@@ -131,12 +131,26 @@ var NAV = [['Arranque'],['painel','Painel','home'],['turmas','Turmas e salas','l
   ['Financeiro'],['propinas','Propinas e multas','wallet'],['facturas','Facturas e recibos','receipt'],
   ['Escola'],['horarios','Horários','cal'],['presencas','Presenças e faltas','check'],['pautas','Pautas e notas','grade'],['comunicados','Comunicados','mega'],
   ['Conta'],['equipa','Equipa da escola','users',0,1],['assinatura','Assinatura do Gescolar','receipt',0,1]];
+function temCON(){ return ((S.escola&&S.escola.niveis)||[]).indexOf('CON')>=0; }
+function soCON(){ var n=(S.escola&&S.escola.niveis)||[]; return n.length>0 && n.every(function(x){ return x==='CON'; }); }
+var SO_ESCOLA={turmas:1,disciplinas:1,estudantes:1,horarios:1,presencas:1,pautas:1};
+function navLista(){
+  var L=[];
+  NAV.forEach(function(n){
+    if(n.length>1 && soCON() && SO_ESCOLA[n[0]]) return;
+    if(n[0]==='professores' && soCON()) n=['professores','Instrutores','board'];
+    L.push(n);
+    if(n[0]==='estudantes' || (soCON() && n[0]==='professores')){}
+  });
+  if(temCON()){ var i=L.map(function(n){ return n[0]; }).indexOf('Financeiro'); L.splice(i,0,['Condução'],['cursos','Cursos e categorias','layers'],['instruendos','Instruendos','users']); }
+  return L;
+}
 function casca(){
   var e=S.escola||{};
   $('#root').innerHTML='<div class="app"><aside class="side" id="side">'+
     '<div class="brand"><img src="logo.png" alt=""><div><b>G<i>e</i>scolar</b><small>gescolar.co.mz</small></div></div>'+
     '<div class="school"><strong>'+esc(e.nome||'')+'</strong><span>'+esc((e.subdominio||'')+'.gescolar.co.mz · '+(e.ano||''))+'</span></div>'+
-    '<nav class="nav">'+NAV.filter(function(n){ return S.papel==='Direccao' || (!n[4] && !(n.length===1 && n[0]==='Conta')); }).map(function(n){ if(n.length===1) return '<div class="grp">'+n[0]+'</div>';
+    '<nav class="nav">'+navLista().filter(function(n){ return S.papel==='Direccao' || (!n[4] && !(n.length===1 && n[0]==='Conta')); }).map(function(n){ if(n.length===1) return '<div class="grp">'+n[0]+'</div>';
       if(n[3]) return '<button class="soon" type="button" tabindex="-1">'+ic(n[2])+'<span>'+n[1]+'</span><span class="em-breve">em breve</span></button>';
       return '<button type="button" class="'+(S.pag===n[0]?'on':'')+'" data-go="'+n[0]+'">'+ic(n[2])+'<span>'+n[1]+'</span></button>'; }).join('')+'</nav>'+
     '<div class="me">'+av(S.nome||'?')+'<div class="who"><strong>'+esc(S.nome)+'</strong><span>Direcção</span></div></div>'+
@@ -163,7 +177,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos }[S.pag] || pPainel;
   f();
 }
 
@@ -173,7 +187,10 @@ function pPainel(){
   api('/painel').then(function(d){
     if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
     S.painel=d; S.escola=d.escola||S.escola;
-    var c=d.contagem, passos=[
+    var c=d.contagem, passos=soCON()?[
+      ['cursos','Criar os cursos de condução','Uma linha por categoria INATRO: preço, prestações, aulas teóricas e práticas.',c.cursos,'curso','cursos'],
+      ['professores','Registar os instrutores','Com o telemóvel: cada instrutor recebe o acesso por SMS.',c.professores,'instrutor','instrutores'],
+      ['instruendos','Inscrever os instruendos','Cada inscrição cria as prestações e envia o número ao instruendo por SMS.',c.instruendos,'instruendo','instruendos']]:[
       ['turmas','Criar as turmas e salas','Cada turma tem o nível, o turno, a sala e a propina mensal.',c.turmas,'turma'],
       ['disciplinas','Criar as disciplinas','Pode carregar o currículo modelo de cada nível e ajustar depois.',c.disciplinas,'disciplina'],
       ['professores','Registar os professores','Com as disciplinas que cada um pode dar e o telemóvel para entrar.',c.professores,'professor'],
@@ -182,7 +199,7 @@ function pPainel(){
     var falta=passos.filter(function(p){ return !p[3]; }).length;
     var primeiro=(S.nome||'').split(' ')[0];
     var arranque = '<section class="card" style="margin-bottom:16px">'+passos.map(function(p,i){ var st=p[3]?'feito':(i===prox?'agora':'');
-        return '<div class="passo '+st+'"><span class="n">'+(p[3]?'✓':(i+1))+'</span><div><b>'+p[1]+'</b><small>'+(p[3]?p[3]+' '+(p[3]===1?p[4]:p[4]+'s')+' registad'+(p[4]==='disciplina'||p[4]==='turma'?'a':'o')+(p[3]===1?'':'s'):p[2])+'</small></div>'+
+        return '<div class="passo '+st+'"><span class="n">'+(p[3]?'✓':(i+1))+'</span><div><b>'+p[1]+'</b><small>'+(p[3]?p[3]+' '+(p[3]===1?p[4]:(p[5]||p[4]+'s'))+' registad'+(p[4]==='disciplina'||p[4]==='turma'?'a':'o')+(p[3]===1?'':'s'):p[2])+'</small></div>'+
           '<button class="btn '+(i===prox?'pri':'')+' sm" data-go2="'+p[0]+'">'+(p[3]?'Ver':'Começar')+'</button></div>'; }).join('')+'</section>';
     $('#page').innerHTML = ph('Painel da Direcção','Olá, '+esc(primeiro), falta ? 'Faltam <b>'+falta+' '+(falta===1?'passo':'passos')+'</b> para a '+esc(S.escola.nome)+' funcionar em pleno.' : esc(S.escola.nome)+' · '+pl(c.estudantes,'estudante','estudantes')+' · '+pl(c.turmas,'turma','turmas')+' · '+pl(c.professores,'professor','professores')+'.',
         '<button class="btn" id="pn-r">Actualizar</button>')+
@@ -346,7 +363,7 @@ function pProfessores(){
     S.professores=d.professores; S.disciplinas=r[1].ok?r[1].disciplinas:[];
     var mapa={}; S.disciplinas.forEach(function(x){ mapa[x.id]=x; });
     var L=d.professores;
-    $('#page').innerHTML=ph('Arranque','Professores', L.length? L.length+' professores registados.' : 'Registe os professores. Cada um recebe um SMS com o link para entrar no Gescolar pelo telemóvel.', (L.length?'<button class="btn" id="conv">Convidar todos por SMS</button>':'')+'<button class="btn pri" id="novo">'+ic('plus')+'Novo professor</button>')+
+    $('#page').innerHTML=ph('Arranque',soCON()?'Instrutores':'Professores', L.length? L.length+' professores registados.' : 'Registe os professores. Cada um recebe um SMS com o link para entrar no Gescolar pelo telemóvel.', (L.length?'<button class="btn" id="conv">Convidar todos por SMS</button>':'')+'<button class="btn pri" id="novo">'+ic('plus')+'Novo professor</button>')+
       (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Professor</th><th>Disciplinas</th><th>Contacto</th><th>Acesso</th><th></th></tr></thead><tbody>'+
         L.map(function(p){ return '<tr><td><div class="person">'+av(p.nome)+'<div><b>'+esc(p.nome)+'</b><small>'+(p.monodocencia?'Monodocência':'Desde '+(p.desde||'—'))+'</small></div></div></td><td>'+
           (p.disciplinas.map(function(id){ return mapa[id]?'<span class="tag" style="margin:2px 4px 2px 0;display:inline-block">'+esc(mapa[id].nome)+'</span>':''; }).join('')||'<span class="muted small">—</span>')+'</td><td class="small"><div class="mono">'+esc(p.telefone||'—')+'</div>'+esc(p.email||'')+'</td><td>'+(p.telefone?'<button class="btn sm" data-ac="'+p.id+'">Enviar acesso</button>':'<span class="small muted">Sem telemóvel</span>')+'</td>'+'<td class="r"><button class="btn sm" data-ed="'+p.id+'">Editar</button> <button class="btn sm danger" data-del="'+p.id+'">'+ic('trash')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
@@ -474,6 +491,7 @@ function formGerar(){
       if(!r.ok){ aGravar(btn,false); $('#g-err').innerHTML=erroCaixa(r.erro); return; }
       fechar(); toast(r.criadas? r.criadas+' mensalidades criadas' : 'Não havia mensalidades novas para criar'+(r.turmas_sem_valor?' · há turmas sem propina definida':'')); pPropinas(); }); };
 }
+function voltarCobranca(){ if(S.pag==='instruendos') pInstruendos(); else pPropinas(); }
 function cobrar(e){
   var abertas=e.propinas.filter(function(p){ return p.estado!=='paga'; });
   var sel={}; abertas.forEach(function(p){ if(p.estado==='atrasada') sel[p.id]=1; }); if(!Object.keys(sel).length && abertas[0]) sel[abertas[0].id]=1;
@@ -510,7 +528,7 @@ function esperar(r, met){
     (r.link?'<div class="stack" style="gap:8px;margin:10px 0"><a class="btn pri" href="'+esc(r.link)+'" target="_blank" rel="noopener" style="justify-content:center;text-decoration:none">Abrir o checkout</a><button class="btn" id="cp">Copiar o link para enviar ao encarregado</button></div>':'')+
     '<p class="small muted" id="w-st">A aguardar confirmação · '+mt(r.total)+'</p></div><div class="modal-f"><button class="btn" id="w-x">Fechar e verificar depois</button></div>');
   var cp=$('#cp'); if(cp) cp.onclick=function(){ try{ navigator.clipboard.writeText(r.link).then(function(){ toast('Link copiado'); },function(){ toast(r.link); }); }catch(e){ toast(r.link); } };
-  $('#w-x').onclick=function(){ parado=true; fechar(); pPropinas(); };
+  $('#w-x').onclick=function(){ parado=true; fechar(); voltarCobranca(); };
   (function verificar(){
     if(parado) return;
     if(Date.now()>fim){ var s=$('#w-st'); if(s) s.textContent='Ainda sem confirmação. Pode fechar: quando a MozPayment confirmar, a mensalidade fica paga sozinha.'; return; }
@@ -528,7 +546,7 @@ function sucessoPag(doc, valor, met, pid){
     '<div class="modal-f"><button class="btn" id="s-f">Ver facturas</button>'+(pid?'<button class="btn" id="s-pdf">'+ic('download')+'Recibo PDF</button>':'')+'<button class="btn pri" data-fechar>Fechar</button></div>');
   $('#s-f').onclick=function(){ fechar(); ir('facturas'); };
   if(pid) $('#s-pdf').onclick=function(){ abrirRecibo(pid); };
-  $$('[data-fechar]').forEach(function(b){ b.onclick=function(){ fechar(); pPropinas(); }; });
+  $$('[data-fechar]').forEach(function(b){ b.onclick=function(){ fechar(); voltarCobranca(); }; });
 }
 
 /* ================= FACTURAS ================= */
@@ -871,6 +889,93 @@ function novoComunicado(){
       fechar(); toast(r.sms?'Publicado e enviado por SMS a '+r.sms+' encarregados':'Comunicado publicado'); if(r.aviso) setTimeout(function(){ toast(r.aviso); },400); pComunicados();
     });
   };
+}
+
+/* ================= ESCOLA DE CONDUÇÃO ================= */
+function pCursos(){
+  aCarregar();
+  api('/cursos').then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    S.cursos=d.cursos; S.categorias=d.categorias;
+    var L=d.cursos;
+    $('#page').innerHTML=ph('Condução','Cursos e categorias', L.length? L.length+' cursos activos.' : 'Crie um curso por categoria de carta (INATRO): preço, número de prestações e aulas.', '<button class="btn pri" id="c-n">'+ic('plus')+'Novo curso</button>')+
+      (L.length? '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">'+L.map(function(c){ var k=d.categorias[c.categoria]||{};
+        return '<section class="card card-b"><div style="display:flex;gap:12px;align-items:center"><span style="width:52px;height:52px;border-radius:12px;background:var(--navy);color:#fff;display:grid;place-items:center;font:800 18px var(--f-display);flex:none">'+esc(c.categoria)+'</span><div style="min-width:0"><b style="display:block">'+esc(c.nome)+'</b><span class="small muted">'+esc(k.nome||'')+' · a partir dos '+c.idade+' anos</span></div></div>'+
+          '<div style="font:800 24px var(--f-display);margin:14px 0 2px">'+mt(c.preco)+'</div><div class="small muted">'+(c.prestacoes>1?'até '+c.prestacoes+' prestações de '+mt(Math.ceil(c.preco/c.prestacoes)):'pagamento único')+'</div>'+
+          '<div class="small" style="margin-top:10px;display:flex;gap:14px;flex-wrap:wrap"><span>'+c.teoricas+' aulas teóricas</span><span>'+c.praticas+' aulas práticas</span><span><b>'+c.inscritos+'</b> inscritos</span></div>'+
+          '<div style="display:flex;gap:6px;margin-top:12px"><button class="btn sm" data-ed="'+c.id+'">Editar</button><button class="btn sm pri" data-ins="'+c.id+'">Inscrever</button><button class="btn sm danger" data-del="'+c.id+'" style="margin-left:auto">'+ic('trash')+'</button></div></section>'; }).join('')+'</div>'
+        : vazio('layers','Ainda sem cursos','Comece pela carta mais procurada, normalmente a B (ligeiros).'));
+    $('#c-n').onclick=function(){ formCurso(null); };
+    $$('[data-ed]').forEach(function(b){ b.onclick=function(){ formCurso(L.filter(function(x){ return x.id===b.getAttribute('data-ed'); })[0]); }; });
+    $$('[data-ins]').forEach(function(b){ b.onclick=function(){ formInscricao(b.getAttribute('data-ins')); }; });
+    $$('[data-del]').forEach(function(b){ b.onclick=function(){ confirmar('Retirar este curso?','Deixa de aparecer para novas inscrições. As inscrições e prestações existentes ficam como estão.',function(btn){ api('/curso-apagar',{id:b.getAttribute('data-del')}).then(function(x){ if(!x.ok){ aGravar(btn,false); $('#cf-err').innerHTML=erroCaixa(x.erro); return; } fechar(); toast('Curso retirado'); pCursos(); }); }); }; });
+  });
+}
+function formCurso(c){
+  c=c||{}; var K=S.categorias||{};
+  modal('<div class="modal-h"><h3>'+(c.id?'Editar curso':'Novo curso')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<div class="frow"><label class="field">Categoria da carta<select class="sel" id="k-c">'+Object.keys(K).map(function(k){ return '<option value="'+k+'"'+(k===(c.categoria||'B')?' selected':'')+'>'+k+' · '+esc(K[k].nome)+'</option>'; }).join('')+'</select></label><label class="field">Idade mínima<input class="inp" type="number" id="k-i" min="16" max="30" value="'+(c.idade||'')+'"></label></div>'+
+    '<label class="field">Nome do curso (opcional)<input class="inp" id="k-n" maxlength="80" value="'+esc(c.nome||'')+'" placeholder="Ex.: Carta B · Ligeiros"></label>'+
+    '<div class="frow"><label class="field">Preço total (MT)<input class="inp mono" id="k-p" inputmode="numeric" value="'+(c.preco||'')+'" placeholder="Ex.: 18000"></label><label class="field">Máximo de prestações<input class="inp" type="number" id="k-x" min="1" max="12" value="'+(c.prestacoes||3)+'"></label></div>'+
+    '<div class="frow"><label class="field">Aulas teóricas<input class="inp" type="number" id="k-t" min="0" value="'+(c.teoricas!=null?c.teoricas:20)+'"></label><label class="field">Aulas práticas<input class="inp" type="number" id="k-r" min="0" value="'+(c.praticas!=null?c.praticas:32)+'"></label></div>'+
+    '<p class="small muted" style="margin:0" id="k-h"></p><div id="k-err"></div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="k-ok">'+ic('save')+'Guardar</button></div>');
+  function dica(){ var k=K[$('#k-c').value]||{}; $('#k-h').textContent='A lei pede pelo menos '+(k.idade||18)+' anos para a carta '+$('#k-c').value+'. As prestações vencem de mês a mês a partir da inscrição.'; if(!c.id) $('#k-i').value=k.idade||18; }
+  $('#k-c').onchange=dica; dica(); if(c.idade) $('#k-i').value=c.idade;
+  $('#k-ok').onclick=function(){ var btn=this; aGravar(btn,true);
+    api('/curso-guardar',{id:c.id, categoria:$('#k-c').value, idade:$('#k-i').value, nome:$('#k-n').value, preco:String($('#k-p').value).replace(/\s/g,''), prestacoes:$('#k-x').value, teoricas:$('#k-t').value, praticas:$('#k-r').value}).then(function(r){
+      if(!r.ok){ aGravar(btn,false); $('#k-err').innerHTML=erroCaixa(r.erro); return; } fechar(); toast(c.id?'Curso actualizado':'Curso criado'); pCursos(); }); };
+}
+function formInscricao(cursoId){
+  var abrir=function(){
+    var C=(S.cursos||[]).filter(function(c){ return c.activo; });
+    if(!C.length){ toast('Crie primeiro um curso'); ir('cursos'); return; }
+    var hoje=new Date().toISOString().slice(0,10);
+    modal('<div class="modal-h"><h3>Inscrever instruendo</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+      '<label class="field">Curso<select class="sel" id="i-c">'+C.map(function(c){ return '<option value="'+c.id+'"'+(c.id===cursoId?' selected':'')+'>'+esc(c.categoria+' · '+c.nome+' · '+mt(c.preco))+'</option>'; }).join('')+'</select></label>'+
+      '<div class="frow"><label class="field">Nome completo<input class="inp" id="i-n" placeholder="Ex.: Délcio Tembe"></label><label class="field">Telemóvel<input class="inp mono" id="i-t" inputmode="numeric" placeholder="84 000 0000"></label></div>'+
+      '<div class="frow"><label class="field">Data de nascimento<input class="inp" type="date" id="i-d" max="'+hoje+'"></label><label class="field">Sexo<select class="sel" id="i-s"><option value="">—</option><option value="F">Feminino</option><option value="M">Masculino</option></select></label></div>'+
+      '<div class="frow"><label class="field">Prestações<select class="sel" id="i-p"></select></label><label class="field">Primeira prestação vence a<input class="inp" type="date" id="i-i" value="'+hoje+'"></label></div>'+
+      '<div class="card card-b" style="background:var(--blue-soft);border-color:transparent" id="i-r"></div>'+
+      '<label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600"><input type="checkbox" id="i-sms" checked> Enviar SMS de boas-vindas com o número e o link do portal</label>'+
+      '<div id="i-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="i-ok">'+ic('save')+'Inscrever</button></div>');
+    function curso(){ return C.filter(function(c){ return c.id===$('#i-c').value; })[0]; }
+    function prest(){ var c=curso(), v=$('#i-p').value; $('#i-p').innerHTML=''; for(var k=1;k<=c.prestacoes;k++) $('#i-p').insertAdjacentHTML('beforeend','<option value="'+k+'"'+(String(k)===v||(!v&&k===c.prestacoes)?' selected':'')+'>'+(k===1?'Pagamento único':k+' prestações')+'</option>'); resumo(); }
+    function resumo(){ var c=curso(), n=+$('#i-p').value||1, base=Math.floor(c.preco/n), r=c.preco-base*n; $('#i-r').innerHTML='<b>'+mt(c.preco)+'</b> · '+(n===1?'um pagamento':n+' prestações: '+mt(base+r)+' agora e '+(n-1)+'× '+mt(base)+' de mês a mês')+'<div class="small muted" style="margin-top:4px">Idade mínima: '+c.idade+' anos · '+c.teoricas+' aulas teóricas · '+c.praticas+' práticas</div>'; }
+    $('#i-c').onchange=prest; $('#i-p').onchange=resumo; prest();
+    $('#i-ok').onclick=function(){ var btn=this; aGravar(btn,true);
+      api('/inscrever',{curso:$('#i-c').value, nome:$('#i-n').value, telefone:$('#i-t').value, nascimento:$('#i-d').value, sexo:$('#i-s').value, prestacoes:$('#i-p').value, inicio:$('#i-i').value, sms:$('#i-sms').checked}).then(function(r){
+        if(!r.ok){ aGravar(btn,false); $('#i-err').innerHTML=erroCaixa(r.erro); return; }
+        fechar(); toast('Inscrito · Nº '+r.numero+(r.sms?' · SMS enviado':'')); if(S.pag==='instruendos') pInstruendos(); else ir('instruendos'); });
+    };
+  };
+  if(S.cursos) abrir(); else api('/cursos').then(function(d){ if(d.ok){ S.cursos=d.cursos; S.categorias=d.categorias; } abrir(); });
+}
+function pInstruendos(){
+  aCarregar();
+  Promise.all([api('/instruendos'), api('/cursos')]).then(function(r){
+    var d=r[0]; if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    if(r[1].ok){ S.cursos=r[1].cursos; S.categorias=r[1].categorias; }
+    S.fIns=S.fIns||'activa';
+    var L=d.instruendos.filter(function(x){ return S.fIns==='todas' || x.estado===S.fIns; });
+    var EST={activa:['Em curso','info'],concluida:['Concluiu','ok'],desistiu:['Desistiu','muted']};
+    $('#page').innerHTML=ph('Condução','Instruendos', d.instruendos.length? d.instruendos.filter(function(x){ return x.estado==='activa'; }).length+' em curso · '+d.instruendos.length+' inscrições no total.' : 'Inscreva o primeiro instruendo. Cada inscrição cria as prestações e o acesso ao portal.',
+        '<select class="sel" id="f-e"><option value="activa"'+(S.fIns==='activa'?' selected':'')+'>Em curso</option><option value="concluida"'+(S.fIns==='concluida'?' selected':'')+'>Concluíram</option><option value="desistiu"'+(S.fIns==='desistiu'?' selected':'')+'>Desistiram</option><option value="todas"'+(S.fIns==='todas'?' selected':'')+'>Todas</option></select><button class="btn pri" id="i-n">'+ic('plus')+'Inscrever</button>')+
+      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Instruendo</th><th>Carta</th><th class="hide-sm">Inscrito</th><th>Pago</th><th class="hide-sm">Próxima prestação</th><th>Estado</th><th></th></tr></thead><tbody>'+
+        L.map(function(x,i){ var pct=x.total?Math.round(x.pago*100/x.total):0, e=EST[x.estado]||[x.estado,'muted'];
+          return '<tr><td><div class="person">'+av(x.nome)+'<div><b>'+esc(x.nome)+'</b><small class="mono">'+esc(x.numero)+' · '+esc(x.telefone)+'</small></div></div></td><td><span class="tag">'+esc(x.categoria)+'</span></td><td class="small num hide-sm">'+data(x.data)+'</td>'+
+            '<td style="min-width:150px"><div class="small"><b class="num">'+mt(x.pago)+'</b> de '+mt(x.total)+'</div><div style="height:6px;border-radius:3px;background:var(--line);margin-top:4px;overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:'+(x.em_atraso?'var(--bad)':'var(--ok)')+'"></i></div>'+(x.em_atraso?'<div class="small" style="color:var(--bad);font-weight:700">'+mt(x.em_atraso)+' em atraso</div>':'')+'</td>'+
+            '<td class="small hide-sm">'+(x.proxima?mt(x.proxima.valor)+' · '+data(x.proxima.vencimento):'<span style="color:var(--ok);font-weight:700">Tudo pago</span>')+'</td>'+
+            '<td><span class="pill '+e[1]+'">'+e[0]+'</span></td><td class="r" style="white-space:nowrap">'+(x.proxima?'<button class="btn sm pri" data-cob="'+i+'">Cobrar</button> ':'')+'<select class="sel" data-est="'+i+'" style="height:30px;font-size:13px"><option value="">Mudar…</option><option value="activa">Em curso</option><option value="concluida">Concluiu</option><option value="desistiu">Desistiu</option></select></td></tr>'; }).join('')+'</tbody></table></div></section>'
+        : vazio('users', d.instruendos.length?'Nenhuma inscrição neste filtro':'Ainda sem instruendos', d.instruendos.length?'Mude o filtro acima.':'Clique em "Inscrever".'));
+    $('#f-e').onchange=function(){ S.fIns=this.value; pInstruendos(); };
+    $('#i-n').onclick=function(){ formInscricao(null); };
+    $$('[data-est]').forEach(function(s){ s.onchange=function(){ var x=L[+s.getAttribute('data-est')], v=s.value; if(!v) return;
+      if(v==='desistiu' && !confirm('Marcar '+x.nome+' como desistente? As prestações por pagar são anuladas.')){ s.value=''; return; }
+      api('/inscricao-estado',{id:x.id, estado:v}).then(function(r){ toast(r.ok?'Estado actualizado':r.erro); pInstruendos(); }); }; });
+    $$('[data-cob]').forEach(function(b){ b.onclick=function(){ var x=L[+b.getAttribute('data-cob')]; b.disabled=true;
+      api('/propinas').then(function(p){ b.disabled=false; if(!p.ok){ toast(p.erro); return; } var e=p.estudantes.filter(function(z){ return z.id===x.estudante; })[0]; if(!e){ toast('Não encontrei as prestações deste instruendo.'); return; } if(!e.encarregado) e.encarregado={nome:e.nome, telefone:x.telefone}; S.voltar='instruendos'; cobrar(e); }); }; });
+  });
 }
 
 /* ================= EQUIPA DA ESCOLA ================= */
