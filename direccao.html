@@ -129,7 +129,8 @@ try{ var h=(location.hash||'').slice(1); if(h) S.pag=h; }catch(e){}
 /* ---------- casca ---------- */
 var NAV = [['Arranque'],['painel','Painel','home'],['turmas','Turmas e salas','layers'],['disciplinas','Disciplinas','book'],['professores','Professores','board'],['estudantes','Estudantes','users'],
   ['Financeiro'],['propinas','Propinas e multas','wallet'],['facturas','Facturas e recibos','receipt'],
-  ['Escola'],['horarios','Horários','cal'],['presencas','Presenças e faltas','check'],['pautas','Pautas e notas','grade'],['comunicados','Comunicados','mega']];
+  ['Escola'],['horarios','Horários','cal'],['presencas','Presenças e faltas','check'],['pautas','Pautas e notas','grade'],['comunicados','Comunicados','mega'],
+  ['Conta'],['assinatura','Assinatura do Gescolar','receipt']];
 function casca(){
   var e=S.escola||{};
   $('#root').innerHTML='<div class="app"><aside class="side" id="side">'+
@@ -142,7 +143,7 @@ function casca(){
     '<a class="exit" href="#" id="sair">'+ic('out','width="14" height="14"')+'Sair</a></aside>'+
     '<div class="main"><header class="top"><button class="menu-btn" id="menu" aria-label="Menu">'+ic('menu','width="18" height="18"')+'</button>'+
     '<div class="top-title">'+ic('layers','width="16" height="16" style="color:var(--blue)"')+'Área da Direcção</div>'+
-    (e.estado==='teste'?'<span class="pill info" style="margin-left:auto">Período de teste até '+esc(data(e.teste_ate))+'</span>':'')+
+    seloSituacao(e)+(S.plataforma?'<a class="btn sm" href="plataforma.html" style="margin-left:8px;text-decoration:none">Plataforma</a>':'')+
     '</header><main class="page" id="page"></main></div></div>';
   $('#sair').onclick=function(ev){ ev.preventDefault(); sair(); };
   $('#menu').onclick=function(ev){ ev.stopPropagation(); $('#side').classList.toggle('open'); };
@@ -162,7 +163,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura }[S.pag] || pPainel;
   f();
 }
 
@@ -871,6 +872,79 @@ function novoComunicado(){
   };
 }
 
+/* ================= ASSINATURA DO GESCOLAR ================= */
+function seloSituacao(e){
+  var s=(e&&e.situacao)||{}, st='margin-left:auto;cursor:pointer';
+  if(s.estado==='teste') return '<span class="pill info" style="'+st+'" data-go3="assinatura">Período de teste até '+esc(data(s.ate))+'</span>';
+  if(s.estado==='activa' && s.dias!=null && s.dias<=7) return '<span class="pill warn" style="'+st+'" data-go3="assinatura">Assinatura termina a '+esc(data(s.ate))+'</span>';
+  if(s.estado==='tolerancia') return '<span class="pill warn" style="'+st+'" data-go3="assinatura">Assinatura terminou · renove já</span>';
+  if(s.estado==='expirada') return '<span class="pill bad" style="'+st+'" data-go3="assinatura">Assinatura expirada · renove</span>';
+  return '<span style="margin-left:auto"></span>';
+}
+document.addEventListener('click',function(ev){ var b=ev.target.closest&&ev.target.closest('[data-go3]'); if(b) ir(b.getAttribute('data-go3')); });
+var SIT_NOME={teste:['Período de teste','info'],activa:['Activa','ok'],tolerancia:['Terminou · em tolerância','warn'],expirada:['Expirada','bad'],suspensa:['Suspensa','bad']};
+function pAssinatura(){
+  aCarregar();
+  api('/assinatura').then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    var s=d.situacao, sn=SIT_NOME[s.estado]||[s.estado,'muted'];
+    S.A={ plano: d.plano==='Rede'?'Pro':d.plano, meses: 1, met:'mpesa' };
+    function desenhar(){
+      var p=d.planos.filter(function(x){ return x.nome===S.A.plano; })[0]||d.planos[0], total=p.preco*S.A.meses;
+      $('#page').innerHTML=ph('Conta','Assinatura do Gescolar','O Gescolar cobra uma mensalidade por escola. Pode pagar por M-Pesa, e-Mola ou cartão, e a assinatura fica activa logo após a confirmação.')+
+        '<div class="grid g4" style="margin-bottom:16px">'+
+          '<div class="card kpi"><div class="l">Situação</div><div class="v" style="font-size:20px"><span class="pill '+sn[1]+'" style="font-size:14px">'+sn[0]+'</span></div><div class="d">'+(s.ate?(s.dias>=0?'Até '+data(s.ate)+' · faltam '+s.dias+' dia(s)':'Terminou a '+data(s.ate)):'—')+'</div></div>'+
+          '<div class="card kpi"><div class="l">Plano actual</div><div class="v">'+esc(d.plano)+'</div><div class="d">'+(d.preco?mt(d.preco)+' por mês':'Preço combinado')+'</div></div>'+
+          '<div class="card kpi"><div class="l">Estudantes activos</div><div class="v">'+grp(d.estudantes)+'</div><div class="d">'+(d.limite?'Limite do plano: '+grp(d.limite):'Sem limite')+'</div></div>'+
+          '<div class="card kpi"><div class="l">Tolerância</div><div class="v">'+d.tolerancia+' dias</div><div class="d">Depois do fim, antes de o acesso ser limitado</div></div>'+
+        '</div>'+
+        '<section class="card card-b" style="margin-bottom:16px"><div class="eyebrow" style="margin-bottom:10px">Renovar ou mudar de plano</div>'+
+          '<div class="grid g4" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:14px">'+d.planos.map(function(x){ var on=x.nome===S.A.plano, rede=x.nome==='Rede', cabe=!x.limite||d.estudantes<=x.limite;
+            return '<button type="button" class="card card-b" data-pl="'+x.nome+'"'+(rede||!cabe?' disabled':'')+' style="text-align:left;cursor:'+(rede||!cabe?'default':'pointer')+';border:2px solid '+(on?'var(--blue)':'var(--line)')+';background:'+(on?'var(--blue-soft)':'var(--surface)')+';opacity:'+(cabe||rede?1:.55)+'"><b style="font-size:17px">'+x.nome+'</b><div style="font:800 22px var(--f-display);margin:6px 0">'+(rede?'Sob consulta':mt(x.preco)+'<small style="font-size:13px;color:var(--muted)"> /mês</small>')+'</div><div class="small muted">'+(rede?'Várias escolas. Fale connosco.':'Até '+grp(x.limite)+' estudantes'+(cabe?'':' · a escola já passou este limite'))+'</div></button>'; }).join('')+'</div>'+
+          '<div class="eyebrow" style="margin-bottom:8px">Quantos meses</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'+[1,3,6,12].map(function(m){ return '<button type="button" class="btn '+(S.A.meses===m?'pri':'')+'" data-m="'+m+'">'+m+(m===1?' mês':' meses')+'</button>'; }).join('')+'</div>'+
+          '<div class="methods" style="max-width:520px;margin-bottom:12px">'+['mpesa','emola','cartao'].map(function(k){ return '<button type="button" class="method '+(S.A.met===k?'on':'')+'" data-mt="'+k+'"><span class="lg" style="background:'+METODO[k][1]+';font-size:12px">'+(k==='cartao'?'VISA':METODO[k][0])+'</span>'+METODO[k][0].replace(' / ','/')+'</button>'; }).join('')+'</div>'+
+          (S.A.met!=='cartao'?'<label class="field" style="max-width:320px;margin-bottom:12px">Número '+METODO[S.A.met][0]+'<input class="inp mono" id="as-tel" inputmode="numeric" maxlength="12" placeholder="'+(S.A.met==='mpesa'?'84 000 0000':'86 000 0000')+'" value="'+esc(S.A.tel||'')+'"></label>':'')+
+          '<div id="as-err"></div><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="as-ok" style="height:44px">Pagar '+mt(total)+'</button><span class="small muted">'+esc(S.A.plano)+' · '+S.A.meses+(S.A.meses===1?' mês':' meses')+' · a validade é somada à actual'+(s.ate&&s.dias>0?' (até '+data(s.ate)+')':'')+'.</span></div></section>'+
+        '<section class="card"><div class="card-h"><b>Histórico</b></div>'+(d.historico.length?'<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Plano</th><th>Meses</th><th>Método</th><th>Estado</th><th class="r">Valor</th><th>Válida até</th></tr></thead><tbody>'+
+          d.historico.map(function(h){ return '<tr><td class="small num">'+data(h.data)+'</td><td>'+esc(h.plano)+'</td><td class="num">'+h.meses+'</td><td class="small">'+esc((METODO[h.metodo]||[h.metodo])[0])+'</td><td>'+(h.estado==='pago'?'<span class="pill ok">Pago</span>':h.estado==='pendente'?'<span class="pill info">Pendente</span>':'<span class="pill bad">'+esc(h.estado)+'</span>')+'</td><td class="r num">'+mt(h.valor)+'</td><td class="small num">'+data(h.valida_ate)+'</td></tr>'; }).join('')+'</tbody></table></div>':'<div class="card-b small muted">Ainda sem pagamentos de assinatura.</div>')+'</section>';
+      $$('[data-pl]').forEach(function(b){ b.onclick=function(){ if(b.disabled) return; S.A.plano=b.getAttribute('data-pl'); guardaTel(); desenhar(); }; });
+      $$('[data-m]').forEach(function(b){ b.onclick=function(){ S.A.meses=+b.getAttribute('data-m'); guardaTel(); desenhar(); }; });
+      $$('[data-mt]').forEach(function(b){ b.onclick=function(){ guardaTel(); S.A.met=b.getAttribute('data-mt'); desenhar(); }; });
+      $('#as-ok').onclick=function(){
+        guardaTel(); var btn=this, tel=(S.A.tel||'').replace(/\D/g,'');
+        if(S.A.met!=='cartao' && tel.length!==9){ $('#as-err').innerHTML=erroCaixa('Escreva o número com 9 dígitos.'); return; }
+        aGravar(btn,true);
+        api('/assinatura-pagar',{plano:S.A.plano, meses:S.A.meses, metodo:S.A.met, numero:tel}).then(function(r){
+          aGravar(btn,false);
+          if(!r.ok){ $('#as-err').innerHTML=erroCaixa(r.erro); return; }
+          esperarAssinatura(r);
+        });
+      };
+    }
+    function guardaTel(){ var t=$('#as-tel'); if(t) S.A.tel=t.value; }
+    desenhar();
+  });
+}
+function esperarAssinatura(r){
+  var fim=Date.now()+4*60e3, parado=false;
+  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div class="spinner"></div><h3 style="margin-top:10px">'+(r.link?'À espera do pagamento com cartão':'Confirme no telemóvel')+'</h3><p class="muted">'+(r.link?'Pague na página segura da MozPayment. Esta janela actualiza sozinha.':esc(r.mensagem||''))+'</p>'+
+    (r.link?'<a class="btn pri" href="'+esc(r.link)+'" target="_blank" rel="noopener" style="text-decoration:none;justify-content:center;margin-bottom:10px">Abrir a página de pagamento</a>':'')+
+    '<p class="small muted" id="w-st">A aguardar confirmação · '+mt(r.total)+'</p></div><div class="modal-f"><button class="btn" id="w-x">Fechar e ver depois</button></div>');
+  $('#w-x').onclick=function(){ parado=true; fechar(); pAssinatura(); };
+  (function verificar(){
+    if(parado) return;
+    if(Date.now()>fim){ var s=$('#w-st'); if(s) s.textContent='Ainda sem confirmação. Quando o pagamento for confirmado, a assinatura é renovada sozinha.'; return; }
+    api('/assinatura-estado',{id:r.id}).then(function(x){
+      if(parado) return;
+      if(x.ok && x.estado==='pago'){ parado=true;
+        modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div style="width:64px;height:64px;border-radius:50%;background:var(--ok);display:grid;place-items:center;margin:0 auto;color:#fff">'+ic('check','width="30" height="30"')+'</div><h3 style="margin-top:14px">Assinatura renovada</h3><p class="muted">Válida até <b style="color:var(--ink)">'+data(x.valida_ate)+'</b>. Obrigado!</p></div><div class="modal-f"><button class="btn pri" id="w-ok">Concluir</button></div>');
+        $('#w-ok').onclick=function(){ fechar(); fetch(PROXY+'/sessao',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SES.token}}).then(function(r){ return r.json(); }).then(function(d){ if(d.ok){ S.escola=d.escola; } casca(); }); }; return; }
+      if(x.ok && (x.estado==='falhado'||x.estado==='expirado')){ var s=$('#w-st'); if(s) s.innerHTML='<b style="color:var(--bad)">O pagamento '+(x.estado==='falhado'?'falhou ou foi cancelado':'expirou')+'.</b> Pode tentar outra vez.'; return; }
+      setTimeout(verificar,4000);
+    });
+  })();
+}
+
 /* ---------- arranque ---------- */
 fetch(PROXY+'/sessao',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SES.token}})
   .then(function(r){ return r.json().then(function(d){ return {st:r.status,d:d}; }); })
@@ -878,7 +952,7 @@ fetch(PROXY+'/sessao',{method:'POST',headers:{'Content-Type':'application/json',
     var d=x.d;
     if(x.st===401 || !d.ok){ if(x.st===401) return sair(); $('#root').innerHTML='<div class="carregar">'+esc(d.erro||'Não foi possível abrir o painel.')+' <a class="link" href="entrar.html">Voltar a entrar</a></div>'; return; }
     if(d.pagina!=='direccao'){ location.replace((d.pagina||'entrar')+'.html'); return; }
-    S.escola=d.escola; S.nome=d.nome;
+    S.escola=d.escola; S.nome=d.nome; S.plataforma=!!d.plataforma;
     SES.token=d.token; try{ localStorage.setItem('gs_sessao', JSON.stringify({token:d.token,nome:d.nome,papel:d.papel,pagina:d.pagina,escola:d.escola,criada:Date.now()})); }catch(e){}
     casca();
   })

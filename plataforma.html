@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="pt-MZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Plataforma · Gescolar</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="gescolar.css">
+<style>
+body{background:var(--bg);margin:0}
+.pf-top{background:var(--navy);color:#fff;padding:14px 16px}
+.pf-top .in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.pf-top img{width:38px;height:38px;border-radius:50%;background:#fff}
+.pf-top b{font:800 18px var(--f-display)}
+.pf-top small{display:block;color:rgba(255,255,255,.7);font-size:12.5px}
+.pf-top .sp{flex:1}
+.pf-top a,.pf-top button{color:#fff;border:1px solid rgba(255,255,255,.25);background:none;border-radius:9px;height:34px;padding:0 12px;font:600 13px var(--f-body);display:inline-flex;align-items:center;text-decoration:none;cursor:pointer}
+.pf-main{max-width:1240px;margin:0 auto;padding:20px 16px 48px}
+.pf-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.kpi .v.bad{color:var(--bad)} .kpi .v.ok{color:var(--ok)}
+.carregar{display:flex;align-items:center;justify-content:center;gap:12px;padding:60px 16px;color:var(--muted)}
+.carregar .spinner{margin:0;width:28px;height:28px;border-width:3px}
+.msg-err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:600}
+.mov{display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.mov:last-child{border-bottom:0}
+.mov .tx{flex:1;min-width:0}
+.mov .tx small{display:block;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mov .vl{font:700 14px var(--f-mono);white-space:nowrap}
+.filtro{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div id="root"><div class="carregar"><div class="spinner"></div>A abrir…</div></div>
+<div class="toasts" id="toasts"></div>
+<script>
+(function(){
+'use strict';
+var PROXY='https://gescolar-proxy.onrender.com';
+function $(s,r){ return (r||document).querySelector(s); }
+function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
+function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function grp(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
+function mt(n){ return grp(n)+' MT'; }
+function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?'—':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
+function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
+function erroCaixa(m){ return '<div class="msg-err">'+esc(m)+'</div>'; }
+function modal(html, largo){ fechar(); var s=document.createElement('div'); s.className='scrim'; s.id='ov'; s.innerHTML='<div class="modal" role="dialog" aria-modal="true"'+(largo?' style="max-width:860px"':'')+'>'+html+'</div>'; s.addEventListener('mousedown',function(e){ if(e.target===s) fechar(); }); document.body.appendChild(s); $$('[data-fechar]',s).forEach(function(b){ b.onclick=fechar; }); }
+function fechar(){ var o=$('#ov'); if(o) o.remove(); }
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') fechar(); });
+var SIT={teste:['Teste','info'],activa:['Activa','ok'],tolerancia:['Tolerância','warn'],expirada:['Expirada','bad'],suspensa:['Suspensa','bad'],desconhecida:['—','muted']};
+var MET={mpesa:'M-Pesa',emola:'e-Mola',cartao:'Cartão',balcao:'Numerário'};
+
+var SES=null; try{ SES=JSON.parse(localStorage.getItem('gs_sessao')||'null'); }catch(e){}
+if(!SES || !SES.token){ location.replace('entrar.html'); return; }
+function sair(){ try{ localStorage.removeItem('gs_sessao'); }catch(e){} location.replace('entrar.html'); }
+function api(rota,corpo){
+  return fetch(PROXY+rota,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SES.token},body:JSON.stringify(corpo||{})})
+    .then(function(r){ return r.json().catch(function(){ return {ok:false,erro:'Resposta inválida do servidor.'}; }).then(function(d){ if(r.status===401) sair(); return d; }); })
+    .catch(function(){ return {ok:false,erro:'Sem ligação ao servidor.'}; });
+}
+var S={ d:null, filtro:'', ordem:'saldo', sessao:null };
+
+function casca(){
+  $('#root').innerHTML='<header class="pf-top"><div class="in"><img src="logo.png" alt=""><div><b>Plataforma Gescolar</b><small>'+esc(S.sessao.nome||'')+'</small></div><span class="sp"></span>'+
+    (S.sessao.escola?'<a href="direccao.html">A minha escola</a>':'')+'<button id="sair">Sair</button></div></header><main class="pf-main" id="pg"><div class="carregar"><div class="spinner"></div>A calcular…</div></main>';
+  $('#sair').onclick=sair;
+  carregar();
+}
+function carregar(){
+  api('/pl/resumo').then(function(d){
+    if(!d.ok){ $('#pg').innerHTML=erroCaixa(d.erro); return; }
+    S.d=d; desenhar();
+  });
+}
+function desenhar(){
+  var d=S.d, t=d.totais;
+  var L=d.escolas.filter(function(e){ var f=S.filtro.toLowerCase(); return !f || (e.nome+' '+e.subdominio+' '+e.cidade+' '+e.provincia).toLowerCase().indexOf(f)>=0; });
+  L.sort(function(a,b){ return S.ordem==='nome'?a.nome.localeCompare(b.nome,'pt'):S.ordem==='estudantes'?b.estudantes-a.estudantes:S.ordem==='validade'?String(a.situacao.ate||'').localeCompare(String(b.situacao.ate||'')):b.saldo-a.saldo; });
+  $('#pg').innerHTML=
+    '<div class="pf-kpis">'+[
+      ['Escolas',grp(t.escolas),t.activas+' activas · '+t.teste+' em teste',''],
+      ['Estudantes',grp(t.estudantes),'em todas as escolas',''],
+      ['Propinas pagas online',mt(t.propinas_online),'desde o início'+(d.taxa_pct?' · taxa '+d.taxa_pct+'%':''),''],
+      ['A transferir às escolas',mt(t.a_transferir),'saldo na carteira única',t.a_transferir?'bad':'ok'],
+      ['Assinaturas este mês',mt(t.assinaturas_mes),mt(t.assinaturas)+' desde o início','']
+    ].map(function(k){ return '<div class="card kpi"><div class="l">'+k[0]+'</div><div class="v num '+k[3]+'" style="font-size:24px">'+k[1]+'</div><div class="d">'+esc(k[2])+'</div></div>'; }).join('')+'</div>'+
+    '<div class="filtro"><input class="inp" id="f" placeholder="Procurar escola, cidade, província…" value="'+esc(S.filtro)+'" style="flex:1;min-width:220px">'+
+      '<select class="sel" id="o"><option value="saldo"'+(S.ordem==='saldo'?' selected':'')+'>Maior saldo a transferir</option><option value="validade"'+(S.ordem==='validade'?' selected':'')+'>Validade mais próxima</option><option value="estudantes"'+(S.ordem==='estudantes'?' selected':'')+'>Mais estudantes</option><option value="nome"'+(S.ordem==='nome'?' selected':'')+'>Nome</option></select>'+
+      '<button class="btn" id="r">Actualizar</button></div>'+
+    '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Escola</th><th>Plano</th><th>Situação</th><th class="r">Estud.</th><th class="r hide-sm">Propinas online</th><th class="r hide-sm">Transferido</th><th class="r">A transferir</th><th></th></tr></thead><tbody>'+
+      (L.length? L.map(function(e,i){ var s=SIT[e.situacao.estado]||SIT.desconhecida;
+        return '<tr><td><b>'+esc(e.nome)+'</b><div class="small muted">'+esc([e.subdominio,e.cidade,e.provincia].filter(Boolean).join(' · '))+'</div></td><td>'+esc(e.plano)+'</td><td><span class="pill '+s[1]+'">'+s[0]+'</span><div class="small muted">'+(e.situacao.ate?'até '+data(e.situacao.ate):'')+'</div></td><td class="r num">'+grp(e.estudantes)+'</td><td class="r num hide-sm">'+mt(e.propinas_online)+'</td><td class="r num hide-sm">'+mt(e.transferido)+'</td><td class="r num" style="font-weight:700;color:'+(e.saldo>0?'var(--bad)':'var(--ink)')+'">'+mt(e.saldo)+'</td><td class="r" style="white-space:nowrap">'+(e.saldo>0?'<button class="btn sm pri" data-tr="'+i+'">Transferir</button> ':'')+'<button class="btn sm" data-ver="'+i+'">Ver</button></td></tr>'; }).join('')
+        : '<tr><td colspan="8" class="muted" style="text-align:center;padding:30px">Nenhuma escola encontrada.</td></tr>')+
+    '</tbody></table></div></section>'+
+    '<p class="small muted" style="margin-top:10px">Propinas online = M-Pesa, e-Mola e cartão (o numerário fica na escola). A transferir = propinas online'+(d.taxa_pct?' − taxa de '+d.taxa_pct+'%':'')+' − transferências registadas.</p>';
+  $('#f').oninput=function(){ S.filtro=this.value; var p=this.selectionStart; desenhar(); var f=$('#f'); f.focus(); f.setSelectionRange(p,p); };
+  $('#o').onchange=function(){ S.ordem=this.value; desenhar(); };
+  $('#r').onclick=function(){ $('#pg').innerHTML='<div class="carregar"><div class="spinner"></div>A calcular…</div>'; carregar(); };
+  $$('[data-tr]').forEach(function(b){ b.onclick=function(){ transferir(L[+b.getAttribute('data-tr')]); }; });
+  $$('[data-ver]').forEach(function(b){ b.onclick=function(){ verEscola(L[+b.getAttribute('data-ver')]); }; });
+}
+function transferir(e, depois){
+  var hoje=new Date().toISOString().slice(0,10);
+  modal('<div class="modal-h"><h3>Registar transferência</h3><button class="icon-btn" data-fechar>✕</button></div><div class="modal-b">'+
+    '<p style="margin:0"><b>'+esc(e.nome)+'</b><br><span class="small muted">Saldo a transferir: '+mt(e.saldo)+'</span></p>'+
+    '<p class="small muted" style="margin:0">Registe aqui depois de enviar o dinheiro à escola (M-Pesa, e-Mola ou banco). O Gescolar não move dinheiro sozinho: só guarda o registo.</p>'+
+    '<div class="frow"><label class="field">Valor (MT)<input class="inp mono" id="t-v" inputmode="decimal" value="'+Math.max(0,Math.round(e.saldo))+'"></label><label class="field">Data<input class="inp" type="date" id="t-d" value="'+hoje+'" max="'+hoje+'"></label></div>'+
+    '<div class="frow"><label class="field">Como<select class="sel" id="t-m"><option>M-Pesa</option><option>e-Mola</option><option>Transferência bancária</option><option>Numerário</option></select></label><label class="field">Referência<input class="inp" id="t-r" maxlength="80" placeholder="ID da transacção"></label></div>'+
+    '<label class="field">Notas (opcional)<input class="inp" id="t-n" maxlength="300"></label>'+
+    '<label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600"><input type="checkbox" id="t-s"'+(e.telefone?' checked':' disabled')+'> Avisar a escola por SMS'+(e.telefone?' ('+esc(e.telefone)+')':' (sem telefone)')+'</label>'+
+    '<div id="t-e"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="t-ok">Registar</button></div>');
+  $('#t-ok').onclick=function(){
+    var b=this; b.disabled=true; b.textContent='A registar…';
+    api('/pl/transferencia',{escola:e.id, valor:$('#t-v').value, data:$('#t-d').value, metodo:$('#t-m').value, referencia:$('#t-r').value, notas:$('#t-n').value, sms:$('#t-s').checked}).then(function(r){
+      if(!r.ok){ b.disabled=false; b.textContent='Registar'; $('#t-e').innerHTML=erroCaixa(r.erro); return; }
+      fechar(); toast('Transferência registada'); if(depois) depois(); else carregar();
+    });
+  };
+}
+function verEscola(e){
+  modal('<div class="modal-h"><h3>'+esc(e.nome)+'</h3><button class="icon-btn" data-fechar>✕</button></div><div class="modal-b" id="ve"><div class="carregar"><div class="spinner"></div>A abrir…</div></div>', true);
+  api('/pl/escola',{id:e.id}).then(function(d){
+    var el=$('#ve'); if(!el) return;
+    if(!d.ok){ el.innerHTML=erroCaixa(d.erro); return; }
+    var x=d.escola, s=SIT[x.situacao.estado]||SIT.desconhecida;
+    el.innerHTML=
+      '<div class="small muted">'+esc([e.subdominio+'.gescolar.co.mz', 'NUIT '+(e.nuit||'—'), e.telefone, e.email].filter(Boolean).join(' · '))+'</div>'+
+      '<div class="card card-b" style="background:var(--bg)"><div class="eyebrow" style="margin-bottom:8px">Assinatura</div>'+
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><span class="pill '+s[1]+'">'+s[0]+'</span><span class="small">'+(x.situacao.ate?'até '+data(x.situacao.ate)+(x.situacao.dias!=null?' ('+(x.situacao.dias>=0?'faltam '+x.situacao.dias:'há '+(-x.situacao.dias))+' dias)':''):'sem data')+'</span></div>'+
+        '<div class="frow"><label class="field">Plano<select class="sel" id="e-p">'+['Essencial','Pro','Rede'].map(function(p){ return '<option'+(p===x.plano?' selected':'')+'>'+p+'</option>'; }).join('')+'</select></label>'+
+        '<label class="field">Estado<select class="sel" id="e-s">'+[['teste','Teste'],['activa','Activa'],['suspensa','Suspensa (bloqueia o acesso)']].map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===x.estado?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select></label></div>'+
+        '<div class="frow"><label class="field">Válida até<input class="inp" type="date" id="e-v" value="'+(x.valida_ate?String(x.valida_ate).slice(0,10):'')+'"></label><label class="field">Ou somar meses<select class="sel" id="e-m"><option value="">—</option><option value="1">+1 mês</option><option value="3">+3 meses</option><option value="12">+12 meses</option></select></label></div>'+
+        '<div id="e-e"></div><button class="btn pri" id="e-ok" style="margin-top:10px">Guardar assinatura</button></div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div class="eyebrow">Extracto da carteira · saldo '+mt(e.saldo)+'</div><button class="btn sm pri" id="e-tr">Registar transferência</button></div>'+
+      '<div>'+(d.movimentos.length? d.movimentos.map(function(m){ return '<div class="mov"><div class="tx"><b>'+(m.tipo==='entrada'?'Propina · '+esc(MET[m.metodo]||m.metodo):'Transferência para a escola')+'</b><small>'+data(m.data)+' · '+esc(m.texto||'')+(m.feita_por?' · '+esc(m.feita_por):'')+'</small></div><div class="vl" style="color:'+(m.tipo==='entrada'?'var(--ok)':'var(--bad)')+'">'+(m.tipo==='entrada'?'+':'−')+mt(m.valor)+'</div>'+(m.tipo==='transferencia'?'<button class="btn sm danger" data-del="'+esc(m.id)+'" title="Apagar registo">✕</button>':'')+'</div>'; }).join('') : '<p class="small muted">Sem movimentos.</p>')+'</div>'+
+      '<div class="eyebrow">Pagamentos da assinatura</div><div>'+(d.assinaturas.length? d.assinaturas.map(function(a){ return '<div class="mov"><div class="tx"><b>'+esc(a.plano)+' · '+a.meses+(a.meses===1?' mês':' meses')+'</b><small>'+data(a.data)+' · '+esc(MET[a.metodo]||a.metodo)+' · '+esc(a.estado)+(a.valida_ate?' · até '+data(a.valida_ate):'')+'</small></div><div class="vl">'+mt(a.valor)+'</div></div>'; }).join('') : '<p class="small muted">Ainda sem pagamentos.</p>')+'</div>';
+    $('#e-ok').onclick=function(){
+      var b=this; b.disabled=true;
+      var corpo={id:x.id, plano:$('#e-p').value, estado:$('#e-s').value}; var mm=$('#e-m').value, v=$('#e-v').value;
+      if(mm) corpo.mais_meses=+mm; else if(v) corpo.valida_ate=v;
+      api('/pl/escola-guardar',corpo).then(function(r){ b.disabled=false; if(!r.ok){ $('#e-e').innerHTML=erroCaixa(r.erro); return; } toast('Assinatura actualizada'); fechar(); carregar(); });
+    };
+    $('#e-tr').onclick=function(){ transferir(e, function(){ carregar(); }); };
+    $$('[data-del]').forEach(function(b){ b.onclick=function(){ if(!confirm('Apagar este registo de transferência? O saldo volta a subir.')) return; b.disabled=true; api('/pl/transferencia-apagar',{id:b.getAttribute('data-del')}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast('Registo apagado'); fechar(); carregar(); }); }; });
+  });
+}
+
+fetch(PROXY+'/sessao',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SES.token}})
+  .then(function(r){ return r.json().then(function(d){ return {st:r.status,d:d}; }); })
+  .then(function(x){
+    var d=x.d;
+    if(x.st===401) return sair();
+    if(!d.ok){ $('#root').innerHTML='<div class="carregar">'+esc(d.erro||'Não foi possível abrir.')+'</div>'; return; }
+    if(!d.plataforma){ location.replace((d.pagina||'entrar')+'.html'); return; }
+    SES.token=d.token; try{ localStorage.setItem('gs_sessao',JSON.stringify({token:d.token,nome:d.nome,papel:d.papel,pagina:d.pagina,escola:d.escola,criada:Date.now()})); }catch(e){}
+    S.sessao=d; casca();
+  })
+  .catch(function(){ $('#root').innerHTML='<div class="carregar">Sem ligação ao servidor do Gescolar. <a class="link" href="">Tentar de novo</a></div>'; });
+})();
+</script>
+</body>
+</html>
