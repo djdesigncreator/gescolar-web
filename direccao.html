@@ -101,7 +101,7 @@ function iniciais(n){ var p=String(n||'?').trim().split(/\s+/); return ((p[0]||'
 var CORES=['#0A64DC','#0E7C86','#7B4DD6','#C2410C','#168A52','#B4235A','#0B2A4A','#8A6D00'];
 function av(n){ var h=0; for(var i=0;i<n.length;i++) h=(h*31+n.charCodeAt(i))>>>0; return '<span class="av" style="background:'+CORES[h%CORES.length]+'">'+esc(iniciais(n))+'</span>'; }
 var IC={home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',layers:'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zM6.5 17A2.5 2.5 0 0 0 4 19.5 2.5 2.5 0 0 0 6.5 22H20v-5',board:'M2 3h20M4 3v11h16V3M12 14v4M8 21l4-3 4 3',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',wallet:'M20 7H5a2 2 0 0 1 0-4h13v4M3 5v14a2 2 0 0 0 2 2h15V7M16 14h.01',receipt:'M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2zM8 8h8M8 12h8M8 16h5',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',cog:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',plus:'M12 5v14M5 12h14',x:'M18 6 6 18M6 6l12 12',menu:'M3 6h18M3 12h18M3 18h18',save:'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8',check:'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',trash:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',sparkle:'M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z'};
-IC.download='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'; IC.image='M3 5h18v14H3zM8.5 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M21 15l-5-5L5 19';
+IC.car='M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7.5 13h.01M16.5 13h.01'; IC.download='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'; IC.image='M3 5h18v14H3zM8.5 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M21 15l-5-5L5 19';
 function ic(n,x){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" '+(x||'')+'><path d="'+IC[n]+'"/></svg>'; }
 function pl(n,a,b){ return n+' '+(n===1?a:b); }
 function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
@@ -142,7 +142,7 @@ function navLista(){
     L.push(n);
     if(n[0]==='estudantes' || (soCON() && n[0]==='professores')){}
   });
-  if(temCON()){ var i=L.map(function(n){ return n[0]; }).indexOf('Financeiro'); L.splice(i,0,['Condução'],['cursos','Cursos e categorias','layers'],['instruendos','Instruendos','users']); }
+  if(temCON()){ var i=L.map(function(n){ return n[0]; }).indexOf('Financeiro'); L.splice(i,0,['Condução'],['cursos','Cursos e categorias','layers'],['instruendos','Instruendos','users'],['aulas','Aulas práticas','cal'],['viaturas','Viaturas','car']); }
   return L;
 }
 function casca(){
@@ -177,7 +177,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos, aulas:pAulas, viaturas:pViaturas }[S.pag] || pPainel;
   f();
 }
 
@@ -201,7 +201,7 @@ function pPainel(){
     var arranque = '<section class="card" style="margin-bottom:16px">'+passos.map(function(p,i){ var st=p[3]?'feito':(i===prox?'agora':'');
         return '<div class="passo '+st+'"><span class="n">'+(p[3]?'✓':(i+1))+'</span><div><b>'+p[1]+'</b><small>'+(p[3]?p[3]+' '+(p[3]===1?p[4]:(p[5]||p[4]+'s'))+' registad'+(p[4]==='disciplina'||p[4]==='turma'?'a':'o')+(p[3]===1?'':'s'):p[2])+'</small></div>'+
           '<button class="btn '+(i===prox?'pri':'')+' sm" data-go2="'+p[0]+'">'+(p[3]?'Ver':'Começar')+'</button></div>'; }).join('')+'</section>';
-    $('#page').innerHTML = ph('Painel da Direcção','Olá, '+esc(primeiro), falta ? 'Faltam <b>'+falta+' '+(falta===1?'passo':'passos')+'</b> para a '+esc(S.escola.nome)+' funcionar em pleno.' : esc(S.escola.nome)+' · '+pl(c.estudantes,'estudante','estudantes')+' · '+pl(c.turmas,'turma','turmas')+' · '+pl(c.professores,'professor','professores')+'.',
+    $('#page').innerHTML = ph('Painel da Direcção','Olá, '+esc(primeiro), falta ? 'Faltam <b>'+falta+' '+(falta===1?'passo':'passos')+'</b> para a '+esc(S.escola.nome)+' funcionar em pleno.' : esc(S.escola.nome)+' · '+(soCON()? pl(c.instruendos,'instruendo em curso','instruendos em curso')+' · '+pl(c.cursos,'curso','cursos')+' · '+pl(c.professores,'instrutor','instrutores') : pl(c.estudantes,'estudante','estudantes')+' · '+pl(c.turmas,'turma','turmas')+' · '+pl(c.professores,'professor','professores'))+'.',
         '<button class="btn" id="pn-r">Actualizar</button>')+
       (falta?arranque:'')+'<div id="pn"><div class="carregar"><div class="spinner"></div>A calcular os números da escola…</div></div>'+(falta?'':'<details style="margin-top:16px"><summary class="small muted" style="cursor:pointer">Passos de arranque</summary><div style="margin-top:10px">'+arranque+'</div></details>');
     $$('[data-go2]').forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-go2')); }; });
@@ -242,7 +242,13 @@ function indicadores(fresco){
     if(!d.ok){ box.innerHTML=erroCaixa(d.erro||'Não foi possível calcular os indicadores.'); return; }
     var $d=d.dinheiro, h=d.hoje_aulas, fa=d.faltas, nt=d.notas;
     var mesNome=MESES_L[+d.mes.slice(5,7)];
-    var tiles=[
+    var C=d.conducao;
+    var tiles=(C && soCON())?[
+      ['Recebido em '+MESES_L[+d.mes.slice(5,7)], mt($d.recebido_mes), $d.pagamentos_mes+' pagamento(s) · hoje '+mt($d.recebido_hoje), ''],
+      ['Prestações em atraso', mt($d.em_atraso), $d.estudantes_atraso+' instruendo(s)', $d.em_atraso?'bad':'ok'],
+      ['Aulas práticas hoje', C.aulas_hoje? C.feitas_hoje+' / '+C.aulas_hoje : '0', C.aulas_hoje? 'feitas / marcadas':'Nenhuma aula marcada hoje', ''],
+      ['Instruendos em curso', grp(C.instruendos), C.sem_aula? C.sem_aula+' sem aula marcada' : 'Todos com aula marcada', C.sem_aula?'bad':'']
+    ]:[
       ['Recebido em '+mesNome, mt($d.recebido_mes), $d.pagamentos_mes+' pagamento(s) · hoje '+mt($d.recebido_hoje), ''],
       ['Propinas em atraso', mt($d.em_atraso), $d.estudantes_atraso+' estudante(s) · multas '+mt($d.multas), $d.em_atraso?'bad':'ok'],
       ['Chamadas de hoje', h.total? h.feitas+' / '+h.total : '—', h.total? (h.por_fazer.length? h.por_fazer.length+' aula(s) já começaram sem chamada' : 'Em dia') + ' · '+h.faltas+' falta(s)' : 'Sem aulas no horário hoje', h.por_fazer.length?'bad':''],
@@ -251,6 +257,7 @@ function indicadores(fresco){
     var metodos=Object.keys($d.por_metodo).sort(function(a,b){ return $d.por_metodo[b]-$d.por_metodo[a]; });
     var totMet=metodos.reduce(function(s,k){ return s+$d.por_metodo[k]; },0);
     box.innerHTML=
+      (C && C.alertas.length ? '<section class="card card-b" style="margin-bottom:16px;border-color:var(--warn)"><div class="eyebrow" style="color:var(--warn)">Viaturas: documentos a terminar</div><div class="pn-lista">'+C.alertas.map(function(a){ return '<div class="pn-it"><div class="tx"><b>'+esc(a.matricula)+' · '+esc(a.tipo)+'</b><small>'+(a.dias<0?'Terminou há '+(-a.dias)+' dia(s)':'Termina em '+a.dias+' dia(s)')+' · '+data(a.ate)+'</small></div><span class="pill '+(a.dias<0?'bad':'warn')+'">'+(a.dias<0?'Vencido':'A terminar')+'</span></div>'; }).join('')+'</div><button class="btn sm" data-go2="viaturas" style="margin-top:8px">Ver viaturas</button></section>' : '')+
       '<div class="grid g4" style="margin-bottom:16px">'+tiles.map(function(t){ return '<div class="card kpi"><div class="l">'+t[0]+'</div><div class="v num '+t[3]+'">'+t[1]+'</div><div class="d">'+esc(t[2])+'</div></div>'; }).join('')+'</div>'+
       '<div class="grid g2" style="margin-bottom:16px">'+
         '<section class="card card-b"><div class="eyebrow">Dinheiro recebido · últimos 6 meses</div><div class="pn-ch" id="pn-ch1" style="margin-top:10px">'+barrasSvg($d.serie,function(x){ return MESES_AB[+x.mes.slice(5,7)]; },function(x){ return x.valor; },mt,$d.serie.length-1)+'</div>'+
@@ -263,18 +270,18 @@ function indicadores(fresco){
       '<div class="grid g2" style="margin-bottom:16px">'+
         '<section class="card card-b"><div class="eyebrow">Maiores dívidas</div><div class="pn-lista">'+
           ($d.devedores.length? $d.devedores.map(function(e){ return '<div class="pn-it"><div class="tx"><b>'+esc(e.nome)+'</b><small>'+esc(e.turma)+' · '+esc(e.numero)+'</small></div><div class="vl" style="color:var(--bad)">'+mt(e.divida)+'</div></div>'; }).join('')+'<button class="btn sm" data-go2="propinas" style="margin-top:10px;align-self:flex-start">Cobrar em Propinas e multas</button>' : '<div class="pn-vazio" style="color:var(--ok);font-weight:600">Ninguém em atraso.</div>')+'</div></section>'+
-        '<section class="card card-b"><div class="eyebrow">Chamadas por fazer hoje</div><div class="pn-lista">'+
+        (soCON()?'<section class="card card-b"><div class="eyebrow">Aulas práticas</div><p class="small muted">Marque as aulas, registe as feitas e acompanhe as horas de cada instruendo.</p><button class="btn sm" data-go2="aulas">Ver aulas práticas</button></section>':('<section class="card card-b"><div class="eyebrow">Chamadas por fazer hoje</div><div class="pn-lista">'+
           (h.por_fazer.length? h.por_fazer.map(function(a){ return '<div class="pn-it"><div class="tx"><b>'+esc(a.disciplina)+' · '+esc(a.turma)+'</b><small>'+esc(a.i)+'–'+esc(a.f)+' · '+esc(a.professor||'sem professor')+'</small></div><span class="pill warn">Por fazer</span></div>'; }).join('') : '<div class="pn-vazio">'+(h.total?'Todas as aulas que já começaram têm chamada.':'Não há aulas no horário para hoje.')+'</div>')+
-          '</div><button class="btn sm" data-go2="presencas" style="margin-top:10px">Ver presenças</button></section>'+
+          '</div><button class="btn sm" data-go2="presencas" style="margin-top:10px">Ver presenças</button></section>'))+
       '</div>'+
-      '<div class="grid g2" style="margin-bottom:16px">'+
+      (soCON()?'':('<div class="grid g2" style="margin-bottom:16px">'+
         '<section class="card card-b"><div class="eyebrow">Faltas · últimos 7 dias</div><div class="pn-ch" id="pn-ch2" style="margin-top:10px">'+barrasSvg(fa.por_dia,function(x){ return ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][new Date(x.data+'T12:00:00Z').getUTCDay()]; },function(x){ return x.faltas; },function(v){ return v+' falta'+(v===1?'':'s'); },fa.por_dia.length-1)+'</div>'+
           '<div class="eyebrow" style="margin-top:14px">Mais faltas · 30 dias</div><div class="pn-lista">'+(fa.mais_faltas.length? fa.mais_faltas.map(function(e){ return '<div class="pn-it"><div class="tx"><b>'+esc(e.nome)+'</b><small>'+esc(e.turma)+'</small></div><div class="vl" style="color:var(--bad)">'+e.faltas+'</div></div>'; }).join('') : '<div class="pn-vazio">Sem faltas registadas.</div>')+'</div></section>'+
         '<section class="card card-b"><div class="eyebrow">Aproveitamento · '+nt.trimestre+'º trimestre</div><div class="pn-lista">'+
           (nt.aproveitamento.some(function(t){ return t.pct!=null; }) ? nt.aproveitamento.map(function(t){ return '<div class="pn-it"><div class="tx"><b>'+esc(t.turma)+'</b>'+(t.pct==null?'<small>Sem notas lançadas</small>':'<div class="pn-bar"><i style="width:'+t.pct+'%"></i></div>')+'</div><div class="vl">'+(t.pct==null?'—':t.pct+'%')+'</div></div>'; }).join('') : '<div class="pn-vazio">Ainda não há notas deste trimestre.</div>')+
           '</div><div class="small muted" style="margin-top:6px">Percentagem de médias positivas. '+nt.com_notas+' de '+nt.pares+' disciplinas×turmas com notas · '+nt.publicadas+' pautas publicadas.</div>'+
           '<div class="eyebrow" style="margin-top:14px">Notas por lançar</div><div class="pn-lista">'+(nt.sem_notas.length? nt.sem_notas.map(function(p){ return '<div class="pn-it"><div class="tx"><b>'+esc(p.professor)+'</b><small>'+esc(p.pendentes.slice(0,3).join(', ')+(p.pendentes.length>3?' e mais '+(p.pendentes.length-3):''))+'</small></div><div class="vl">'+p.pendentes.length+'</div></div>'; }).join('') : '<div class="pn-vazio" style="color:var(--ok);font-weight:600">Todas as disciplinas têm notas.</div>')+'</div></section>'+
-      '</div>'+
+      '</div>'))+
       '<p class="small muted" style="margin:0">Actualizado às '+new Date(d.gerado).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})+'. Os números são recalculados a cada minuto.</p>';
     ['#pn-ch1','#pn-ch2'].forEach(function(s){ var b=$(s); if(b) ligarDicas(b); });
     $$('[data-go2]',box).forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-go2')); }; });
@@ -961,9 +968,9 @@ function pInstruendos(){
     var EST={activa:['Em curso','info'],concluida:['Concluiu','ok'],desistiu:['Desistiu','muted']};
     $('#page').innerHTML=ph('Condução','Instruendos', d.instruendos.length? d.instruendos.filter(function(x){ return x.estado==='activa'; }).length+' em curso · '+d.instruendos.length+' inscrições no total.' : 'Inscreva o primeiro instruendo. Cada inscrição cria as prestações e o acesso ao portal.',
         '<select class="sel" id="f-e"><option value="activa"'+(S.fIns==='activa'?' selected':'')+'>Em curso</option><option value="concluida"'+(S.fIns==='concluida'?' selected':'')+'>Concluíram</option><option value="desistiu"'+(S.fIns==='desistiu'?' selected':'')+'>Desistiram</option><option value="todas"'+(S.fIns==='todas'?' selected':'')+'>Todas</option></select><button class="btn pri" id="i-n">'+ic('plus')+'Inscrever</button>')+
-      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Instruendo</th><th>Carta</th><th class="hide-sm">Inscrito</th><th>Pago</th><th class="hide-sm">Próxima prestação</th><th>Estado</th><th></th></tr></thead><tbody>'+
+      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Instruendo</th><th>Carta</th><th class="hide-sm">Inscrito</th><th>Práticas</th><th>Pago</th><th class="hide-sm">Próxima prestação</th><th>Estado</th><th></th></tr></thead><tbody>'+
         L.map(function(x,i){ var pct=x.total?Math.round(x.pago*100/x.total):0, e=EST[x.estado]||[x.estado,'muted'];
-          return '<tr><td><div class="person">'+av(x.nome)+'<div><b>'+esc(x.nome)+'</b><small class="mono">'+esc(x.numero)+' · '+esc(x.telefone)+'</small></div></div></td><td><span class="tag">'+esc(x.categoria)+'</span></td><td class="small num hide-sm">'+data(x.data)+'</td>'+
+          return '<tr><td><div class="person">'+av(x.nome)+'<div><b>'+esc(x.nome)+'</b><small class="mono">'+esc(x.numero)+' · '+esc(x.telefone)+'</small></div></div></td><td><span class="tag">'+esc(x.categoria)+'</span></td><td class="small num hide-sm">'+data(x.data)+'</td>'+'<td class="small"><b class="num">'+x.praticas.feitas+'</b>/'+x.praticas.total+(x.praticas.marcadas?'<div class="muted">'+x.praticas.marcadas+' marcada(s)</div>':'')+'</td>'+
             '<td style="min-width:150px"><div class="small"><b class="num">'+mt(x.pago)+'</b> de '+mt(x.total)+'</div><div style="height:6px;border-radius:3px;background:var(--line);margin-top:4px;overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:'+(x.em_atraso?'var(--bad)':'var(--ok)')+'"></i></div>'+(x.em_atraso?'<div class="small" style="color:var(--bad);font-weight:700">'+mt(x.em_atraso)+' em atraso</div>':'')+'</td>'+
             '<td class="small hide-sm">'+(x.proxima?mt(x.proxima.valor)+' · '+data(x.proxima.vencimento):'<span style="color:var(--ok);font-weight:700">Tudo pago</span>')+'</td>'+
             '<td><span class="pill '+e[1]+'">'+e[0]+'</span></td><td class="r" style="white-space:nowrap">'+(x.proxima?'<button class="btn sm pri" data-cob="'+i+'">Cobrar</button> ':'')+'<select class="sel" data-est="'+i+'" style="height:30px;font-size:13px"><option value="">Mudar…</option><option value="activa">Em curso</option><option value="concluida">Concluiu</option><option value="desistiu">Desistiu</option></select></td></tr>'; }).join('')+'</tbody></table></div></section>'
@@ -976,6 +983,84 @@ function pInstruendos(){
     $$('[data-cob]').forEach(function(b){ b.onclick=function(){ var x=L[+b.getAttribute('data-cob')]; b.disabled=true;
       api('/propinas').then(function(p){ b.disabled=false; if(!p.ok){ toast(p.erro); return; } var e=p.estudantes.filter(function(z){ return z.id===x.estudante; })[0]; if(!e){ toast('Não encontrei as prestações deste instruendo.'); return; } if(!e.encarregado) e.encarregado={nome:e.nome, telefone:x.telefone}; S.voltar='instruendos'; cobrar(e); }); }; });
   });
+}
+
+function pViaturas(){
+  aCarregar();
+  api('/viaturas').then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    var L=d.viaturas;
+    function doc(dias, ate){ if(dias==null) return '<span class="small muted">—</span>'; return '<span class="pill '+(dias<0?'bad':dias<=30?'warn':'ok')+'">'+(dias<0?'Vencido':data(ate))+'</span>'+(dias>=0&&dias<=30?'<div class="small muted">faltam '+dias+' dia(s)</div>':''); }
+    $('#page').innerHTML=ph('Condução','Viaturas', L.length? L.length+' viaturas activas.':'Registe as viaturas de instrução, com as datas da inspecção e do seguro.','<button class="btn pri" id="v-n">'+ic('plus')+'Nova viatura</button>')+
+      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Viatura</th><th>Categoria</th><th>Inspecção até</th><th>Seguro até</th><th class="r">Aulas feitas</th><th></th></tr></thead><tbody>'+
+        L.map(function(v,i){ return '<tr><td><b class="mono">'+esc(v.matricula)+'</b><div class="small muted">'+esc([v.modelo,v.ano].filter(Boolean).join(' · '))+'</div></td><td><span class="tag">'+esc(v.categoria)+'</span></td><td>'+doc(v.dias_inspecao,v.inspecao)+'</td><td>'+doc(v.dias_seguro,v.seguro)+'</td><td class="r num">'+v.aulas_feitas+'<div class="small muted">'+Math.round(v.minutos/60)+' h</div></td><td class="r"><button class="btn sm" data-ed="'+i+'">Editar</button> <button class="btn sm danger" data-del="'+i+'">'+ic('trash')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
+        : vazio('car','Ainda sem viaturas','A inspecção e o seguro em dia são verificados em cada aula marcada.'));
+    $('#v-n').onclick=function(){ formViatura(null); };
+    $$('[data-ed]').forEach(function(b){ b.onclick=function(){ formViatura(L[+b.getAttribute('data-ed')]); }; });
+    $$('[data-del]').forEach(function(b){ b.onclick=function(){ var v=L[+b.getAttribute('data-del')]; confirmar('Retirar a viatura '+esc(v.matricula)+'?','Deixa de aparecer para novas aulas. As aulas feitas ficam no histórico.',function(btn){ api('/viatura-apagar',{id:v.id}).then(function(x){ if(!x.ok){ aGravar(btn,false); $('#cf-err').innerHTML=erroCaixa(x.erro); return; } fechar(); toast('Viatura retirada'); pViaturas(); }); }); }; });
+  });
+}
+function formViatura(v){
+  v=v||{}; var cats=['A1','A','B','BE','C','CE','D'];
+  modal('<div class="modal-h"><h3>'+(v.id?'Editar viatura':'Nova viatura')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<div class="frow"><label class="field">Matrícula<input class="inp mono" id="w-m" value="'+esc(v.matricula||'')+'" placeholder="AFG-123-MC" style="text-transform:uppercase"></label><label class="field">Categoria<select class="sel" id="w-c">'+cats.map(function(c){ return '<option'+(c===(v.categoria||'B')?' selected':'')+'>'+c+'</option>'; }).join('')+'</select></label></div>'+
+    '<div class="frow"><label class="field">Marca e modelo<input class="inp" id="w-o" value="'+esc(v.modelo||'')+'" placeholder="Toyota Vitz"></label><label class="field">Ano<input class="inp" type="number" id="w-a" value="'+esc(v.ano||'')+'" min="1980" max="2100"></label></div>'+
+    '<div class="frow"><label class="field">Inspecção válida até<input class="inp" type="date" id="w-i" value="'+(v.inspecao?String(v.inspecao).slice(0,10):'')+'"></label><label class="field">Seguro válido até<input class="inp" type="date" id="w-s" value="'+(v.seguro?String(v.seguro).slice(0,10):'')+'"></label></div>'+
+    '<label class="field">Notas<input class="inp" id="w-n" maxlength="300" value="'+esc(v.notas||'')+'" placeholder="Ex.: dupla embraiagem"></label><div id="w-err"></div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="w-ok">'+ic('save')+'Guardar</button></div>');
+  $('#w-ok').onclick=function(){ var btn=this; aGravar(btn,true);
+    api('/viatura-guardar',{id:v.id, matricula:$('#w-m').value, categoria:$('#w-c').value, modelo:$('#w-o').value, ano:$('#w-a').value, inspecao:$('#w-i').value, seguro:$('#w-s').value, notas:$('#w-n').value}).then(function(r){
+      if(!r.ok){ aGravar(btn,false); $('#w-err').innerHTML=erroCaixa(r.erro); return; } fechar(); toast(v.id?'Viatura actualizada':'Viatura registada'); pViaturas(); }); };
+}
+function somaDiasD(data,n){ var d=new Date(data+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+var DIAS_LONGOS=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+function dataLongaD(x){ var d=new Date(x+'T12:00:00Z'); return DIAS_LONGOS[d.getUTCDay()]+', '+x.slice(8,10)+'/'+x.slice(5,7)+'/'+x.slice(0,4); }
+function pAulas(){
+  aCarregar();
+  S.AD=S.AD||new Date(Date.now()+2*3600e3).toISOString().slice(0,10);
+  api('/aulas-praticas',{de:S.AD, ate:S.AD}).then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    S.AP=d;
+    var L=d.aulas, EST={marcada:['Marcada','info'],feita:['Feita','ok'],faltou:['Faltou','bad'],cancelada:['Cancelada','muted']};
+    var semana=[]; for(var k=-3;k<=3;k++) semana.push(somaDiasD(S.AD,k));
+    $('#page').innerHTML=ph('Condução','Aulas práticas', dataLongaD(S.AD)+' · '+L.filter(function(a){ return a.estado!=='cancelada'; }).length+' aula(s)',
+        '<button class="btn" id="a-p" aria-label="Dia anterior">‹</button><input class="inp" type="date" id="a-d" value="'+S.AD+'" style="height:38px"><button class="btn" id="a-s" aria-label="Dia seguinte">›</button><button class="btn pri" id="a-n">'+ic('plus')+'Marcar aula</button>')+
+      '<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:14px">'+semana.map(function(x){ var dd=new Date(x+'T12:00:00Z'); return '<button class="btn sm '+(x===S.AD?'pri':'')+'" data-dia="'+x+'" style="flex:none">'+['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][dd.getUTCDay()]+' '+x.slice(8,10)+'/'+x.slice(5,7)+'</button>'; }).join('')+'</div>'+
+      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Hora</th><th>Instruendo</th><th>Instrutor</th><th>Viatura</th><th>Estado</th><th></th></tr></thead><tbody>'+
+        L.map(function(a,i){ var e=EST[a.estado]||[a.estado,'muted']; return '<tr><td class="mono small"><b>'+esc(a.inicio)+'</b>–'+esc(a.fim)+'</td><td><b>'+esc(a.instruendo)+'</b><div class="small muted">'+esc(a.numero)+' · carta '+esc(a.categoria)+'</div></td><td class="small">'+esc(a.instrutor)+'</td><td class="small"><span class="mono">'+esc(a.viatura)+'</span><div class="muted">'+esc(a.modelo)+'</div></td><td><span class="pill '+e[1]+'">'+e[0]+'</span></td>'+
+          '<td class="r" style="white-space:nowrap">'+(a.estado==='marcada'?(a.data<=d.hoje?'<button class="btn sm pri" data-es="'+i+'" data-v="feita">Feita</button> <button class="btn sm" data-es="'+i+'" data-v="faltou">Faltou</button> ':'')+'<button class="btn sm danger" data-es="'+i+'" data-v="cancelada">Cancelar</button>':'<button class="btn sm ghost" data-es="'+i+'" data-v="marcada">Repor</button>')+'</td></tr>'; }).join('')+'</tbody></table></div></section>'
+        : vazio('cal','Sem aulas neste dia', d.inscricoes.length?'Clique em "Marcar aula".':'Inscreva primeiro os instruendos.'))+
+      (d.inscricoes.length? '<section class="card card-b" style="margin-top:16px"><div class="eyebrow" style="margin-bottom:8px">Progresso dos instruendos em curso</div><div class="pn-lista">'+d.inscricoes.map(function(x){ var pct=x.total?Math.min(100,Math.round(x.feitas*100/x.total)):0; return '<div class="pn-it"><div class="tx"><b>'+esc(x.nome)+' · carta '+esc(x.categoria)+'</b><div class="pn-bar"><i style="width:'+pct+'%"></i></div></div><div class="vl">'+x.feitas+'/'+x.total+'</div><span class="small muted" style="width:100px;text-align:right">'+(x.marcadas?x.marcadas+' marcada(s)':'<span style="color:var(--bad)">sem marcação</span>')+'</span></div>'; }).join('')+'</div></section>':'');
+    $('#a-d').onchange=function(){ if(this.value){ S.AD=this.value; pAulas(); } };
+    $('#a-p').onclick=function(){ S.AD=somaDiasD(S.AD,-1); pAulas(); };
+    $('#a-s').onclick=function(){ S.AD=somaDiasD(S.AD,1); pAulas(); };
+    $$('[data-dia]').forEach(function(b){ b.onclick=function(){ S.AD=b.getAttribute('data-dia'); pAulas(); }; });
+    $('#a-n').onclick=function(){ marcarAulaForm(); };
+    $$('[data-es]').forEach(function(b){ b.onclick=function(){ var a=L[+b.getAttribute('data-es')], v=b.getAttribute('data-v'); if(v==='cancelada' && !confirm('Cancelar a aula de '+a.instruendo+' às '+a.inicio+'?')) return; b.disabled=true;
+      api('/aula-estado',{id:a.id, estado:v}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast({feita:'Aula registada como feita',faltou:'Falta registada',cancelada:'Aula cancelada',marcada:'Aula reposta'}[v]); pAulas(); }); }; });
+  });
+}
+function marcarAulaForm(){
+  var d=S.AP; if(!d) return;
+  if(!d.inscricoes.length){ toast('Inscreva primeiro um instruendo'); return; }
+  if(!d.instrutores.length){ toast('Registe primeiro um instrutor'); ir('professores'); return; }
+  if(!d.viaturas.length){ toast('Registe primeiro uma viatura'); ir('viaturas'); return; }
+  var hoje=d.hoje;
+  modal('<div class="modal-h"><h3>Marcar aula prática</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<label class="field">Instruendo<select class="sel" id="m-i">'+d.inscricoes.map(function(x){ return '<option value="'+x.id+'">'+esc(x.nome+' · carta '+x.categoria+' · '+x.feitas+'/'+x.total+' feitas')+'</option>'; }).join('')+'</select></label>'+
+    '<div class="frow"><label class="field">Instrutor<select class="sel" id="m-p">'+d.instrutores.map(function(p){ return '<option value="'+p.id+'">'+esc(p.nome)+'</option>'; }).join('')+'</select></label><label class="field">Viatura<select class="sel" id="m-v"></select></label></div>'+
+    '<div class="frow"><label class="field">Data<input class="inp" type="date" id="m-d" min="'+hoje+'" value="'+(S.AD>=hoje?S.AD:hoje)+'"></label><label class="field">Hora<input class="inp" type="time" id="m-h" value="08:00" step="900"></label></div>'+
+    '<label class="field">Duração<select class="sel" id="m-u"><option value="45">45 minutos</option><option value="60" selected>1 hora</option><option value="90">1 h 30</option><option value="120">2 horas</option></select></label>'+
+    '<label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600"><input type="checkbox" id="m-s" checked> Avisar o instruendo por SMS</label><div id="m-err"></div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="m-ok">Marcar</button></div>');
+  function viaturas(){ var x=d.inscricoes.filter(function(z){ return z.id===$('#m-i').value; })[0]||{}, cat=x.categoria;
+    var ok=function(v){ return v.categoria===cat || (cat==='A1'&&v.categoria==='A') || (cat==='BE'&&v.categoria==='B') || (cat==='CE'&&v.categoria==='C'); };
+    var L=d.viaturas.filter(ok); $('#m-v').innerHTML=L.length? L.map(function(v){ var mau=(v.dias_inspecao!=null&&v.dias_inspecao<0)||(v.dias_seguro!=null&&v.dias_seguro<0); return '<option value="'+v.id+'"'+(mau?' disabled':'')+'>'+esc(v.matricula+(v.modelo?' · '+v.modelo:'')+(mau?' (documentos vencidos)':''))+'</option>'; }).join('') : '<option value="">Sem viatura da categoria '+esc(cat)+'</option>'; }
+  $('#m-i').onchange=viaturas; viaturas();
+  $('#m-ok').onclick=function(){ var btn=this, dia=$('#m-d').value; aGravar(btn,true);
+    api('/aula-marcar',{inscricao:$('#m-i').value, instrutor:$('#m-p').value, viatura:$('#m-v').value, data:dia, inicio:$('#m-h').value, duracao:$('#m-u').value, sms:$('#m-s').checked}).then(function(r){
+      if(!r.ok){ aGravar(btn,false); $('#m-err').innerHTML=erroCaixa(r.erro); return; }
+      fechar(); toast('Aula marcada até às '+r.fim+(r.sms?' · SMS enviado':'')); S.AD=dia; pAulas(); }); };
 }
 
 /* ================= EQUIPA DA ESCOLA ================= */
