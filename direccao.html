@@ -73,7 +73,8 @@ try{ var h=(location.hash||'').slice(1); if(h) S.pag=h; }catch(e){}
 
 /* ---------- casca ---------- */
 var NAV = [['Arranque'],['painel','Painel','home'],['turmas','Turmas e salas','layers'],['disciplinas','Disciplinas','book'],['professores','Professores','board'],['estudantes','Estudantes','users'],
-  ['Em construção'],['x','Horários','cal',1],['x','Pautas e notas','grade',1],['x','Propinas e multas','wallet',1],['x','Facturas e recibos','receipt',1],['x','Comunicados','mega',1]];
+  ['Financeiro'],['propinas','Propinas e multas','wallet'],['facturas','Facturas e recibos','receipt'],
+  ['Em construção'],['x','Horários','cal',1],['x','Pautas e notas','grade',1],['x','Comunicados','mega',1]];
 function casca(){
   var e=S.escola||{};
   $('#root').innerHTML='<div class="app"><aside class="side" id="side">'+
@@ -106,7 +107,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape') fechar(); 
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas }[S.pag] || pPainel;
   f();
 }
 
@@ -132,7 +133,7 @@ function pPainel(){
       '<section class="card">'+passos.map(function(p,i){ var st=p[3]?'feito':(i===prox?'agora':'');
         return '<div class="passo '+st+'"><span class="n">'+(p[3]?'✓':(i+1))+'</span><div><b>'+p[1]+'</b><small>'+(p[3]?p[3]+' '+(p[3]===1?p[4]:p[4]+'s')+' registad'+(p[4]==='disciplina'||p[4]==='turma'?'a':'o')+(p[3]===1?'':'s'):p[2])+'</small></div>'+
           '<button class="btn '+(i===prox?'pri':'')+' sm" data-go2="'+p[0]+'">'+(p[3]?'Ver':'Começar')+'</button></div>'; }).join('')+'</section>'+
-      '<p class="small muted" style="margin:0">Horários, pautas, propinas e facturas ficam disponíveis a seguir a este arranque.</p>';
+      '<p class="small muted" style="margin:0">Depois do arranque, gere as mensalidades em <a class="link" href="#propinas" data-go2="propinas">Propinas e multas</a>. Horários e pautas vêm a seguir.</p>';
     $$('[data-go2]').forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-go2')); }; });
   });
 }
@@ -273,6 +274,120 @@ function formMatricula(){
   $('#m-ok').onclick=function(){ var btn=this; aGravar(btn,true);
     api('/matricular',{ nome:$('#m-nome').value, turma:$('#m-turma').value, sexo:$('#m-sexo').value, nascimento:$('#m-nasc').value, enc_nome:$('#m-enc').value, enc_telefone:$('#m-tel').value, enc_parentesco:$('#m-par').value, enc_email:$('#m-email').value, saude:$('#m-saude').value })
       .then(function(r){ if(r.ok){ fechar(); toast('Matriculado · Nº '+r.numero); S.filtroTurma=$('#m-turma')?$('#m-turma').value:S.filtroTurma; pEstudantes(); } else { aGravar(btn,false); $('#m-err').innerHTML=erroCaixa(r.erro); } }); };
+}
+
+
+/* ================= PROPINAS ================= */
+var MESES_C=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+var MESES_L=['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+var METODO={mpesa:['M-Pesa','#E60000'],emola:['e-Mola','#F28C00'],cartao:['Visa / Mastercard','#1A1F71'],balcao:['Numerário','#5A6A80']};
+function pPropinas(){
+  aCarregar();
+  Promise.all([api('/turmas'), api('/propinas', S.filtroTurma?{turma:S.filtroTurma}:{})]).then(function(r){
+    var t=r[0], d=r[1];
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    S.turmas=t.ok?t.turmas:[]; S.prop=d;
+    var tm={}; S.turmas.forEach(function(x){ tm[x.id]=x; });
+    var L=d.estudantes, T=d.totais, R=d.regras||{};
+    var semProp=L.length && L.every(function(e){ return !e.propinas.length; });
+    $('#page').innerHTML=ph('Financeiro','Propinas e multas','Vencem a '+(R.dia_limite||10)+' de cada mês · multa de '+(R.multa||0)+'% por mês de atraso, com tecto de '+(R.multa_max||0)+'%.',
+      '<select class="sel" id="pf-t"><option value="">Todas as turmas</option>'+S.turmas.map(function(x){ return '<option value="'+x.id+'"'+(x.id===S.filtroTurma?' selected':'')+'>'+esc(x.nome)+'</option>'; }).join('')+'</select>'+
+      '<button class="btn pri" id="gerar">'+ic('plus')+'Gerar mensalidades</button>')+
+      '<div class="grid g4">'+[['Cobrado',mt(T.cobrado)],['Em dívida',mt(T.divida)],['Das quais multas',mt(T.multas)],['Estudantes em atraso',grp(T.atraso)]].map(function(k){ return '<div class="card kpi"><div class="l">'+k[0]+'</div><div class="v" style="font-size:22px">'+k[1]+'</div></div>'; }).join('')+'</div>'+
+      (!S.turmas.length? vazio('layers','Crie primeiro as turmas','A propina mensal de cada turma define o valor das mensalidades.') :
+       !L.length? vazio('users','Ainda não há estudantes','Matricule estudantes para gerar as mensalidades.') :
+       semProp? vazio('wallet','Gere as mensalidades do ano','Clique em "Gerar mensalidades". O Gescolar cria uma mensalidade por mês para cada estudante, com o valor da turma.') :
+       '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Estudante</th><th style="min-width:330px">Mensalidades</th><th class="r">Em dívida</th><th></th></tr></thead><tbody>'+
+        L.map(function(e){ return '<tr><td><div class="person">'+av(e.nome)+'<div><b>'+esc(e.nome)+'</b><small>'+esc(tm[e.turma]?tm[e.turma].nome:'')+' · <span class="mono">'+esc(e.numero||'')+'</span></small></div></div></td>'+
+          '<td><div style="display:flex;gap:3px;flex-wrap:wrap">'+e.propinas.filter(function(p){return p.tipo==='propina';}).map(function(p){ var c=p.estado==='paga'?'var(--ok)':p.estado==='atrasada'?'var(--bad)':'var(--line)', fg=p.estado==='aberta'?'var(--muted)':'#fff';
+            return '<span title="'+esc(MESES_L[p.mes]||'')+': '+(p.estado==='paga'?'paga':p.estado==='atrasada'?'em atraso · '+mt(p.total):'por vencer')+'" style="min-width:34px;text-align:center;font-size:11px;font-weight:700;padding:3px 4px;border-radius:5px;background:'+c+';color:'+fg+'">'+MESES_C[p.mes]+'</span>'; }).join('')+'</div></td>'+
+          '<td class="r"><b class="num" style="color:'+(e.divida?'var(--bad)':'inherit')+'">'+(e.divida?mt(e.divida):'—')+'</b></td>'+
+          '<td class="r">'+(e.propinas.some(function(p){return p.estado!=='paga';})?'<button class="btn sm pri" data-cob="'+e.id+'">Cobrar</button>':'<span class="pill ok">Em dia</span>')+'</td></tr>'; }).join('')+
+        '</tbody></table></div></section>'+
+        '<div class="legend"><span><i style="background:var(--ok)"></i>Paga</span><span><i style="background:var(--bad)"></i>Em atraso</span><span><i style="background:var(--line)"></i>Por vencer</span></div>');
+    $('#pf-t').onchange=function(){ S.filtroTurma=this.value; pPropinas(); };
+    $('#gerar').onclick=formGerar;
+    $$('[data-cob]').forEach(function(b){ b.onclick=function(){ cobrar(L.filter(function(e){return e.id===b.getAttribute('data-cob');})[0]); }; });
+  });
+}
+function formGerar(){
+  modal('<div class="modal-h"><h3>Gerar mensalidades</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<label class="field">Turma<select class="sel" id="g-t"><option value="">Todas as turmas</option>'+(S.turmas||[]).map(function(x){ return '<option value="'+x.id+'"'+(x.id===S.filtroTurma?' selected':'')+'>'+esc(x.nome)+(x.propina?' · '+mt(x.propina):' · sem propina definida')+'</option>'; }).join('')+'</select></label>'+
+    '<div class="frow"><label class="field">De<select class="sel" id="g-de">'+MESES_L.map(function(m,i){ return i?'<option value="'+i+'"'+(i===Math.max(2,new Date().getMonth()+1)?' selected':'')+'>'+m+'</option>':''; }).join('')+'</select></label><label class="field">Até<select class="sel" id="g-ate">'+MESES_L.map(function(m,i){ return i?'<option value="'+i+'"'+(i===11?' selected':'')+'>'+m+'</option>':''; }).join('')+'</select></label></div>'+
+    '<p class="small muted" style="margin:0">Atenção: meses já passados ficam logo em atraso e com multa. Se a escola começa a usar o Gescolar a meio do ano, comece no mês actual. Cria uma mensalidade por mês para cada estudante activo, com o valor da turma. As que já existem não se repetem. Pode voltar a gerar depois de matricular estudantes novos.</p><div id="g-err"></div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="g-ok">'+ic('check')+'Gerar</button></div>');
+  $('#g-ok').onclick=function(){ var btn=this; aGravar(btn,true);
+    api('/propinas-gerar',{ turma:$('#g-t').value||null, de:$('#g-de').value, ate:$('#g-ate').value }).then(function(r){
+      if(!r.ok){ aGravar(btn,false); $('#g-err').innerHTML=erroCaixa(r.erro); return; }
+      fechar(); toast(r.criadas? r.criadas+' mensalidades criadas' : 'Não havia mensalidades novas para criar'+(r.turmas_sem_valor?' · há turmas sem propina definida':'')); pPropinas(); }); };
+}
+function cobrar(e){
+  var abertas=e.propinas.filter(function(p){ return p.estado!=='paga'; });
+  var sel={}; abertas.forEach(function(p){ if(p.estado==='atrasada') sel[p.id]=1; }); if(!Object.keys(sel).length && abertas[0]) sel[abertas[0].id]=1;
+  var met='mpesa', tel=(e.encarregado&&e.encarregado.telefone||'').replace(/\D/g,'');
+  function total(){ return abertas.filter(function(p){return sel[p.id];}).reduce(function(s,p){ return s+p.total; },0); }
+  function desenhar(){
+    modal('<div class="modal-h"><h3>Cobrar · '+esc(e.nome)+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+      '<div class="stack" style="gap:6px">'+abertas.map(function(p){ return '<label class="split" style="border:1px solid '+(sel[p.id]?'var(--blue)':'var(--line)')+';background:'+(sel[p.id]?'var(--blue-soft)':'var(--surface)')+';border-radius:9px;padding:9px 12px;cursor:pointer;color:var(--ink)"><span><input type="checkbox" data-p="'+p.id+'"'+(sel[p.id]?' checked':'')+' style="margin-right:8px">'+esc(p.descricao||MESES_L[p.mes])+(p.estado==='atrasada'?' <span class="pill bad">Atraso</span>':'')+'</span><b class="num">'+mt(p.total)+(p.multa?'<small class="muted" style="font-weight:500"> (multa '+mt(p.multa)+')</small>':'')+'</b></label>'; }).join('')+'</div>'+
+      '<div class="split" style="font-size:18px"><b>Total</b><b class="num">'+mt(total())+'</b></div>'+
+      '<div class="methods" style="grid-template-columns:repeat(4,minmax(0,1fr))">'+['mpesa','emola','cartao','balcao'].map(function(k){ return '<button type="button" class="method '+(met===k?'on':'')+'" data-m="'+k+'"><span class="lg" style="background:'+METODO[k][1]+';font-size:12px">'+(k==='cartao'?'VISA':k==='balcao'?'MT':METODO[k][0])+'</span>'+METODO[k][0].replace(' / ','/')+'</button>'; }).join('')+'</div>'+
+      (met==='mpesa'||met==='emola'? '<label class="field">Número '+METODO[met][0]+' do encarregado<input class="inp mono" id="c-tel" inputmode="numeric" maxlength="12" value="'+esc(tel)+'"><span class="small" id="c-tel-h" style="font-weight:500"></span></label>' : '')+
+      (met==='cartao'? '<p class="small muted" style="margin:0">Abre o checkout seguro da MozPayment. Pode enviar o link ao encarregado ou pagar aqui com o cartão dele.</p>' : '')+
+      (met==='balcao'? '<p class="small muted" style="margin:0">Use quando o encarregado paga em dinheiro na secretaria. A factura-recibo é emitida logo.</p>' : '')+
+      '<div id="c-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="c-ok"'+(total()?'':' disabled')+'>'+(met==='balcao'?'Registar e emitir recibo':met==='cartao'?'Criar link de pagamento':'Enviar pedido ao telemóvel')+'</button></div>');
+    $$('[data-p]').forEach(function(c){ c.onchange=function(){ if(c.checked) sel[c.getAttribute('data-p')]=1; else delete sel[c.getAttribute('data-p')]; desenhar(); }; });
+    $$('[data-m]').forEach(function(b){ b.onclick=function(){ met=b.getAttribute('data-m'); desenhar(); }; });
+    var ti=$('#c-tel'); if(ti){ var v=function(){ tel=ti.value.replace(/\D/g,''); var p=tel.slice(0,2), m=tel.length!==9?'O número tem 9 dígitos.':(met==='mpesa'&&p!=='84'&&p!=='85')?'M-Pesa só com números 84 ou 85.':(met==='emola'&&p!=='86'&&p!=='87')?'e-Mola só com números 86 ou 87.':''; $('#c-tel-h').textContent=m||'Número válido.'; $('#c-tel-h').style.color=m?'var(--bad)':'var(--ok)'; return !m; }; ti.oninput=v; if(tel) v(); }
+    $('#c-ok').onclick=function(){
+      var btn=this, ids=Object.keys(sel);
+      if(ti && tel.length!==9){ $('#c-err').innerHTML=erroCaixa('Escreva o número do encarregado com 9 dígitos.'); return; }
+      aGravar(btn,true);
+      if(met==='balcao'){ api('/pagar-balcao',{propinas:ids}).then(function(r){ if(!r.ok){ aGravar(btn,false); $('#c-err').innerHTML=erroCaixa(r.erro); return; } sucessoPag(r.documento,r.total,'balcao'); }); return; }
+      api('/pagar',{propinas:ids, metodo:met, numero:tel, nome:e.encarregado?e.encarregado.nome:e.nome}).then(function(r){
+        if(!r.ok){ aGravar(btn,false); $('#c-err').innerHTML=erroCaixa(r.erro); return; }
+        esperar(r, met); });
+    };
+  }
+  desenhar();
+}
+function esperar(r, met){
+  var fim=Date.now()+3*60e3, parado=false;
+  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div class="spinner"></div><h3 style="margin-top:10px">'+(met==='cartao'?'À espera do pagamento por cartão':'Confirme no telemóvel')+'</h3>'+
+    '<p class="muted">'+(met==='cartao'?'Abra o checkout e pague com o cartão. Esta janela actualiza sozinha quando a MozPayment confirmar.':esc(r.mensagem||'Pedido enviado.'))+'</p>'+
+    (r.link?'<div class="stack" style="gap:8px;margin:10px 0"><a class="btn pri" href="'+esc(r.link)+'" target="_blank" rel="noopener" style="justify-content:center;text-decoration:none">Abrir o checkout</a><button class="btn" id="cp">Copiar o link para enviar ao encarregado</button></div>':'')+
+    '<p class="small muted" id="w-st">A aguardar confirmação · '+mt(r.total)+'</p></div><div class="modal-f"><button class="btn" id="w-x">Fechar e verificar depois</button></div>');
+  var cp=$('#cp'); if(cp) cp.onclick=function(){ try{ navigator.clipboard.writeText(r.link).then(function(){ toast('Link copiado'); },function(){ toast(r.link); }); }catch(e){ toast(r.link); } };
+  $('#w-x').onclick=function(){ parado=true; fechar(); pPropinas(); };
+  (function verificar(){
+    if(parado) return;
+    if(Date.now()>fim){ var s=$('#w-st'); if(s) s.textContent='Ainda sem confirmação. Pode fechar: quando a MozPayment confirmar, a mensalidade fica paga sozinha.'; return; }
+    api('/pagamento-estado',{id:r.pagamento}).then(function(x){
+      if(parado) return;
+      if(x.ok && x.estado==='pago'){ sucessoPag(x.documento, x.valor, met); return; }
+      if(x.ok && (x.estado==='falhado'||x.estado==='expirado')){ var s=$('#w-st'); if(s){ s.innerHTML='<b style="color:var(--bad)">'+(x.estado==='falhado'?'O pagamento falhou ou foi cancelado.':'O pedido expirou sem ser confirmado.')+'</b> Pode tentar outra vez.'; } return; }
+      setTimeout(verificar, 4000);
+    });
+  })();
+}
+function sucessoPag(doc, valor, met){
+  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div style="width:64px;height:64px;border-radius:50%;background:var(--ok);display:grid;place-items:center;margin:0 auto;color:#fff">'+ic('check','width="30" height="30"')+'</div>'+
+    '<h3 style="margin-top:14px;font-size:20px">Pagamento confirmado</h3><p class="muted">'+mt(valor)+' · '+esc((METODO[met]||[met])[0])+'<br>Factura-recibo <b class="mono" style="color:var(--ink)">'+esc(doc||'')+'</b></p></div>'+
+    '<div class="modal-f"><button class="btn" id="s-f">Ver facturas</button><button class="btn pri" data-fechar>Fechar</button></div>');
+  $('#s-f').onclick=function(){ fechar(); ir('facturas'); };
+  $$('[data-fechar]').forEach(function(b){ b.onclick=function(){ fechar(); pPropinas(); }; });
+}
+
+/* ================= FACTURAS ================= */
+function pFacturas(){
+  aCarregar();
+  api('/pagamentos').then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    var L=d.pagamentos, tot=L.reduce(function(s,p){ return s+(p.valor||0); },0);
+    $('#page').innerHTML=ph('Financeiro','Facturas e recibos', L.length? L.length+' facturas-recibo · '+mt(tot)+' recebidos.' : 'As facturas-recibo aparecem aqui quando houver pagamentos.', '')+
+      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Documento</th><th>Data</th><th>Estudante</th><th>Método</th><th class="hide-sm">Referência</th><th class="r">Valor</th></tr></thead><tbody>'+
+        L.map(function(p){ var m=METODO[p.metodo]||[p.metodo,'#5A6A80']; return '<tr><td class="mono"><b>'+esc(p.documento||'—')+'</b></td><td class="num small">'+data(p.data)+'</td><td>'+esc(p.estudante)+'<div class="small muted mono">'+esc(p.numero||'')+'</div></td><td><span class="small" style="font-weight:700;color:'+m[1]+'">'+esc(m[0])+'</span></td><td class="mono small hide-sm">'+esc(p.transacao||p.referencia||'')+'</td><td class="r"><b class="num">'+mt(p.valor)+'</b>'+(p.multa?'<div class="small muted">multa '+mt(p.multa)+'</div>':'')+'</td></tr>'; }).join('')+'</tbody></table></div></section>'
+        : vazio('receipt','Ainda sem facturas','Quando uma propina for paga por M-Pesa, e-Mola, cartão ou numerário, a factura-recibo aparece aqui.'));
+  });
 }
 
 /* ---------- arranque ---------- */
