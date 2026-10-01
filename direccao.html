@@ -70,6 +70,7 @@ textarea.inp{height:auto;min-height:130px;padding:10px;line-height:1.45;resize:v
 <div id="root"><div class="carregar"><div class="spinner"></div>A abrir o painel…</div></div>
 <div class="toasts" id="toasts"></div>
 <script src="pauta.js" charset="utf-8"></script>
+<script src="chamada.js" charset="utf-8"></script>
 <script>
 (function(){
 'use strict';
@@ -114,7 +115,7 @@ try{ var h=(location.hash||'').slice(1); if(h) S.pag=h; }catch(e){}
 /* ---------- casca ---------- */
 var NAV = [['Arranque'],['painel','Painel','home'],['turmas','Turmas e salas','layers'],['disciplinas','Disciplinas','book'],['professores','Professores','board'],['estudantes','Estudantes','users'],
   ['Financeiro'],['propinas','Propinas e multas','wallet'],['facturas','Facturas e recibos','receipt'],
-  ['Escola'],['horarios','Horários','cal'],['pautas','Pautas e notas','grade'],['comunicados','Comunicados','mega']];
+  ['Escola'],['horarios','Horários','cal'],['presencas','Presenças e faltas','check'],['pautas','Pautas e notas','grade'],['comunicados','Comunicados','mega']];
 function casca(){
   var e=S.escola||{};
   $('#root').innerHTML='<div class="app"><aside class="side" id="side">'+
@@ -143,11 +144,11 @@ function erroCaixa(m){ return '<div class="msg-err">'+esc(m)+'</div>'; }
 function modal(html){ fechar(); var s=document.createElement('div'); s.className='scrim'; s.id='ov'; s.innerHTML='<div class="modal" role="dialog" aria-modal="true">'+html+'</div>'; s.addEventListener('mousedown',function(e){ if(e.target===s) fechar(); }); document.body.appendChild(s); var f=s.querySelector('input,select'); if(f) setTimeout(function(){ f.focus(); },30); $$('[data-fechar]',s).forEach(function(b){ b.onclick=fechar; }); return s; }
 function fechar(){ var o=$('#ov'); if(o) o.remove(); }
 function aGravar(btn, sim){ if(sim){ btn.disabled=true; btn.dataset.txt=btn.innerHTML; btn.innerHTML='A gravar…'; } else { btn.disabled=false; if(btn.dataset.txt) btn.innerHTML=btn.dataset.txt; } }
-document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window.__gsSujo && window.__gsSujo() && $('#pe')) return; fechar(); } });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window.__gsSujo && window.__gsSujo() && ($('#pe')||$('#cq'))) return; fechar(); } });
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, pautas:pPautas, comunicados:pComunicados }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados }[S.pag] || pPainel;
   f();
 }
 
@@ -622,6 +623,83 @@ function celulaH(chave, daTurma, DM){
     alvo.forEach(function(k){ if(d) g.aulas[k]={d:d,p:p,s:s}; else delete g.aulas[k]; });
     H.sujo=true; fechar(); desenharH();
   };
+}
+
+/* ================= PRESENÇAS E FALTAS ================= */
+function hojeLocal(){ var d=new Date(Date.now()+2*3600e3); return d.toISOString().slice(0,10); }
+function somaDias(data,n){ var d=new Date(data+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function pPresencas(){
+  if(typeof window.GSChamada==='undefined'){ $('#page').innerHTML=erroCaixa('Falta o ficheiro chamada.js no site (gescolar-web). Carregue-o no GitHub.'); return; }
+  S.Q=S.Q||{ vista:'dia', data:hojeLocal(), turma:'', de:somaDias(hojeLocal(),-30), ate:hojeLocal() };
+  if(S.Q.vista==='dia') presencasDia(); else presencasTurma();
+}
+function abasPres(){ return '<div style="display:flex;gap:6px;margin-bottom:14px"><button class="btn '+(S.Q.vista==='dia'?'pri':'')+'" data-v="dia">Chamadas do dia</button><button class="btn '+(S.Q.vista==='turma'?'pri':'')+'" data-v="turma">Faltas por turma</button></div>'; }
+function ligarAbasPres(){ $$('[data-v]').forEach(function(b){ b.onclick=function(){ S.Q.vista=b.getAttribute('data-v'); pPresencas(); }; }); }
+function presencasDia(){
+  aCarregar();
+  api('/chamadas-dia',{data:S.Q.data}).then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    var L=d.aulas, feitas=L.filter(function(a){ return a.feita; }).length, fal=L.reduce(function(s,a){ return s+a.faltas; },0);
+    $('#page').innerHTML=ph('Escola','Presenças e faltas', L.length? GSChamada.dataLonga(d.data)+' · '+feitas+' de '+L.length+' chamadas feitas · '+fal+' faltas.' : 'Os professores fazem a chamada em cada aula, pelo telemóvel.',
+        '<input class="inp" type="date" id="q-d" value="'+d.data+'" max="'+hojeLocal()+'" style="height:38px">')+abasPres()+
+      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Hora</th><th>Turma</th><th>Disciplina</th><th class="hide-sm">Professor</th><th>Chamada</th><th class="r">Faltas</th><th></th></tr></thead><tbody>'+
+        L.map(function(a,i){ return '<tr><td class="mono small">'+a.i+'–'+a.f+'</td><td><span class="tag">'+esc(a.turma_nome)+'</span></td><td><span class="dot" style="background:'+esc(a.cor)+'"></span>'+esc(a.disciplina)+(a.sumario?'<div class="small muted" style="max-width:280px;white-space:normal">'+esc(a.sumario)+'</div>':'')+'</td><td class="small hide-sm">'+esc(a.professor||'—')+'</td><td>'+(a.feita?'<span class="pill ok">Feita</span>':'<span class="pill warn">Por fazer</span>')+'</td><td class="r num">'+(a.feita?(a.faltas+(a.atrasos?' <span class="small muted">+'+a.atrasos+' atr.</span>':'')):'—')+'</td><td class="r"><button class="btn sm" data-ab="'+i+'">'+(a.feita?'Ver':'Fazer')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
+        : vazio('cal','Sem aulas neste dia','Não há aulas no horário para este dia. Monte os horários em "Horários".'));
+    ligarAbasPres();
+    $('#q-d').onchange=function(){ if(this.value){ S.Q.data=this.value; presencasDia(); } };
+    $$('[data-ab]').forEach(function(b){ b.onclick=function(){ var a=L[+b.getAttribute('data-ab')]; abrirChamadaDir(a.turma, d.data, a.tempo, presencasDia); }; });
+  });
+}
+function abrirChamadaDir(turma, data, tempo, depois){
+  var ch=null;
+  modal('<div class="modal-h"><h3>Chamada</h3><button class="icon-btn" id="cq-x">'+ic('x')+'</button></div><div class="modal-b" id="cq"><div class="carregar"><div class="spinner"></div>A abrir…</div></div>');
+  var m=$('#ov .modal'); if(m) m.style.maxWidth='640px';
+  window.__gsSujo=function(){ return ch && ch.sujo(); };
+  var fecharC=function(){ if(ch && ch.sujo() && !confirm('Tem alterações por guardar. Fechar mesmo assim?')) return; fechar(); if(depois) depois(); };
+  var ov=$('#ov'); if(ov){ var nov=ov.cloneNode(true); ov.parentNode.replaceChild(nov,ov); nov.addEventListener('mousedown',function(e){ if(e.target===nov) fecharC(); }); }
+  $('#cq-x').onclick=fecharC;
+  api('/chamada',{turma:turma, data:data, tempo:tempo}).then(function(r){
+    var el=$('#cq'); if(!el) return;
+    if(!r.ok){ el.innerHTML=erroCaixa(r.erro); return; }
+    ch=GSChamada.montar(el, r.chamada, { hoje:hojeLocal(), podeJustificar:true, aviso:toast, guardar:function(mm,sum,sms){ return api('/chamada-guardar',{turma:turma, data:data, tempo:tempo, marcas:mm, sumario:sum, sms:sms}); } });
+  });
+}
+function presencasTurma(){
+  aCarregar();
+  (S.turmas&&S.turmas.length?Promise.resolve({ok:true,turmas:S.turmas}):api('/turmas')).then(function(t){
+    if(!t.ok){ $('#page').innerHTML=erroCaixa(t.erro); return; }
+    S.turmas=t.turmas;
+    if(!S.turmas.length){ $('#page').innerHTML=ph('Escola','Presenças e faltas','')+abasPres()+vazio('layers','Crie primeiro uma turma',''); ligarAbasPres(); return; }
+    if(!S.turmas.some(function(x){ return x.id===S.Q.turma; })) S.Q.turma=S.turmas[0].id;
+    api('/presencas',{turma:S.Q.turma, de:S.Q.de, ate:S.Q.ate}).then(function(d){
+      if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+      var E=d.estudantes, tot=E.reduce(function(s,e){ return s+e.faltas; },0);
+      $('#page').innerHTML=ph('Escola','Presenças e faltas','Turma <b>'+esc(d.turma.nome)+'</b> · '+d.aulas+' aulas com chamada · '+tot+' faltas injustificadas no período.',
+          '<select class="sel" id="q-t">'+S.turmas.map(function(x){ return '<option value="'+x.id+'"'+(x.id===S.Q.turma?' selected':'')+'>'+esc(x.nome)+'</option>'; }).join('')+'</select>'+
+          '<input class="inp" type="date" id="q-de" value="'+d.de+'" style="height:38px"><input class="inp" type="date" id="q-ate" value="'+d.ate+'" max="'+hojeLocal()+'" style="height:38px">')+abasPres()+
+        (E.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Estudante</th><th class="r">Faltas</th><th class="r">Justificadas</th><th class="r">Atrasos</th><th class="r">Presença</th><th></th></tr></thead><tbody>'+
+          E.map(function(e,i){ return '<tr><td><b>'+esc(e.nome)+'</b><div class="small muted mono">'+esc(e.numero)+'</div></td><td class="r num" style="'+(e.faltas?'color:var(--bad);font-weight:700':'')+'">'+e.faltas+'</td><td class="r num">'+e.justificadas+'</td><td class="r num">'+e.atrasos+'</td><td class="r num">'+(e.presenca==null?'—':'<span style="color:'+(e.presenca<75?'var(--bad)':e.presenca<90?'var(--warn)':'var(--ok)')+';font-weight:700">'+e.presenca+'%</span>')+'</td><td class="r">'+(e.lista.length?'<button class="btn sm" data-ver="'+i+'">Ver '+e.lista.length+'</button>':'')+'</td></tr>'; }).join('')+'</tbody></table></div></section>'+
+          '<p class="small muted" style="margin-top:10px">Presença = aulas sem falta ÷ aulas com chamada. A vermelho, abaixo de 75%.</p>'
+          : vazio('users','Sem estudantes nesta turma',''));
+      ligarAbasPres();
+      $('#q-t').onchange=function(){ S.Q.turma=this.value; presencasTurma(); };
+      $('#q-de').onchange=function(){ if(this.value){ S.Q.de=this.value; presencasTurma(); } };
+      $('#q-ate').onchange=function(){ if(this.value){ S.Q.ate=this.value; presencasTurma(); } };
+      $$('[data-ver]').forEach(function(b){ b.onclick=function(){ faltasEstudante(E[+b.getAttribute('data-ver')]); }; });
+    });
+  });
+}
+function faltasEstudante(e){
+  var NOME={F:['Falta','bad'],J:['Justificada','info'],A:['Atraso','warn']};
+  function desenhar(){
+    modal('<div class="modal-h"><h3>'+esc(e.nome)+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b" style="gap:0;padding:0">'+
+      e.lista.map(function(x,i){ var n=NOME[x.tipo]||NOME.F; return '<div style="display:flex;gap:10px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)"><div style="flex:1"><b>'+esc(x.disciplina||'—')+'</b><div class="small muted">'+esc(GSChamada.dataLonga(x.data))+' · '+(x.tempo+1)+'º tempo</div></div><span class="pill '+n[1]+'">'+n[0]+'</span>'+
+        (x.tipo==='A'?'':'<button class="btn sm" data-j="'+i+'">'+(x.tipo==='J'?'Tirar justificação':'Justificar')+'</button>')+'</div>'; }).join('')+
+      '</div><div class="modal-f"><button class="btn pri" data-fechar>Fechar</button></div>');
+    $$('[data-fechar]').forEach(function(b){ b.onclick=function(){ fechar(); presencasTurma(); }; });
+    $$('[data-j]').forEach(function(b){ b.onclick=function(){ var x=e.lista[+b.getAttribute('data-j')], j=x.tipo!=='J'; b.disabled=true; api('/falta-justificar',{id:x.id, justificar:j}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } x.tipo=r.tipo; toast(j?'Falta justificada':'Justificação retirada'); desenhar(); }); }; });
+  }
+  desenhar();
 }
 
 /* ================= PAUTAS E NOTAS ================= */

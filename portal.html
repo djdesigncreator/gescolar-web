@@ -201,11 +201,24 @@ function pInicio(){
     '</div>'+
     '<div class="pt-g2"><div class="mini"><div class="l">Por pagar</div><div class="v num">'+mt(e.em_aberto)+'</div><div class="d">'+abertas.length+' mensalidade(s)</div></div>'+
       '<div class="mini"><div class="l">Último pagamento</div><div class="v num">'+(ult?mt(ult.valor):'—')+'</div><div class="d">'+(ult?data(ult.data)+' · '+esc((METODO[ult.metodo]||[ult.metodo])[0]):'Ainda sem pagamentos')+'</div></div></div>'+
+    blocoFaltas(e)+
     '<div class="sec-t">Comunicados da escola</div>'+(e.comunicados&&e.comunicados.length ? '<div class="lista">'+e.comunicados.slice(0,S.todosCom?30:3).map(function(c){ var longo=c.texto.length>180; return '<div class="com-it"><b>'+esc(c.titulo)+'</b><small>'+data(c.data)+(c.turma?' · Turma '+esc(e.turma):' · Toda a escola')+'</small><p'+(longo?' class="corta"':'')+'>'+esc(c.texto)+'</p>'+(longo?'<button type="button" data-ler>Ler tudo</button>':'')+'</div>'; }).join('')+'</div>'+(e.comunicados.length>3&&!S.todosCom?'<div style="text-align:center;margin-top:10px"><button class="btn sm" id="todos-com">Ver todos ('+e.comunicados.length+')</button></div>':'') : vazio('mega','Sem comunicados','Quando a escola publicar avisos, aparecem aqui.'))+
     '<div class="sec-t">Contactos da escola</div><div class="lista"><div class="pt-it"><div class="tx"><b>'+esc(d.escola.nome)+'</b><small>'+esc([d.escola.telefone,d.escola.email].filter(Boolean).join(' · ')||'—')+'</small></div>'+(d.escola.telefone?'<a class="btn sm" href="tel:'+esc(String(d.escola.telefone).replace(/[^\d+]/g,''))+'">Ligar</a>':'')+'</div></div>';
   $$('[data-ler]').forEach(function(x){ x.onclick=function(){ x.previousElementSibling.classList.remove('corta'); x.remove(); }; });
   var tc=$('#todos-com'); if(tc) tc.onclick=function(){ S.todosCom=true; pInicio(); };
+  var tf=$('#todas-f'); if(tf) tf.onclick=function(){ S.todasF=true; pInicio(); };
   var b=$('#pg-pagar'); if(b) b.onclick=function(){ S.sel={}; abertas.forEach(function(p){ if(p.estado==='atrasada') S.sel[p.id]=1; }); if(!Object.keys(S.sel).length && prox) S.sel[prox.id]=1; ir('propinas'); };
+}
+
+function blocoFaltas(e){
+  var L=e.faltas||[]; if(!L.length) return '<div class="sec-t">Assiduidade</div><div class="lista"><div class="pt-it"><div class="tx"><b style="color:var(--ok)">Sem faltas registadas</b><small>As faltas e atrasos marcados pelos professores aparecem aqui.</small></div></div></div>';
+  var lim=new Date(Date.now()-30*864e5).toISOString().slice(0,10), m=L.filter(function(x){ return x.data>=lim; });
+  var F=m.filter(function(x){ return x.tipo==='F'; }).length, J=m.filter(function(x){ return x.tipo==='J'; }).length, A=m.filter(function(x){ return x.tipo==='A'; }).length;
+  var N={F:['Falta','bad'],J:['Justificada','info'],A:['Atraso','warn']};
+  return '<div class="sec-t">Assiduidade <span class="small muted" style="font:500 13px var(--f-body)">últimos 30 dias</span></div>'+
+    '<div class="pt-g2" style="grid-template-columns:repeat(3,1fr)"><div class="mini"><div class="l">Faltas</div><div class="v" style="color:'+(F?'var(--bad)':'var(--ok)')+'">'+F+'</div></div><div class="mini"><div class="l">Justificadas</div><div class="v">'+J+'</div></div><div class="mini"><div class="l">Atrasos</div><div class="v">'+A+'</div></div></div>'+
+    '<div class="lista">'+L.slice(0,S.todasF?60:4).map(function(x){ var n=N[x.tipo]||N.F; return '<div class="pt-it"><div class="tx"><b>'+esc(x.disciplina||'Aula')+'</b><small>'+esc(x.data.slice(8,10)+'/'+x.data.slice(5,7)+'/'+x.data.slice(0,4))+' · '+(x.tempo+1)+'º tempo</small></div><span class="pill '+n[1]+'">'+n[0]+'</span></div>'; }).join('')+'</div>'+
+    (L.length>4&&!S.todasF?'<div style="text-align:center;margin-top:10px"><button class="btn sm" id="todas-f">Ver todas ('+L.length+')</button></div>':'');
 }
 
 /* ================= PROPINAS ================= */

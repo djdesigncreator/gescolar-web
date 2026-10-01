@@ -116,6 +116,7 @@ label.pt-it{cursor:pointer}
 <div id="root"><div class="carregar"><div class="spinner"></div>A abrir…</div></div>
 <div class="toasts" id="toasts"></div>
 <script src="pauta.js" charset="utf-8"></script>
+<script src="chamada.js" charset="utf-8"></script>
 <script>
 (function(){
 'use strict';
@@ -125,7 +126,7 @@ function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorA
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?'—':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
 function iniciais(n){ var p=String(n||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+((p.length>1?p[p.length-1]:'')[0]||'')).toUpperCase(); }
-var IC={home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'};
+var IC={check:'M20 6 9 17l-5-5',list:'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'};
 function ic(n,x){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" '+(x||'')+'><path d="'+IC[n]+'"/></svg>'; }
 function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
 function vazio(i,t,s){ return '<div class="vazio"><div class="ic">'+ic(i)+'</div><b>'+esc(t)+'</b>'+esc(s)+'</div>'; }
@@ -144,8 +145,8 @@ function api(rota,corpo){
 
 var S={ d:null, aba:'inicio', par:'', tri:triActual(), ed:null, dia:0 };
 try{ var h=(location.hash||'').slice(1); if(h) S.aba=h; }catch(e){}
-var ABAS=[['inicio','Início','home'],['notas','Notas','grade'],['horario','Horário','cal'],['avisos','Avisos','mega']];
-function sujo(){ return S.ed && S.ed.sujo(); }
+var ABAS=[['inicio','Início','home'],['chamada','Chamada','list'],['notas','Notas','grade'],['horario','Horário','cal'],['avisos','Avisos','mega']];
+function sujo(){ return (S.ed && S.ed.sujo()) || (S.ch && S.ch.sujo()); }
 window.addEventListener('beforeunload',function(e){ if(sujo()){ e.preventDefault(); e.returnValue=''; } });
 
 function carregar(){
@@ -161,14 +162,15 @@ function casca(){
       '<div class="pt-esc"><b>'+esc(E.nome)+'</b><small>Professor · '+esc(d.eu.nome)+'</small></div><button class="pt-sair" id="sair">'+ic('out')+'Sair</button></div>'+
     '<nav class="pt-tabs">'+ABAS.map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav>'+
     '</div></header><main class="pt-main'+(S.aba==='notas'?' largo':'')+'" id="pg"></main>'+
-    '<nav class="pt-nav" style="grid-template-columns:repeat(4,1fr)">'+ABAS.map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav></div>';
+    '<nav class="pt-nav" style="grid-template-columns:repeat(5,1fr)">'+ABAS.map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav></div>';
   $('#sair').onclick=function(){ if(sujo() && !confirm('Tem notas por guardar. Sair mesmo assim?')) return; sair(); };
   $$('[data-aba]').forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-aba')); }; });
-  ({inicio:pInicio,notas:pNotas,horario:pHorario,avisos:pAvisos}[S.aba]||pInicio)();
+  ({inicio:pInicio,chamada:pChamada,notas:pNotas,horario:pHorario,avisos:pAvisos}[S.aba]||pInicio)();
 }
-function ir(a){ if(a!==S.aba && sujo() && !confirm('Tem notas por guardar. Sair desta página mesmo assim?')) return; if(a!=='notas') S.ed=null; S.aba=a; try{ history.replaceState(null,'','#'+a); }catch(e){} casca(); window.scrollTo(0,0); }
+function ir(a){ if(a!==S.aba && sujo() && !confirm('Tem notas por guardar. Sair desta página mesmo assim?')) return; if(a!=='notas') S.ed=null; if(a!=='chamada') S.ch=null; S.aba=a; try{ history.replaceState(null,'','#'+a); }catch(e){} casca(); window.scrollTo(0,0); }
 
-function aulaHtml(a, agora){ return '<div class="aula'+(agora?' agora':'')+'"><div class="hr">'+a.i+'<br>'+a.f+'</div><div class="barra" style="background:'+esc(a.cor)+'"></div><div class="tx"><b>'+esc(a.disciplina)+' · '+esc(a.turma)+(agora?' <span class="pill info">Agora</span>':'')+'</b><small>'+esc(a.sala||'Sala da turma')+'</small></div></div>'; }
+function aulaHtml(a, agora, comChamada){ return '<div class="aula'+(agora?' agora':'')+'"><div class="hr">'+a.i+'<br>'+a.f+'</div><div class="barra" style="background:'+esc(a.cor)+'"></div><div class="tx"><b>'+esc(a.disciplina)+' · '+esc(a.turma)+(agora?' <span class="pill info">Agora</span>':'')+'</b><small>'+esc(a.sala||'Sala da turma')+'</small></div>'+
+  (comChamada?'<button class="btn sm '+(a.chamada?'':'pri')+'" style="align-self:center" data-ch="'+esc(a.turma_id+'|'+a.tempo)+'">'+(a.chamada?ic('check')+'Feita':'Chamada')+'</button>':'')+'</div>'; }
 function hm(x){ var p=x.split(':'); return (+p[0])*60+(+p[1]); }
 
 /* ================= INÍCIO ================= */
@@ -178,11 +180,39 @@ function pInicio(){
   $('#pg').innerHTML=
     '<div class="pt-hero"><span class="av" style="background:#0B2A4A">'+esc(iniciais(d.eu.nome))+'</span><div><b>Olá, '+esc(d.eu.nome.split(' ')[0])+'</b><span class="info">'+d.turmas.length+' turma(s)/disciplina(s) · '+d.aulas.length+' aulas por semana</span></div></div>'+
     '<div class="sec-t">Hoje · '+DIAS_L[hoje]+'</div>'+
-    (deHoje.length? '<div class="lista">'+deHoje.map(function(a){ return aulaHtml(a, agoraM>=hm(a.i)&&agoraM<hm(a.f)); }).join('')+'</div>' : vazio('cal','Sem aulas hoje', d.aulas.length?'Bom descanso.':'Quando a Direcção marcar o seu horário, as aulas aparecem aqui.'))+
+    (deHoje.length? '<div class="lista">'+deHoje.map(function(a){ return aulaHtml(a, agoraM>=hm(a.i)&&agoraM<hm(a.f), true); }).join('')+'</div>' : vazio('cal','Sem aulas hoje', d.aulas.length?'Bom descanso.':'Quando a Direcção marcar o seu horário, as aulas aparecem aqui.'))+
     '<div class="sec-t">As minhas turmas</div>'+
     (d.turmas.length? '<div class="lista">'+d.turmas.map(function(t){ return '<div class="pt-it"><div style="width:6px;align-self:stretch;border-radius:4px;background:'+esc(t.cor)+'"></div><div class="tx"><b>'+esc(t.disciplina_nome)+' · '+esc(t.turma_nome)+'</b><small>'+t.estudantes+' estudantes</small></div><button class="btn sm pri" data-lancar="'+esc(t.turma+'|'+t.disciplina)+'">Lançar notas</button></div>'; }).join('')+'</div>'
       : vazio('users','Ainda sem turmas','A Direcção liga-o às turmas pelo horário ou pelas disciplinas que dá. Fale com a secretaria.'));
   $$('[data-lancar]').forEach(function(b){ b.onclick=function(){ S.par=b.getAttribute('data-lancar'); ir('notas'); }; });
+  $$('[data-ch]').forEach(function(b){ b.onclick=function(){ S.chData=S.d.hoje.data; S.chAula=b.getAttribute('data-ch'); ir('chamada'); }; });
+}
+
+/* ================= CHAMADA ================= */
+function somaDias(data,n){ var d=new Date(data+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
+function pChamada(){
+  var d=S.d, hoje=d.hoje.data;
+  if(!d.aulas.length){ $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Chamada</div>'+vazio('list','Ainda sem aulas no horário','A chamada faz-se pelas aulas do seu horário. Quando a Direcção o marcar, aparecem aqui.'); return; }
+  S.chData=S.chData||hoje;
+  var dia=new Date(S.chData+'T12:00:00Z').getUTCDay();
+  var L=d.aulas.filter(function(a){ return a.dia===dia; });
+  if(!L.some(function(a){ return a.turma_id+'|'+a.tempo===S.chAula; })){ var agoraM=new Date().getHours()*60+new Date().getMinutes(); var cur=L.filter(function(a){ return hm(a.i)<=agoraM; }).pop(); S.chAula=L.length?((cur||L[0]).turma_id+'|'+(cur||L[0]).tempo):''; }
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Chamada</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><input class="inp" type="date" id="ch-d" value="'+S.chData+'" min="'+somaDias(hoje,-14)+'" max="'+hoje+'" style="height:42px;flex:none">'+
+    (L.length?'<select class="sel" id="ch-a" style="height:42px;flex:1;min-width:200px">'+L.map(function(a){ var k=a.turma_id+'|'+a.tempo; return '<option value="'+esc(k)+'"'+(k===S.chAula?' selected':'')+'>'+esc(a.i+' · '+a.disciplina+' · '+a.turma)+'</option>'; }).join('')+'</select>':'')+'</div>'+
+    (L.length?'<section class="card card-b" id="ch"></section>':vazio('cal','Sem aulas neste dia','Escolha outra data. Pode fazer ou corrigir chamadas dos últimos 14 dias.'));
+  $('#ch-d').onchange=function(){ var v=this.value; if(!v) return; if(sujo() && !confirm('Tem uma chamada por guardar. Mudar mesmo assim?')){ this.value=S.chData; return; } if(v>hoje||v<somaDias(hoje,-14)){ toast('Escolha uma data dos últimos 14 dias'); this.value=S.chData; return; } S.chData=v; S.chAula=''; S.ch=null; pChamada(); };
+  var sa=$('#ch-a'); if(sa) sa.onchange=function(){ if(sujo() && !confirm('Tem uma chamada por guardar. Mudar mesmo assim?')){ this.value=S.chAula; return; } S.chAula=this.value; S.ch=null; abrir(); };
+  if(L.length) abrir();
+  function abrir(){
+    var p=S.chAula.split('|'); $('#ch').innerHTML='<div class="carregar"><div class="spinner"></div>A abrir a chamada…</div>';
+    api('/prof/chamada',{turma:p[0], data:S.chData, tempo:+p[1]}).then(function(r){
+      if(!r.ok){ $('#ch').innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; }
+      S.ch=GSChamada.montar($('#ch'), r.chamada, { hoje:hoje, aviso:toast,
+        guardar:function(m,sum,sms){ return api('/prof/chamada-guardar',{turma:p[0], data:S.chData, tempo:+p[1], marcas:m, sumario:sum, sms:sms}); },
+        depois:function(){ if(S.chData===hoje) S.d.aulas.forEach(function(a){ if(a.turma_id===p[0] && a.tempo===+p[1] && a.dia===d.hoje.dia) a.chamada=true; }); } });
+    });
+  }
 }
 
 /* ================= NOTAS ================= */
@@ -229,7 +259,7 @@ function pAvisos(){
 }
 
 /* ---------- arranque ---------- */
-if(typeof window.GSPauta==='undefined'){ $('#root').innerHTML='<div class="carregar">Falta o ficheiro pauta.js no site. Avise a Direcção.</div>'; return; }
+if(typeof window.GSPauta==='undefined' || typeof window.GSChamada==='undefined'){ $('#root').innerHTML='<div class="carregar">Faltam os ficheiros pauta.js ou chamada.js no site. Avise a Direcção.</div>'; return; }
 fetch(PROXY+'/sessao',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SES.token}})
   .then(function(r){ return r.json().then(function(d){ return {st:r.status,d:d}; }); })
   .then(function(x){
