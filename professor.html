@@ -200,17 +200,26 @@ function aulaHtml(a, agora, comChamada){ return '<div class="aula'+(agora?' agor
 function hm(x){ var p=x.split(':'); return (+p[0])*60+(+p[1]); }
 
 /* ================= INÍCIO ================= */
+function blocoTitular(d, hoje){
+  var T=d.titular||[]; if(!T.length) return '';
+  return '<div class="sec-t">'+(T.length>1?'As minhas turmas (titular)':'A minha turma')+'</div><div class="lista">'+T.map(function(t){
+    return '<div class="pt-it" style="flex-wrap:wrap"><div style="width:6px;align-self:stretch;border-radius:4px;background:var(--blue)"></div><div class="tx"><b>'+esc(t.turma_nome)+'</b><small>'+t.estudantes+' '+(t.esc?'criança(s)':'aluno(s)')+' · professor(a) titular</small></div>'+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;padding-left:18px">'+(hoje!==0?'<button class="btn sm '+(t.chamada?'':'pri')+'" data-ch="'+esc(t.turma+'|99')+'">'+(t.chamada?ic('check')+'Chamada feita':'Chamada do dia')+'</button>':'')+
+      (t.esc?'<button class="btn sm" data-dir="'+esc(t.turma)+'">Diário</button>':'')+'<button class="btn sm" data-tnotas="'+esc(t.turma)+'">'+(t.esc?'Avaliação':'Notas')+'</button></div></div>'; }).join('')+'</div>';
+}
 function pInicio(){
   var d=S.d, hoje=new Date().getDay(), agoraM=new Date().getHours()*60+new Date().getMinutes();
   var deHoje=d.aulas.filter(function(a){ return a.dia===hoje; });
+  var TT={}; (d.titular||[]).forEach(function(t){ TT[t.turma]=1; }); var outras=d.turmas.filter(function(t){ return !TT[t.turma]; }); TT=Object.keys(TT);
   $('#pg').innerHTML=
-    '<div class="pt-hero"><span class="av" style="background:#0B2A4A">'+esc(iniciais(d.eu.nome))+'</span><div><b>Olá, '+esc(d.eu.nome.split(' ')[0])+'</b><span class="info">'+d.turmas.length+' turma(s)/disciplina(s) · '+d.aulas.length+' aulas por semana</span></div></div>'+
-    '<div class="sec-t">Hoje · '+DIAS_L[hoje]+'</div>'+
-    (deHoje.length? '<div class="lista">'+deHoje.map(function(a){ return aulaHtml(a, agoraM>=hm(a.i)&&agoraM<hm(a.f), true); }).join('')+'</div>' : vazio('cal','Sem aulas hoje', d.aulas.length?'Bom descanso.':'Quando a Direcção marcar o seu horário, as aulas aparecem aqui.'))+
-    '<div class="sec-t">As minhas turmas</div>'+
-    (d.turmas.length? '<div class="lista">'+d.turmas.map(function(t){ return '<div class="pt-it"><div style="width:6px;align-self:stretch;border-radius:4px;background:'+esc(t.cor)+'"></div><div class="tx"><b>'+esc(t.disciplina_nome)+' · '+esc(t.turma_nome)+'</b><small>'+t.estudantes+' estudantes</small></div>'+(t.esc?'<button class="btn sm pri" data-dir="'+esc(t.turma)+'">Diário</button>':'<button class="btn sm pri" data-lancar="'+esc(t.turma+'|'+t.disciplina)+'">Lançar notas</button>')+'</div>'; }).join('')+'</div>'
-      : vazio('users','Ainda sem turmas','A Direcção liga-o às turmas pelo horário ou pelas disciplinas que dá. Fale com a secretaria.'));
+    '<div class="pt-hero"><span class="av" style="background:#0B2A4A">'+esc(iniciais(d.eu.nome))+'</span><div><b>Olá, '+esc(d.eu.nome.split(' ')[0])+'</b><span class="info">'+(TT.length? 'Titular da '+esc((d.titular||[]).map(function(t){ return t.turma_nome; }).join(', '))+(outras.length?' · mais '+outras.length+' disciplina(s)':'') : d.turmas.length+' turma(s)/disciplina(s) · '+d.aulas.length+' aulas por semana')+'</span></div></div>'+
+    blocoTitular(d, hoje)+
+    (!deHoje.length && TT.length && !d.aulas.length ? '' : '<div class="sec-t">Hoje · '+DIAS_L[hoje]+'</div>'+
+    (deHoje.length? '<div class="lista">'+deHoje.map(function(a){ return aulaHtml(a, agoraM>=hm(a.i)&&agoraM<hm(a.f), true); }).join('')+'</div>' : vazio('cal','Sem aulas hoje', d.aulas.length?'Bom descanso.':'Quando a Direcção marcar o seu horário, as aulas aparecem aqui.')))+
+    (outras.length? '<div class="sec-t">'+(TT.length?'Outras disciplinas':'As minhas turmas')+'</div><div class="lista">'+outras.map(function(t){ return '<div class="pt-it"><div style="width:6px;align-self:stretch;border-radius:4px;background:'+esc(t.cor)+'"></div><div class="tx"><b>'+esc(t.disciplina_nome)+' · '+esc(t.turma_nome)+'</b><small>'+t.estudantes+' estudantes</small></div>'+(t.esc?'<button class="btn sm pri" data-dir="'+esc(t.turma)+'">Diário</button>':'<button class="btn sm pri" data-lancar="'+esc(t.turma+'|'+t.disciplina)+'">Lançar notas</button>')+'</div>'; }).join('')+'</div>'
+      : TT.length? '' : '<div class="sec-t">As minhas turmas</div>'+vazio('users','Ainda sem turmas','A Direcção liga-o às turmas pelo horário ou pelas disciplinas que dá. Fale com a secretaria.'));
   $$('[data-lancar]').forEach(function(b){ b.onclick=function(){ S.par=b.getAttribute('data-lancar'); ir('notas'); }; });
+  $$('[data-tnotas]').forEach(function(b){ b.onclick=function(){ var t=b.getAttribute('data-tnotas'), x=S.d.turmas.filter(function(z){ return z.turma===t; })[0]; if(x) S.par=x.turma+'|'+x.disciplina; ir('notas'); }; });
   $$('[data-dir]').forEach(function(b){ b.onclick=function(){ S.diTurma=b.getAttribute('data-dir'); ir('diario'); }; });
   $$('[data-ch]').forEach(function(b){ b.onclick=function(){ S.chData=S.d.hoje.data; S.chAula=b.getAttribute('data-ch'); ir('chamada'); }; });
 }
@@ -219,14 +228,15 @@ function pInicio(){
 function somaDias(data,n){ var d=new Date(data+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); }
 function pChamada(){
   var d=S.d, hoje=d.hoje.data;
-  if(!d.aulas.length){ $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Chamada</div>'+vazio('list','Ainda sem aulas no horário','A chamada faz-se pelas aulas do seu horário. Quando a Direcção o marcar, aparecem aqui.'); return; }
+  var TIT=d.titular||[];
+  if(!d.aulas.length && !TIT.length){ $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Chamada</div>'+vazio('list','Ainda sem aulas no horário','A chamada faz-se pelas aulas do seu horário. Quando a Direcção o marcar, aparecem aqui.'); return; }
   S.chData=S.chData||hoje;
   var dia=new Date(S.chData+'T12:00:00Z').getUTCDay();
-  var L=d.aulas.filter(function(a){ return a.dia===dia; });
-  if(!L.some(function(a){ return a.turma_id+'|'+a.tempo===S.chAula; })){ var agoraM=new Date().getHours()*60+new Date().getMinutes(); var cur=L.filter(function(a){ return hm(a.i)<=agoraM; }).pop(); S.chAula=L.length?((cur||L[0]).turma_id+'|'+(cur||L[0]).tempo):''; }
+  var L=(dia===0?[]:TIT.map(function(t){ return {turma_id:t.turma, tempo:99, i:'', f:'', turma:t.turma_nome, disciplina:'Chamada do dia', diaInteiro:true}; })).concat(d.aulas.filter(function(a){ return a.dia===dia; }));
+  if(!L.some(function(a){ return a.turma_id+'|'+a.tempo===S.chAula; })){ var agoraM=new Date().getHours()*60+new Date().getMinutes(); var cur=L.filter(function(a){ return !a.diaInteiro && hm(a.i)<=agoraM; }).pop(); if(TIT.length && dia!==0) cur=null; S.chAula=L.length?((cur||L[0]).turma_id+'|'+(cur||L[0]).tempo):''; }
   $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Chamada</div>'+
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><input class="inp" type="date" id="ch-d" value="'+S.chData+'" min="'+somaDias(hoje,-14)+'" max="'+hoje+'" style="height:42px;flex:none">'+
-    (L.length?'<select class="sel" id="ch-a" style="height:42px;flex:1;min-width:200px">'+L.map(function(a){ var k=a.turma_id+'|'+a.tempo; return '<option value="'+esc(k)+'"'+(k===S.chAula?' selected':'')+'>'+esc(a.i+' · '+a.disciplina+' · '+a.turma)+'</option>'; }).join('')+'</select>':'')+'</div>'+
+    (L.length?'<select class="sel" id="ch-a" style="height:42px;flex:1;min-width:200px">'+L.map(function(a){ var k=a.turma_id+'|'+a.tempo; return '<option value="'+esc(k)+'"'+(k===S.chAula?' selected':'')+'>'+esc(a.diaInteiro?'Chamada do dia · '+a.turma:a.i+' · '+a.disciplina+' · '+a.turma)+'</option>'; }).join('')+'</select>':'')+'</div>'+
     (L.length?'<section class="card card-b" id="ch"></section>':vazio('cal','Sem aulas neste dia','Escolha outra data. Pode fazer ou corrigir chamadas dos últimos 14 dias.'));
   $('#ch-d').onchange=function(){ var v=this.value; if(!v) return; if(sujo() && !confirm('Tem uma chamada por guardar. Mudar mesmo assim?')){ this.value=S.chData; return; } if(v>hoje||v<somaDias(hoje,-14)){ toast('Escolha uma data dos últimos 14 dias'); this.value=S.chData; return; } S.chData=v; S.chAula=''; S.ch=null; pChamada(); };
   var sa=$('#ch-a'); if(sa) sa.onchange=function(){ if(sujo() && !confirm('Tem uma chamada por guardar. Mudar mesmo assim?')){ this.value=S.chAula; return; } S.chAula=this.value; S.ch=null; abrir(); };
@@ -237,7 +247,7 @@ function pChamada(){
       if(!r.ok){ $('#ch').innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; }
       S.ch=GSChamada.montar($('#ch'), r.chamada, { hoje:hoje, aviso:toast,
         guardar:function(m,sum,sms){ return api('/prof/chamada-guardar',{turma:p[0], data:S.chData, tempo:+p[1], marcas:m, sumario:sum, sms:sms}); },
-        depois:function(){ if(S.chData===hoje) S.d.aulas.forEach(function(a){ if(a.turma_id===p[0] && a.tempo===+p[1] && a.dia===d.hoje.dia) a.chamada=true; }); } });
+        depois:function(){ if(S.chData===hoje){ S.d.aulas.forEach(function(a){ if(a.turma_id===p[0] && a.tempo===+p[1] && a.dia===d.hoje.dia) a.chamada=true; }); if(+p[1]===99) TIT.forEach(function(t){ if(t.turma===p[0]) t.chamada=true; }); } } });
     });
   }
 }

@@ -233,7 +233,7 @@ function blocoFaltas(e){
   var N={F:['Falta','bad'],J:['Justificada','info'],A:['Atraso','warn']};
   return '<div class="sec-t">Assiduidade <span class="small muted" style="font:500 13px var(--f-body)">últimos 30 dias</span></div>'+
     '<div class="pt-g2" style="grid-template-columns:repeat(3,1fr)"><div class="mini"><div class="l">Faltas</div><div class="v" style="color:'+(F?'var(--bad)':'var(--ok)')+'">'+F+'</div></div><div class="mini"><div class="l">Justificadas</div><div class="v">'+J+'</div></div><div class="mini"><div class="l">Atrasos</div><div class="v">'+A+'</div></div></div>'+
-    '<div class="lista">'+L.slice(0,S.todasF?60:4).map(function(x){ var n=N[x.tipo]||N.F; return '<div class="pt-it"><div class="tx"><b>'+esc(x.disciplina||'Aula')+'</b><small>'+esc(x.data.slice(8,10)+'/'+x.data.slice(5,7)+'/'+x.data.slice(0,4))+' · '+(x.tempo+1)+'º tempo</small></div><span class="pill '+n[1]+'">'+n[0]+'</span></div>'; }).join('')+'</div>'+
+    '<div class="lista">'+L.slice(0,S.todasF?60:4).map(function(x){ var n=N[x.tipo]||N.F; return '<div class="pt-it"><div class="tx"><b>'+esc(x.disciplina||'Aula')+'</b><small>'+esc(x.data.slice(8,10)+'/'+x.data.slice(5,7)+'/'+x.data.slice(0,4))+' · '+(x.tempo===99?'dia inteiro':(x.tempo+1)+'º tempo')+'</small></div><span class="pill '+n[1]+'">'+n[0]+'</span></div>'; }).join('')+'</div>'+
     (L.length>4&&!S.todasF?'<div style="text-align:center;margin-top:10px"><button class="btn sm" id="todas-f">Ver todas ('+L.length+')</button></div>':'');
 }
 

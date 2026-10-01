@@ -271,7 +271,7 @@ function indicadores(fresco){
         '<section class="card card-b"><div class="eyebrow">Maiores dívidas</div><div class="pn-lista">'+
           ($d.devedores.length? $d.devedores.map(function(e){ return '<div class="pn-it"><div class="tx"><b>'+esc(e.nome)+'</b><small>'+esc(e.turma)+' · '+esc(e.numero)+'</small></div><div class="vl" style="color:var(--bad)">'+mt(e.divida)+'</div></div>'; }).join('')+'<button class="btn sm" data-go2="propinas" style="margin-top:10px;align-self:flex-start">Cobrar em Propinas e multas</button>' : '<div class="pn-vazio" style="color:var(--ok);font-weight:600">Ninguém em atraso.</div>')+'</div></section>'+
         (soCON()?'<section class="card card-b"><div class="eyebrow">Aulas práticas</div><p class="small muted">Marque as aulas, registe as feitas e acompanhe as horas de cada instruendo.</p><button class="btn sm" data-go2="aulas">Ver aulas práticas</button></section>':('<section class="card card-b"><div class="eyebrow">Chamadas por fazer hoje</div><div class="pn-lista">'+
-          (h.por_fazer.length? h.por_fazer.map(function(a){ return '<div class="pn-it"><div class="tx"><b>'+esc(a.disciplina)+' · '+esc(a.turma)+'</b><small>'+esc(a.i)+'–'+esc(a.f)+' · '+esc(a.professor||'sem professor')+'</small></div><span class="pill warn">Por fazer</span></div>'; }).join('') : '<div class="pn-vazio">'+(h.total?'Todas as aulas que já começaram têm chamada.':'Não há aulas no horário para hoje.')+'</div>')+
+          (h.por_fazer.length? h.por_fazer.map(function(a){ return '<div class="pn-it"><div class="tx"><b>'+esc(a.disciplina)+' · '+esc(a.turma)+'</b><small>'+(a.f?esc(a.i)+'–'+esc(a.f):'Desde as '+esc(a.i))+' · '+esc(a.professor||'sem professor')+'</small></div><span class="pill warn">Por fazer</span></div>'; }).join('') : '<div class="pn-vazio">'+(h.total?'Todas as aulas que já começaram têm chamada.':'Não há aulas no horário para hoje.')+'</div>')+
           '</div><button class="btn sm" data-go2="presencas" style="margin-top:10px">Ver presenças</button></section>'))+
       '</div>'+
       (soCON()?'':('<div class="grid g2" style="margin-bottom:16px">'+
@@ -294,10 +294,10 @@ function pTurmas(){
   Promise.all([api('/turmas'), api('/professores')]).then(function(r){
     var d=r[0]; if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
     S.turmas=d.turmas; S.professores=r[1].ok?r[1].professores:[];
-    var L=d.turmas;
+    var L=d.turmas, PN={}; S.professores.forEach(function(p){ PN[p.id]=p.nome; });
     $('#page').innerHTML = ph('Arranque','Turmas e salas', L.length? L.length+' turmas activas.' : 'Ainda não há turmas. Crie a primeira.', '<button class="btn pri" id="nova">'+ic('plus')+'Nova turma</button>')+
       (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Nível</th><th>Turno</th><th>Sala</th><th class="r">Estudantes</th><th class="r">Propina</th><th></th></tr></thead><tbody>'+
-        L.map(function(t){ return '<tr><td><b>'+esc(t.nome)+'</b><div class="small muted mono">'+esc(t.codigo)+'</div></td><td><span class="tag">'+esc(NIVEL[t.nivel]||t.nivel)+'</span></td><td>'+esc(t.turno)+'</td><td>'+esc(t.sala||'—')+'</td><td class="r num">'+(t.estudantes||0)+' / '+(t.capacidade||0)+'</td><td class="r num">'+(t.propina?mt(t.propina):'—')+'</td>'+
+        L.map(function(t){ return '<tr><td><b>'+esc(t.nome)+'</b><div class="small muted mono">'+esc(t.codigo)+'</div>'+(t.titular&&PN[t.titular]?'<div class="small muted">Titular: '+esc(PN[t.titular])+'</div>':'')+'</td><td><span class="tag">'+esc(NIVEL[t.nivel]||t.nivel)+'</span></td><td>'+esc(t.turno)+'</td><td>'+esc(t.sala||'—')+'</td><td class="r num">'+(t.estudantes||0)+' / '+(t.capacidade||0)+'</td><td class="r num">'+(t.propina?mt(t.propina):'—')+'</td>'+
           '<td class="r"><button class="btn sm" data-ed="'+t.id+'">Editar</button> <button class="btn sm danger" data-del="'+t.id+'">'+ic('trash')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
         : vazio('layers','Crie as turmas da escola','Por exemplo "10ª Classe A" ou "Sala dos 4 anos". Pode criar quantas precisar.'));
     $('#nova').onclick=function(){ formTurma(null); };
@@ -311,6 +311,7 @@ function confirmar(tit,sub,fn){
   $('#cf-ok').onclick=function(){ aGravar(this,true); fn(this); };
 }
 function opcoesNivel(sel){ var n=(S.escola&&S.escola.niveis&&S.escola.niveis.length)?S.escola.niveis:Object.keys(NIVEL); return n.map(function(k){ return '<option value="'+k+'"'+(k===sel?' selected':'')+'>'+NIVEL[k]+'</option>'; }).join(''); }
+var MONO={PRI:1,ESC:1};
 function formTurma(t){
   t=t||{};
   var profs=S.professores||[];
@@ -320,10 +321,14 @@ function formTurma(t){
     '<div class="frow"><label class="field">Sala<input class="inp" id="t-sala" value="'+esc(t.sala||'')+'" placeholder="Ex.: Bloco B · 21"></label><label class="field">Capacidade<input class="inp" id="t-cap" type="number" min="1" value="'+(t.capacidade||40)+'"></label></div>'+
     '<div class="frow"><label class="field">Propina mensal (MT)<input class="inp mono" id="t-prop" type="number" min="0" step="50" value="'+(t.propina||'')+'" placeholder="Ex.: 2500"></label>'+
     '<label class="field">Director(a) de turma<select class="sel" id="t-dir"><option value="">— escolher depois —</option>'+profs.map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.director?' selected':'')+'>'+esc(p.nome)+'</option>'; }).join('')+'</select></label></div>'+
+    '<div id="t-titw"><label class="field">Professor(a) titular<select class="sel" id="t-tit"><option value="">— sem titular (cada disciplina tem o seu professor) —</option>'+profs.map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.titular?' selected':'')+'>'+esc(p.nome)+'</option>'; }).join('')+'</select></label>'+
+      '<p class="small muted" style="margin:6px 0 0">No primário e na escolinha, um só professor dá todas as disciplinas e faz uma chamada por dia. Uma disciplina marcada no horário com outro professor (ex.: Educação Física) fica com esse professor.</p></div>'+
     (t.id?'':'<p class="small muted" style="margin:0">As disciplinas do mesmo nível que já existirem ficam ligadas à turma automaticamente.</p>')+
     '<div id="t-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="t-ok">'+ic('save')+'Guardar</button></div>');
+  function verTit(){ $('#t-titw').style.display=MONO[$('#t-nivel').value]?'':'none'; }
+  $('#t-nivel').onchange=verTit; verTit();
   $('#t-ok').onclick=function(){ var btn=this; aGravar(btn,true);
-    api('/turma-guardar',{ id:t.id, nome:$('#t-nome').value, nivel:$('#t-nivel').value, classe:$('#t-classe').value, turno:$('#t-turno').value, sala:$('#t-sala').value, capacidade:$('#t-cap').value, propina:$('#t-prop').value, director:$('#t-dir').value||null, disciplinas: t.id? t.disciplinas : undefined })
+    api('/turma-guardar',{ id:t.id, nome:$('#t-nome').value, nivel:$('#t-nivel').value, classe:$('#t-classe').value, turno:$('#t-turno').value, sala:$('#t-sala').value, capacidade:$('#t-cap').value, propina:$('#t-prop').value, director:$('#t-dir').value||null, titular: MONO[$('#t-nivel').value]?$('#t-tit').value:'', disciplinas: t.id? t.disciplinas : undefined })
       .then(function(x){ if(x.ok){ fechar(); toast(t.id?'Turma actualizada':'Turma criada'); pTurmas(); } else { aGravar(btn,false); $('#t-err').innerHTML=erroCaixa(x.erro); } }); };
 }
 
@@ -771,7 +776,7 @@ function presencasDia(){
     $('#page').innerHTML=ph('Escola','Presenças e faltas', L.length? GSChamada.dataLonga(d.data)+' · '+feitas+' de '+L.length+' chamadas feitas · '+fal+' faltas.' : 'Os professores fazem a chamada em cada aula, pelo telemóvel.',
         '<input class="inp" type="date" id="q-d" value="'+d.data+'" max="'+hojeLocal()+'" style="height:38px">')+abasPres()+
       (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Hora</th><th>Turma</th><th>Disciplina</th><th class="hide-sm">Professor</th><th>Chamada</th><th class="r">Faltas</th><th></th></tr></thead><tbody>'+
-        L.map(function(a,i){ return '<tr><td class="mono small">'+a.i+'–'+a.f+'</td><td><span class="tag">'+esc(a.turma_nome)+'</span></td><td><span class="dot" style="background:'+esc(a.cor)+'"></span>'+esc(a.disciplina)+(a.sumario?'<div class="small muted" style="max-width:280px;white-space:normal">'+esc(a.sumario)+'</div>':'')+'</td><td class="small hide-sm">'+esc(a.professor||'—')+'</td><td>'+(a.feita?'<span class="pill ok">Feita</span>':'<span class="pill warn">Por fazer</span>')+'</td><td class="r num">'+(a.feita?(a.faltas+(a.atrasos?' <span class="small muted">+'+a.atrasos+' atr.</span>':'')):'—')+'</td><td class="r"><button class="btn sm" data-ab="'+i+'">'+(a.feita?'Ver':'Fazer')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
+        L.map(function(a,i){ return '<tr><td class="mono small">'+(a.dia?'Dia':a.i+'–'+a.f)+'</td><td><span class="tag">'+esc(a.turma_nome)+'</span></td><td><span class="dot" style="background:'+esc(a.cor)+'"></span>'+esc(a.disciplina)+(a.sumario?'<div class="small muted" style="max-width:280px;white-space:normal">'+esc(a.sumario)+'</div>':'')+'</td><td class="small hide-sm">'+esc(a.professor||'—')+'</td><td>'+(a.feita?'<span class="pill ok">Feita</span>':'<span class="pill warn">Por fazer</span>')+'</td><td class="r num">'+(a.feita?(a.faltas+(a.atrasos?' <span class="small muted">+'+a.atrasos+' atr.</span>':'')):'—')+'</td><td class="r"><button class="btn sm" data-ab="'+i+'">'+(a.feita?'Ver':'Fazer')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
         : vazio('cal','Sem aulas neste dia','Não há aulas no horário para este dia. Monte os horários em "Horários".'));
     ligarAbasPres();
     $('#q-d').onchange=function(){ if(this.value){ S.Q.data=this.value; presencasDia(); } };
@@ -821,7 +826,7 @@ function faltasEstudante(e){
   var NOME={F:['Falta','bad'],J:['Justificada','info'],A:['Atraso','warn']};
   function desenhar(){
     modal('<div class="modal-h"><h3>'+esc(e.nome)+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b" style="gap:0;padding:0">'+
-      e.lista.map(function(x,i){ var n=NOME[x.tipo]||NOME.F; return '<div style="display:flex;gap:10px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)"><div style="flex:1"><b>'+esc(x.disciplina||'—')+'</b><div class="small muted">'+esc(GSChamada.dataLonga(x.data))+' · '+(x.tempo+1)+'º tempo</div></div><span class="pill '+n[1]+'">'+n[0]+'</span>'+
+      e.lista.map(function(x,i){ var n=NOME[x.tipo]||NOME.F; return '<div style="display:flex;gap:10px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line)"><div style="flex:1"><b>'+esc(x.disciplina||'—')+'</b><div class="small muted">'+esc(GSChamada.dataLonga(x.data))+' · '+(x.tempo===99?'dia inteiro':(x.tempo+1)+'º tempo')+'</div></div><span class="pill '+n[1]+'">'+n[0]+'</span>'+
         (x.tipo==='A'?'':'<button class="btn sm" data-j="'+i+'">'+(x.tipo==='J'?'Tirar justificação':'Justificar')+'</button>')+'</div>'; }).join('')+
       '</div><div class="modal-f"><button class="btn pri" data-fechar>Fechar</button></div>');
     $$('[data-fechar]').forEach(function(b){ b.onclick=function(){ fechar(); presencasTurma(); }; });
