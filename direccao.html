@@ -130,13 +130,13 @@ try{ var h=(location.hash||'').slice(1); if(h) S.pag=h; }catch(e){}
 var NAV = [['Arranque'],['painel','Painel','home'],['turmas','Turmas e salas','layers'],['disciplinas','Disciplinas','book'],['professores','Professores','board'],['estudantes','Estudantes','users'],
   ['Financeiro'],['propinas','Propinas e multas','wallet'],['facturas','Facturas e recibos','receipt'],
   ['Escola'],['horarios','Horários','cal'],['presencas','Presenças e faltas','check'],['pautas','Pautas e notas','grade'],['comunicados','Comunicados','mega'],
-  ['Conta'],['assinatura','Assinatura do Gescolar','receipt']];
+  ['Conta'],['equipa','Equipa da escola','users',0,1],['assinatura','Assinatura do Gescolar','receipt',0,1]];
 function casca(){
   var e=S.escola||{};
   $('#root').innerHTML='<div class="app"><aside class="side" id="side">'+
     '<div class="brand"><img src="logo.png" alt=""><div><b>G<i>e</i>scolar</b><small>gescolar.co.mz</small></div></div>'+
     '<div class="school"><strong>'+esc(e.nome||'')+'</strong><span>'+esc((e.subdominio||'')+'.gescolar.co.mz · '+(e.ano||''))+'</span></div>'+
-    '<nav class="nav">'+NAV.map(function(n){ if(n.length===1) return '<div class="grp">'+n[0]+'</div>';
+    '<nav class="nav">'+NAV.filter(function(n){ return S.papel==='Direccao' || (!n[4] && !(n.length===1 && n[0]==='Conta')); }).map(function(n){ if(n.length===1) return '<div class="grp">'+n[0]+'</div>';
       if(n[3]) return '<button class="soon" type="button" tabindex="-1">'+ic(n[2])+'<span>'+n[1]+'</span><span class="em-breve">em breve</span></button>';
       return '<button type="button" class="'+(S.pag===n[0]?'on':'')+'" data-go="'+n[0]+'">'+ic(n[2])+'<span>'+n[1]+'</span></button>'; }).join('')+'</nav>'+
     '<div class="me">'+av(S.nome||'?')+'<div class="who"><strong>'+esc(S.nome)+'</strong><span>Direcção</span></div></div>'+
@@ -163,7 +163,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa }[S.pag] || pPainel;
   f();
 }
 
@@ -872,6 +872,38 @@ function novoComunicado(){
   };
 }
 
+/* ================= EQUIPA DA ESCOLA ================= */
+function pEquipa(){
+  if(S.papel!=='Direccao'){ $('#page').innerHTML=erroCaixa('Só a Direcção pode gerir a equipa.'); return; }
+  aCarregar();
+  api('/equipa').then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    var L=d.equipa;
+    $('#page').innerHTML=ph('Conta','Equipa da escola','Pessoas que entram com email e palavra-passe: Direcção e Secretaria. A Secretaria faz matrículas, cobra propinas e gere o dia-a-dia; só a Direcção gere a equipa e a assinatura.','<button class="btn pri" id="eq-n">'+ic('plus')+'Adicionar pessoa</button>')+
+      '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Função</th><th class="hide-sm">Email</th><th class="hide-sm">Telemóvel</th><th>Último acesso</th><th>Estado</th><th></th></tr></thead><tbody>'+
+      L.map(function(u){ var eu=u.id===d.eu; return '<tr><td><div class="person">'+av(u.nome||'?')+'<div><b>'+esc(u.nome||'—')+(eu?' <span class="small muted">(você)</span>':'')+'</b></div></div></td><td><span class="tag">'+(u.papel==='Direccao'?'Direcção':'Secretaria')+'</span></td><td class="small hide-sm">'+esc(u.email||'—')+'</td><td class="mono small hide-sm">'+esc(u.telefone||'—')+'</td><td class="small num">'+data(u.ultimo)+'</td><td>'+(u.activo?'<span class="pill ok">Activa</span>':'<span class="pill muted">Desactivada</span>')+'</td><td class="r">'+(eu?'':'<button class="btn sm'+(u.activo?' danger':'')+'" data-est="'+u.id+'" data-a="'+(u.activo?0:1)+'">'+(u.activo?'Desactivar':'Activar')+'</button>')+'</td></tr>'; }).join('')+
+      '</tbody></table></div></section><p class="small muted" style="margin-top:10px">Quem esquecer a palavra-passe usa "Esqueci a palavra-passe" na página de entrada e recebe um código no telemóvel registado aqui.</p>';
+    $('#eq-n').onclick=novaPessoa;
+    $$('[data-est]').forEach(function(b){ b.onclick=function(){ var a=b.getAttribute('data-a')==='1'; b.disabled=true; api('/equipa-estado',{id:b.getAttribute('data-est'), activo:a}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast(a?'Conta activada':'Conta desactivada'); pEquipa(); }); }; });
+  });
+}
+function novaPessoa(){
+  modal('<div class="modal-h"><h3>Adicionar pessoa à equipa</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<label class="field">Nome completo<input class="inp" id="q-n" placeholder="Ex.: Célia Mondlane"></label>'+
+    '<div class="frow"><label class="field">Email<input class="inp" id="q-e" type="email" autocapitalize="none" placeholder="secretaria@escola.co.mz"></label><label class="field">Telemóvel<input class="inp mono" id="q-t" inputmode="numeric" placeholder="84 000 0000"></label></div>'+
+    '<label class="field">Função<select class="sel" id="q-p"><option value="Secretaria">Secretaria</option><option value="Direccao">Direcção (acesso total)</option></select></label>'+
+    '<p class="small muted" style="margin:0">A pessoa recebe um SMS com o link para criar a sua palavra-passe. Ninguém fica a saber a palavra-passe dela.</p><div id="q-err"></div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="q-ok">'+ic('save')+'Criar conta</button></div>');
+  $('#q-ok').onclick=function(){
+    var btn=this; aGravar(btn,true);
+    api('/equipa-criar',{nome:$('#q-n').value, email:$('#q-e').value, telefone:$('#q-t').value, papel:$('#q-p').value}).then(function(r){
+      if(!r.ok){ aGravar(btn,false); $('#q-err').innerHTML=erroCaixa(r.erro); return; }
+      modal('<div class="modal-b" style="text-align:center;padding:24px 20px"><div style="width:60px;height:60px;border-radius:50%;background:var(--ok);display:grid;place-items:center;margin:0 auto;color:#fff">'+ic('check','width="28" height="28"')+'</div><h3 style="margin-top:12px">Conta criada</h3><p class="muted">'+(r.sms?'Enviámos um SMS com o link para criar a palavra-passe.':'O SMS não foi enviado. Envie este link à pessoa:')+'</p><input class="inp mono" readonly value="'+esc(r.link)+'" style="width:100%;font-size:12.5px"></div><div class="modal-f"><button class="btn pri" data-fechar>Fechar</button></div>');
+      $$('[data-fechar]').forEach(function(b){ b.onclick=function(){ fechar(); pEquipa(); }; });
+    });
+  };
+}
+
 /* ================= ASSINATURA DO GESCOLAR ================= */
 function seloSituacao(e){
   var s=(e&&e.situacao)||{}, st='margin-left:auto;cursor:pointer';
@@ -952,7 +984,7 @@ fetch(PROXY+'/sessao',{method:'POST',headers:{'Content-Type':'application/json',
     var d=x.d;
     if(x.st===401 || !d.ok){ if(x.st===401) return sair(); $('#root').innerHTML='<div class="carregar">'+esc(d.erro||'Não foi possível abrir o painel.')+' <a class="link" href="entrar.html">Voltar a entrar</a></div>'; return; }
     if(d.pagina!=='direccao'){ location.replace((d.pagina||'entrar')+'.html'); return; }
-    S.escola=d.escola; S.nome=d.nome; S.plataforma=!!d.plataforma;
+    S.escola=d.escola; S.nome=d.nome; S.plataforma=!!d.plataforma; S.papel=d.papel;
     SES.token=d.token; try{ localStorage.setItem('gs_sessao', JSON.stringify({token:d.token,nome:d.nome,papel:d.papel,pagina:d.pagina,escola:d.escola,criada:Date.now()})); }catch(e){}
     casca();
   })
