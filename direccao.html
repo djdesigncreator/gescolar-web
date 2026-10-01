@@ -63,6 +63,20 @@ textarea.inp{height:auto;min-height:130px;padding:10px;line-height:1.45;resize:v
 .dc-card b{display:block;font-size:14.5px}
 .dc-card small{display:block;color:var(--muted);font-size:12.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media print{.side,.top,.ph .actions,.dcs,.no-print{display:none!important}.app{display:block}.main{margin:0}.page{padding:0}.card{box-shadow:none}}
+.pn-lista{display:flex;flex-direction:column}
+.pn-it{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.pn-it:last-child{border-bottom:0}
+.pn-it .tx{flex:1;min-width:0}
+.pn-it .tx b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pn-it .tx small{color:var(--muted);font-size:12.5px}
+.pn-it .vl{font:700 14px var(--f-mono);white-space:nowrap}
+.pn-bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:6px}
+.pn-bar i{display:block;height:100%;border-radius:4px;background:var(--blue)}
+.pn-ch{position:relative}
+.pn-ch svg{display:block;width:100%;height:auto;overflow:visible}
+.pn-tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--surface);font-size:12.5px;font-weight:600;padding:5px 9px;border-radius:7px;white-space:nowrap;transform:translate(-50%,-110%);opacity:0;transition:opacity .1s}
+.pn-vazio{color:var(--muted);font-size:14px;padding:6px 0}
+.kpi .v.bad{color:var(--bad)} .kpi .v.ok{color:var(--ok)}
 .msg-err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:600}
 </style>
 </head>
@@ -161,21 +175,91 @@ function pPainel(){
     var c=d.contagem, passos=[
       ['turmas','Criar as turmas e salas','Cada turma tem o nível, o turno, a sala e a propina mensal.',c.turmas,'turma'],
       ['disciplinas','Criar as disciplinas','Pode carregar o currículo modelo de cada nível e ajustar depois.',c.disciplinas,'disciplina'],
-      ['professores','Registar os professores','Com as disciplinas que cada um pode dar.',c.professores,'professor'],
+      ['professores','Registar os professores','Com as disciplinas que cada um pode dar e o telemóvel para entrar.',c.professores,'professor'],
       ['estudantes','Matricular os estudantes','Cada estudante recebe o número e fica ligado ao encarregado.',c.estudantes,'estudante']];
     var prox=-1; passos.forEach(function(p,i){ if(prox<0 && !p[3]) prox=i; });
     var falta=passos.filter(function(p){ return !p[3]; }).length;
     var primeiro=(S.nome||'').split(' ')[0];
-    $('#page').innerHTML = ph('Painel da Direcção','Olá, '+esc(primeiro),'')+
-      '<section class="resumo"><p class="frase">'+(falta?
-        'A <mark>'+esc(S.escola.nome)+'</mark> está criada. Faltam <mark>'+falta+' '+(falta===1?'passo':'passos')+'</mark> para a escola começar a funcionar no Gescolar.' :
-        'A <mark>'+esc(S.escola.nome)+'</mark> tem tudo o que precisa para começar: '+pl(c.turmas,'turma','turmas')+', '+pl(c.disciplinas,'disciplina','disciplinas')+', '+pl(c.professores,'professor','professores')+' e '+pl(c.estudantes,'estudante','estudantes')+'.')+'</p></section>'+
-      '<div class="grid g4">'+[['Turmas',c.turmas],['Disciplinas',c.disciplinas],['Professores',c.professores],['Estudantes',c.estudantes]].map(function(k){ return '<div class="card kpi"><div class="l">'+k[0]+'</div><div class="v">'+grp(k[1])+'</div></div>'; }).join('')+'</div>'+
-      '<section class="card">'+passos.map(function(p,i){ var st=p[3]?'feito':(i===prox?'agora':'');
+    var arranque = '<section class="card" style="margin-bottom:16px">'+passos.map(function(p,i){ var st=p[3]?'feito':(i===prox?'agora':'');
         return '<div class="passo '+st+'"><span class="n">'+(p[3]?'✓':(i+1))+'</span><div><b>'+p[1]+'</b><small>'+(p[3]?p[3]+' '+(p[3]===1?p[4]:p[4]+'s')+' registad'+(p[4]==='disciplina'||p[4]==='turma'?'a':'o')+(p[3]===1?'':'s'):p[2])+'</small></div>'+
-          '<button class="btn '+(i===prox?'pri':'')+' sm" data-go2="'+p[0]+'">'+(p[3]?'Ver':'Começar')+'</button></div>'; }).join('')+'</section>'+
-      '<p class="small muted" style="margin:0">Depois do arranque, gere as mensalidades em <a class="link" href="#propinas" data-go2="propinas">Propinas e multas</a>. Horários e pautas vêm a seguir.</p>';
+          '<button class="btn '+(i===prox?'pri':'')+' sm" data-go2="'+p[0]+'">'+(p[3]?'Ver':'Começar')+'</button></div>'; }).join('')+'</section>';
+    $('#page').innerHTML = ph('Painel da Direcção','Olá, '+esc(primeiro), falta ? 'Faltam <b>'+falta+' '+(falta===1?'passo':'passos')+'</b> para a '+esc(S.escola.nome)+' funcionar em pleno.' : esc(S.escola.nome)+' · '+pl(c.estudantes,'estudante','estudantes')+' · '+pl(c.turmas,'turma','turmas')+' · '+pl(c.professores,'professor','professores')+'.',
+        '<button class="btn" id="pn-r">Actualizar</button>')+
+      (falta?arranque:'')+'<div id="pn"><div class="carregar"><div class="spinner"></div>A calcular os números da escola…</div></div>'+(falta?'':'<details style="margin-top:16px"><summary class="small muted" style="cursor:pointer">Passos de arranque</summary><div style="margin-top:10px">'+arranque+'</div></details>');
     $$('[data-go2]').forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-go2')); }; });
+    $('#pn-r').onclick=function(){ indicadores(true); };
+    indicadores(false);
+  });
+}
+var MESES_AB=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function barrasSvg(serie, rotulo, valor, fmtv, dest){
+  // um só série, uma cor (azul da marca); barras finas com topo arredondado; rótulo só na barra de destaque
+  var W=560, H=190, pl=8, pr=8, pt=26, pb=26, n=serie.length, max=Math.max.apply(null,serie.map(valor).concat([1]));
+  var bw=Math.min(46,(W-pl-pr)/n*0.56), step=(W-pl-pr)/n;
+  var out='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Gráfico de barras"><line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+(H-pb)+'" y2="'+(H-pb)+'" stroke="var(--line)" stroke-width="1"/>';
+  serie.forEach(function(x,i){
+    var v=valor(x), h=Math.round((H-pt-pb)*v/max), cx=pl+step*i+step/2, y=H-pb-h, r=Math.min(4,h/2);
+    var path = h>0 ? 'M'+(cx-bw/2)+','+(H-pb)+' V'+(y+r)+' Q'+(cx-bw/2)+','+y+' '+(cx-bw/2+r)+','+y+' H'+(cx+bw/2-r)+' Q'+(cx+bw/2)+','+y+' '+(cx+bw/2)+','+(y+r)+' V'+(H-pb)+' Z' : '';
+    out+='<g class="pn-b" data-tip="'+esc(rotulo(x)+': '+fmtv(v))+'" data-x="'+cx+'" data-y="'+y+'">'+
+      '<rect x="'+(cx-step/2)+'" y="'+pt+'" width="'+step+'" height="'+(H-pt-pb)+'" fill="transparent"/>'+
+      (path?'<path d="'+path+'" fill="var(--blue)" opacity="'+(i===dest?1:0.55)+'"/>':'<rect x="'+(cx-bw/2)+'" y="'+(H-pb-2)+'" width="'+bw+'" height="2" fill="var(--line)"/>')+
+      (i===dest?'<text x="'+cx+'" y="'+(y-7)+'" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)" font-family="var(--f-mono)">'+esc(fmtv(v))+'</text>':'')+
+      '<text x="'+cx+'" y="'+(H-8)+'" text-anchor="middle" font-size="12" fill="var(--muted)">'+esc(rotulo(x))+'</text></g>';
+  });
+  return out+'</svg>';
+}
+function ligarDicas(box){
+  var tip=document.createElement('div'); tip.className='pn-tip'; box.appendChild(tip);
+  var svg=box.querySelector('svg');
+  $$('.pn-b',box).forEach(function(g){
+    g.addEventListener('mouseenter',function(){ var k=svg.getBoundingClientRect().width/560; tip.textContent=g.getAttribute('data-tip'); tip.style.left=(+g.getAttribute('data-x')*k)+'px'; tip.style.top=(+g.getAttribute('data-y')*k)+'px'; tip.style.opacity=1; });
+    g.addEventListener('mouseleave',function(){ tip.style.opacity=0; });
+  });
+}
+function indicadores(fresco){
+  var box=$('#pn'); if(!box) return;
+  if(fresco) box.innerHTML='<div class="carregar"><div class="spinner"></div>A actualizar…</div>';
+  api('/painel-indicadores',{fresco:!!fresco}).then(function(d){
+    box=$('#pn'); if(!box) return;
+    if(!d.ok){ box.innerHTML=erroCaixa(d.erro||'Não foi possível calcular os indicadores.'); return; }
+    var $d=d.dinheiro, h=d.hoje_aulas, fa=d.faltas, nt=d.notas;
+    var mesNome=MESES_L[+d.mes.slice(5,7)];
+    var tiles=[
+      ['Recebido em '+mesNome, mt($d.recebido_mes), $d.pagamentos_mes+' pagamento(s) · hoje '+mt($d.recebido_hoje), ''],
+      ['Propinas em atraso', mt($d.em_atraso), $d.estudantes_atraso+' estudante(s) · multas '+mt($d.multas), $d.em_atraso?'bad':'ok'],
+      ['Chamadas de hoje', h.total? h.feitas+' / '+h.total : '—', h.total? (h.por_fazer.length? h.por_fazer.length+' aula(s) já começaram sem chamada' : 'Em dia') + ' · '+h.faltas+' falta(s)' : 'Sem aulas no horário hoje', h.por_fazer.length?'bad':''],
+      ['Faltas esta semana', grp(fa.semana), grp(fa.mes)+' nos últimos 30 dias', '']
+    ];
+    var metodos=Object.keys($d.por_metodo).sort(function(a,b){ return $d.por_metodo[b]-$d.por_metodo[a]; });
+    var totMet=metodos.reduce(function(s,k){ return s+$d.por_metodo[k]; },0);
+    box.innerHTML=
+      '<div class="grid g4" style="margin-bottom:16px">'+tiles.map(function(t){ return '<div class="card kpi"><div class="l">'+t[0]+'</div><div class="v num '+t[3]+'">'+t[1]+'</div><div class="d">'+esc(t[2])+'</div></div>'; }).join('')+'</div>'+
+      '<div class="grid g2" style="margin-bottom:16px">'+
+        '<section class="card card-b"><div class="eyebrow">Dinheiro recebido · últimos 6 meses</div><div class="pn-ch" id="pn-ch1" style="margin-top:10px">'+barrasSvg($d.serie,function(x){ return MESES_AB[+x.mes.slice(5,7)]; },function(x){ return x.valor; },mt,$d.serie.length-1)+'</div>'+
+          '<div class="small muted" style="margin-top:6px">A vencer ainda este mês: <b style="color:var(--ink)">'+mt($d.a_vencer)+'</b></div></section>'+
+        '<section class="card card-b"><div class="eyebrow">Como pagaram em '+mesNome+'</div><div class="pn-lista" style="margin-top:6px">'+
+          (metodos.length? metodos.map(function(k){ var m=METODO[k]||[k,'#5A6A80'], v=$d.por_metodo[k]; return '<div class="pn-it"><div class="tx"><b>'+esc(m[0])+'</b><div class="pn-bar"><i style="width:'+Math.round(v*100/totMet)+'%"></i></div></div><div class="vl">'+mt(v)+'</div></div>'; }).join('') : '<div class="pn-vazio">Ainda sem pagamentos este mês.</div>')+
+          '</div><div class="eyebrow" style="margin-top:16px">Últimos pagamentos</div><div class="pn-lista">'+
+          ($d.ultimos.length? $d.ultimos.map(function(p){ return '<div class="pn-it"><div class="tx"><b>'+esc(p.estudante||'—')+'</b><small>'+data(p.data)+' · '+esc((METODO[p.metodo]||[p.metodo])[0])+' · '+esc(p.documento)+'</small></div><div class="vl">'+mt(p.valor)+'</div></div>'; }).join('') : '<div class="pn-vazio">Sem pagamentos.</div>')+'</div></section>'+
+      '</div>'+
+      '<div class="grid g2" style="margin-bottom:16px">'+
+        '<section class="card card-b"><div class="eyebrow">Maiores dívidas</div><div class="pn-lista">'+
+          ($d.devedores.length? $d.devedores.map(function(e){ return '<div class="pn-it"><div class="tx"><b>'+esc(e.nome)+'</b><small>'+esc(e.turma)+' · '+esc(e.numero)+'</small></div><div class="vl" style="color:var(--bad)">'+mt(e.divida)+'</div></div>'; }).join('')+'<button class="btn sm" data-go2="propinas" style="margin-top:10px;align-self:flex-start">Cobrar em Propinas e multas</button>' : '<div class="pn-vazio" style="color:var(--ok);font-weight:600">Ninguém em atraso.</div>')+'</div></section>'+
+        '<section class="card card-b"><div class="eyebrow">Chamadas por fazer hoje</div><div class="pn-lista">'+
+          (h.por_fazer.length? h.por_fazer.map(function(a){ return '<div class="pn-it"><div class="tx"><b>'+esc(a.disciplina)+' · '+esc(a.turma)+'</b><small>'+esc(a.i)+'–'+esc(a.f)+' · '+esc(a.professor||'sem professor')+'</small></div><span class="pill warn">Por fazer</span></div>'; }).join('') : '<div class="pn-vazio">'+(h.total?'Todas as aulas que já começaram têm chamada.':'Não há aulas no horário para hoje.')+'</div>')+
+          '</div><button class="btn sm" data-go2="presencas" style="margin-top:10px">Ver presenças</button></section>'+
+      '</div>'+
+      '<div class="grid g2" style="margin-bottom:16px">'+
+        '<section class="card card-b"><div class="eyebrow">Faltas · últimos 7 dias</div><div class="pn-ch" id="pn-ch2" style="margin-top:10px">'+barrasSvg(fa.por_dia,function(x){ return ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][new Date(x.data+'T12:00:00Z').getUTCDay()]; },function(x){ return x.faltas; },function(v){ return v+' falta'+(v===1?'':'s'); },fa.por_dia.length-1)+'</div>'+
+          '<div class="eyebrow" style="margin-top:14px">Mais faltas · 30 dias</div><div class="pn-lista">'+(fa.mais_faltas.length? fa.mais_faltas.map(function(e){ return '<div class="pn-it"><div class="tx"><b>'+esc(e.nome)+'</b><small>'+esc(e.turma)+'</small></div><div class="vl" style="color:var(--bad)">'+e.faltas+'</div></div>'; }).join('') : '<div class="pn-vazio">Sem faltas registadas.</div>')+'</div></section>'+
+        '<section class="card card-b"><div class="eyebrow">Aproveitamento · '+nt.trimestre+'º trimestre</div><div class="pn-lista">'+
+          (nt.aproveitamento.some(function(t){ return t.pct!=null; }) ? nt.aproveitamento.map(function(t){ return '<div class="pn-it"><div class="tx"><b>'+esc(t.turma)+'</b>'+(t.pct==null?'<small>Sem notas lançadas</small>':'<div class="pn-bar"><i style="width:'+t.pct+'%"></i></div>')+'</div><div class="vl">'+(t.pct==null?'—':t.pct+'%')+'</div></div>'; }).join('') : '<div class="pn-vazio">Ainda não há notas deste trimestre.</div>')+
+          '</div><div class="small muted" style="margin-top:6px">Percentagem de médias positivas. '+nt.com_notas+' de '+nt.pares+' disciplinas×turmas com notas · '+nt.publicadas+' pautas publicadas.</div>'+
+          '<div class="eyebrow" style="margin-top:14px">Notas por lançar</div><div class="pn-lista">'+(nt.sem_notas.length? nt.sem_notas.map(function(p){ return '<div class="pn-it"><div class="tx"><b>'+esc(p.professor)+'</b><small>'+esc(p.pendentes.slice(0,3).join(', ')+(p.pendentes.length>3?' e mais '+(p.pendentes.length-3):''))+'</small></div><div class="vl">'+p.pendentes.length+'</div></div>'; }).join('') : '<div class="pn-vazio" style="color:var(--ok);font-weight:600">Todas as disciplinas têm notas.</div>')+'</div></section>'+
+      '</div>'+
+      '<p class="small muted" style="margin:0">Actualizado às '+new Date(d.gerado).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})+'. Os números são recalculados a cada minuto.</p>';
+    ['#pn-ch1','#pn-ch2'].forEach(function(s){ var b=$(s); if(b) ligarDicas(b); });
+    $$('[data-go2]',box).forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-go2')); }; });
   });
 }
 
