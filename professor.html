@@ -126,7 +126,7 @@ function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorA
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?'—':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
 function iniciais(n){ var p=String(n||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+((p.length>1?p[p.length-1]:'')[0]||'')).toUpperCase(); }
-var IC={check:'M20 6 9 17l-5-5',list:'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'};
+var IC={car:'M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7.5 13h.01M16.5 13h.01',check:'M20 6 9 17l-5-5',list:'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'};
 function ic(n,x){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" '+(x||'')+'><path d="'+IC[n]+'"/></svg>'; }
 function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
 function vazio(i,t,s){ return '<div class="vazio"><div class="ic">'+ic(i)+'</div><b>'+esc(t)+'</b>'+esc(s)+'</div>'; }
@@ -146,6 +146,8 @@ function api(rota,corpo){
 var S={ d:null, aba:'inicio', par:'', tri:triActual(), ed:null, dia:0 };
 try{ var h=(location.hash||'').slice(1); if(h) S.aba=h; }catch(e){}
 var ABAS=[['inicio','Início','home'],['chamada','Chamada','list'],['notas','Notas','grade'],['horario','Horário','cal'],['avisos','Avisos','mega']];
+function soInstrutor(){ var d=S.d; return !!(d && d.conducao && !d.turmas.length && !d.aulas.length); }
+function abasP(){ var d=S.d; if(soInstrutor()) return [['inicio','Início','home'],['praticas','Aulas','car'],['avisos','Avisos','mega']]; return d && d.conducao ? ABAS.slice(0,4).concat([['praticas','Práticas','car'],ABAS[4]]) : ABAS; }
 function sujo(){ return (S.ed && S.ed.sujo()) || (S.ch && S.ch.sujo()); }
 window.addEventListener('beforeunload',function(e){ if(sujo()){ e.preventDefault(); e.returnValue=''; } });
 
@@ -159,13 +161,14 @@ function casca(){
   var d=S.d, E=d.escola;
   $('#root').innerHTML='<div class="pt"><header class="pt-top"><div class="in">'+
     '<div class="pt-row">'+(E.logotipo?'<div class="pt-logo"><img src="'+esc(E.logotipo)+'" alt=""></div>':'<div class="pt-logo ini">'+esc(iniciais(E.nome))+'</div>')+
-      '<div class="pt-esc"><b>'+esc(E.nome)+'</b><small>Professor · '+esc(d.eu.nome)+'</small></div><button class="pt-sair" id="sair">'+ic('out')+'Sair</button></div>'+
-    '<nav class="pt-tabs">'+ABAS.map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav>'+
+      '<div class="pt-esc"><b>'+esc(E.nome)+'</b><small>'+(soInstrutor()?'Instrutor':'Professor')+' · '+esc(d.eu.nome)+'</small></div><button class="pt-sair" id="sair">'+ic('out')+'Sair</button></div>'+
+    '<nav class="pt-tabs">'+abasP().map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav>'+
     '</div></header><main class="pt-main'+(S.aba==='notas'?' largo':'')+'" id="pg"></main>'+
-    '<nav class="pt-nav" style="grid-template-columns:repeat(5,1fr)">'+ABAS.map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav></div>';
+    '<nav class="pt-nav" style="grid-template-columns:repeat('+abasP().length+',1fr)">'+abasP().map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav></div>';
   $('#sair').onclick=function(){ if(sujo() && !confirm('Tem notas por guardar. Sair mesmo assim?')) return; sair(); };
   $$('[data-aba]').forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-aba')); }; });
-  ({inicio:pInicio,chamada:pChamada,notas:pNotas,horario:pHorario,avisos:pAvisos}[S.aba]||pInicio)();
+  if(!abasP().some(function(a){ return a[0]===S.aba; })) S.aba='inicio';
+  ({inicio:soInstrutor()?pInicioInstrutor:pInicio,chamada:pChamada,notas:pNotas,horario:pHorario,avisos:pAvisos,praticas:pPraticas}[S.aba]||pInicio)();
 }
 function ir(a){ if(a!==S.aba && sujo() && !confirm('Tem notas por guardar. Sair desta página mesmo assim?')) return; if(a!=='notas') S.ed=null; if(a!=='chamada') S.ch=null; S.aba=a; try{ history.replaceState(null,'','#'+a); }catch(e){} casca(); window.scrollTo(0,0); }
 
@@ -235,6 +238,40 @@ function pNotas(){
       S.ed=GSPauta.montar($('#ed'), r.pauta, { aviso:toast, guardar:function(g,pub){ return api('/prof/pauta-guardar',{turma:p[0], disciplina:p[1], trimestre:S.tri, grelha:g, publicado:pub}); } });
     });
   }
+}
+
+
+/* ================= INSTRUTOR (ESCOLA DE CONDUÇÃO) ================= */
+var EST_P={marcada:['Marcada','info'],feita:['Feita','ok'],faltou:['Faltou','bad']};
+function linhaPratica(a, hoje){
+  var e=EST_P[a.estado]||[a.estado,'muted'];
+  return '<div class="aula"><div class="hr">'+esc(a.inicio)+'<br>'+esc(a.fim)+'</div><div class="barra" style="background:'+(a.estado==='feita'?'var(--ok)':a.estado==='faltou'?'var(--bad)':'var(--blue)')+'"></div>'+
+    '<div class="tx"><b>'+esc(a.instruendo)+' <span class="pill '+e[1]+'">'+e[0]+'</span></b><small>Carta '+esc(a.categoria)+' · '+esc(a.viatura)+(a.modelo?' '+esc(a.modelo):'')+(a.telefone?' · <a href="tel:'+esc(String(a.telefone).replace(/\s/g,''))+'">'+esc(a.telefone)+'</a>':'')+'</small>'+
+    (a.data<=hoje ? (a.estado==='marcada' ? '<div style="display:flex;gap:6px;margin-top:8px"><button class="btn sm pri" data-ap="'+esc(a.id)+'" data-v="feita">Feita</button><button class="btn sm" data-ap="'+esc(a.id)+'" data-v="faltou">Faltou</button></div>'
+      : '<div style="margin-top:6px"><button class="btn sm ghost" data-ap="'+esc(a.id)+'" data-v="marcada">Desfazer</button></div>') : '')+'</div></div>';
+}
+function ligarPraticas(depois){
+  $$('[data-ap]').forEach(function(b){ b.onclick=function(){ var v=b.getAttribute('data-v'), id=b.getAttribute('data-ap'); b.disabled=true;
+    api('/prof/aula-estado',{id:id, estado:v}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; }
+      S.d.conducao.aulas.forEach(function(a){ if(a.id===id) a.estado=v; }); toast(v==='feita'?'Aula registada como feita':v==='faltou'?'Falta registada':'Registo desfeito'); depois(); }); }; });
+}
+function pInicioInstrutor(){
+  var c=S.d.conducao, hoje=c.hoje, L=c.aulas.filter(function(a){ return a.data===hoje; });
+  var pend=c.aulas.filter(function(a){ return a.data<hoje && a.estado==='marcada'; });
+  $('#pg').innerHTML='<div class="pt-hero"><span class="av" style="background:#0B2A4A">'+esc(iniciais(S.d.eu.nome))+'</span><div><b>Olá, '+esc(S.d.eu.nome.split(' ')[0])+'</b><span class="info">'+c.feitas_mes+' aula(s) dadas este mês</span></div></div>'+
+    '<div class="sec-t">Hoje · '+DIAS_L[new Date(hoje+'T12:00:00Z').getUTCDay()]+'</div>'+
+    (L.length? '<div class="lista">'+L.map(function(a){ return linhaPratica(a,hoje); }).join('')+'</div>' : vazio('car','Sem aulas hoje','As aulas que a escola marcar consigo aparecem aqui.'))+
+    (pend.length? '<div class="sec-t" style="color:var(--bad)">Por registar (dias anteriores)</div><div class="lista">'+pend.map(function(a){ return '<div style="padding:6px 14px 0" class="small muted">'+esc(a.data.slice(8,10)+'/'+a.data.slice(5,7))+'</div>'+linhaPratica(a,hoje); }).join('')+'</div>' : '');
+  ligarPraticas(pInicioInstrutor);
+}
+function pPraticas(){
+  var c=S.d.conducao; if(!c){ $('#pg').innerHTML=vazio('car','Sem aulas práticas',''); return; }
+  var hoje=c.hoje, dias={}; c.aulas.forEach(function(a){ (dias[a.data]=dias[a.data]||[]).push(a); });
+  var ks=Object.keys(dias).sort();
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Aulas práticas · últimos e próximos 7 dias</div>'+
+    (ks.length? ks.map(function(k){ return '<div class="sec-t" style="font-size:14px;margin:16px 0 8px">'+DIAS_L[new Date(k+'T12:00:00Z').getUTCDay()]+', '+k.slice(8,10)+'/'+k.slice(5,7)+(k===hoje?' · <span style="color:var(--blue)">hoje</span>':'')+'</div><div class="lista">'+dias[k].map(function(a){ return linhaPratica(a,hoje); }).join('')+'</div>'; }).join('')
+      : vazio('car','Sem aulas neste período','As aulas marcadas pela escola aparecem aqui.'));
+  ligarPraticas(pPraticas);
 }
 
 /* ================= HORÁRIO ================= */

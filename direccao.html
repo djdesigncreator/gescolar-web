@@ -142,7 +142,7 @@ function navLista(){
     L.push(n);
     if(n[0]==='estudantes' || (soCON() && n[0]==='professores')){}
   });
-  if(temCON()){ var i=L.map(function(n){ return n[0]; }).indexOf('Financeiro'); L.splice(i,0,['Condução'],['cursos','Cursos e categorias','layers'],['instruendos','Instruendos','users'],['aulas','Aulas práticas','cal'],['viaturas','Viaturas','car']); }
+  if(temCON()){ var i=L.map(function(n){ return n[0]; }).indexOf('Financeiro'); L.splice(i,0,['Condução'],['cursos','Cursos e categorias','layers'],['instruendos','Instruendos','users'],['aulas','Aulas práticas','cal'],['exames','Exames','grade'],['viaturas','Viaturas','car']); }
   return L;
 }
 function casca(){
@@ -177,7 +177,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos, aulas:pAulas, viaturas:pViaturas }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos, aulas:pAulas, viaturas:pViaturas, exames:pExames }[S.pag] || pPainel;
   f();
 }
 
@@ -1061,6 +1061,50 @@ function marcarAulaForm(){
     api('/aula-marcar',{inscricao:$('#m-i').value, instrutor:$('#m-p').value, viatura:$('#m-v').value, data:dia, inicio:$('#m-h').value, duracao:$('#m-u').value, sms:$('#m-s').checked}).then(function(r){
       if(!r.ok){ aGravar(btn,false); $('#m-err').innerHTML=erroCaixa(r.erro); return; }
       fechar(); toast('Aula marcada até às '+r.fim+(r.sms?' · SMS enviado':'')); S.AD=dia; pAulas(); }); };
+}
+
+function pExames(){
+  aCarregar();
+  api('/exames').then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    S.EX=d;
+    var RES={marcado:['Marcado','info'],aprovado:['Aprovado','ok'],reprovado:['Reprovado','bad'],faltou:['Faltou','bad']};
+    var prox=d.exames.filter(function(x){ return x.resultado==='marcado'; }).sort(function(a,b){ return (a.data+a.hora).localeCompare(b.data+b.hora); });
+    var hist=d.exames.filter(function(x){ return x.resultado!=='marcado'; });
+    var aprov=hist.filter(function(x){ return x.resultado==='aprovado'; }).length, feitos=hist.filter(function(x){ return x.resultado!=='faltou'; }).length;
+    function linha(x,i,lista){ var r=RES[x.resultado]||RES.marcado;
+      return '<tr><td class="small num"><b>'+esc(x.data.slice(8,10)+'/'+x.data.slice(5,7)+'/'+x.data.slice(0,4))+'</b>'+(x.hora?'<div class="muted">'+esc(x.hora)+'</div>':'')+'</td><td><b>'+esc(x.instruendo)+'</b><div class="small muted">'+esc(x.numero)+' · carta '+esc(x.categoria)+'</div></td><td>'+esc(x.tipo_nome)+(x.tentativa>1?'<div class="small muted">'+x.tentativa+'ª tentativa</div>':'')+'</td><td class="small hide-sm">'+esc(x.local||'—')+'</td><td><span class="pill '+r[1]+'">'+r[0]+'</span></td>'+
+        '<td class="r" style="white-space:nowrap">'+(x.resultado==='marcado'?(x.data<=d.hoje?'<button class="btn sm pri" data-rx="'+lista+i+'" data-v="aprovado">Aprovado</button> <button class="btn sm danger" data-rx="'+lista+i+'" data-v="reprovado">Reprovado</button> <button class="btn sm" data-rx="'+lista+i+'" data-v="faltou">Faltou</button>':'<span class="small muted">Registe o resultado no dia</span>'):'<button class="btn sm ghost" data-rx="'+lista+i+'" data-v="marcado">Corrigir</button>')+'</td></tr>'; }
+    var cab='<thead><tr><th>Data</th><th>Instruendo</th><th>Exame</th><th class="hide-sm">Local</th><th>Resultado</th><th></th></tr></thead>';
+    $('#page').innerHTML=ph('Condução','Exames', d.exames.length? prox.length+' exame(s) marcado(s)'+(feitos?' · taxa de aprovação '+Math.round(aprov*100/feitos)+'%':'')+'.' : 'Marque o exame de código e, depois de aprovado, o exame de condução.','<button class="btn pri" id="x-n">'+ic('plus')+'Marcar exame</button>')+
+      '<div class="eyebrow" style="margin-bottom:8px">Marcados</div>'+
+      (prox.length? '<section class="card" style="margin-bottom:18px"><div class="tbl-wrap"><table>'+cab+'<tbody>'+prox.map(function(x,i){ return linha(x,i,'p'); }).join('')+'</tbody></table></div></section>' : '<p class="small muted" style="margin:0 0 18px">Nenhum exame marcado.</p>')+
+      '<div class="eyebrow" style="margin-bottom:8px">Resultados</div>'+
+      (hist.length? '<section class="card"><div class="tbl-wrap"><table>'+cab+'<tbody>'+hist.map(function(x,i){ return linha(x,i,'h'); }).join('')+'</tbody></table></div></section>' : '<p class="small muted">Ainda sem resultados.</p>');
+    $('#x-n').onclick=marcarExameForm;
+    $$('[data-rx]').forEach(function(b){ b.onclick=function(){ var k=b.getAttribute('data-rx'), x=(k[0]==='p'?prox:hist)[+k.slice(1)], v=b.getAttribute('data-v');
+      if(v==='aprovado' && x.tipo==='conducao' && !confirm('Aprovado no exame de condução: a inscrição de '+x.instruendo+' fica concluída e ele recebe os parabéns por SMS. Confirmar?')) return;
+      b.disabled=true; api('/exame-resultado',{id:x.id, resultado:v}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast(r.concluida?'Aprovado · curso concluído'+(r.sms?' · SMS enviado':''):'Resultado registado'); pExames(); }); }; });
+  });
+}
+function marcarExameForm(){
+  var d=S.EX; if(!d) return;
+  if(!d.inscricoes.length){ toast('Não há instruendos em curso'); return; }
+  var hoje=d.hoje;
+  modal('<div class="modal-h"><h3>Marcar exame</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<label class="field">Instruendo<select class="sel" id="x-i">'+d.inscricoes.map(function(x){ return '<option value="'+x.id+'">'+esc(x.nome+' · carta '+x.categoria+' · '+x.feitas+'/'+x.total+' práticas'+(x.codigo_aprovado?' · código aprovado':''))+'</option>'; }).join('')+'</select></label>'+
+    '<label class="field">Exame<select class="sel" id="x-t"><option value="codigo">Exame de código</option><option value="conducao">Exame de condução</option></select></label>'+
+    '<div class="frow"><label class="field">Data<input class="inp" type="date" id="x-d" value="'+hoje+'"></label><label class="field">Hora<input class="inp" type="time" id="x-h" value="08:00"></label></div>'+
+    '<label class="field">Local<input class="inp" id="x-l" maxlength="80" placeholder="Ex.: INATRO · Delegação da Matola"></label>'+
+    '<p class="small muted" id="x-a" style="margin:0"></p>'+
+    '<label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600"><input type="checkbox" id="x-s" checked> Avisar o instruendo por SMS</label><div id="x-err"></div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="x-ok">Marcar</button></div>');
+  function aviso(){ var x=d.inscricoes.filter(function(z){ return z.id===$('#x-i').value; })[0]||{}; $('#x-t').value=x.codigo_aprovado?'conducao':'codigo';
+    $('#x-a').textContent = x.total && x.feitas<x.total ? 'Atenção: o instruendo fez '+x.feitas+' de '+x.total+' aulas práticas.' : ''; }
+  $('#x-i').onchange=aviso; aviso();
+  $('#x-ok').onclick=function(){ var btn=this; aGravar(btn,true);
+    api('/exame-marcar',{inscricao:$('#x-i').value, tipo:$('#x-t').value, data:$('#x-d').value, hora:$('#x-h').value, local:$('#x-l').value, sms:$('#x-s').checked}).then(function(r){
+      if(!r.ok){ aGravar(btn,false); $('#x-err').innerHTML=erroCaixa(r.erro); return; } fechar(); toast('Exame marcado'+(r.tentativa>1?' · '+r.tentativa+'ª tentativa':'')+(r.sms?' · SMS enviado':'')); pExames(); }); };
 }
 
 /* ================= EQUIPA DA ESCOLA ================= */
