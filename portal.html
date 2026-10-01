@@ -108,6 +108,17 @@ label.pt-it{cursor:pointer}
 .msg-err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:600}
 .method{cursor:pointer}
 .modal .btn.pri{justify-content:center}
+.dia-c{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.dia-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;margin-bottom:8px}
+.dia-h b{font:800 15px var(--f-display)}
+.dia-h small{color:var(--muted);font-size:12.5px}
+.dia-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dia-l{background:var(--surface2);border-radius:10px;padding:8px 10px}
+.dia-l span,.dia-t span,.dia-r span{display:block;font:700 11px var(--f-body);text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-bottom:2px}
+.dia-l b{font-size:13.5px}
+.dia-t{margin-top:10px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.dia-r{margin-top:10px;background:var(--blue-soft);border-radius:10px;padding:8px 10px;font-size:14px;line-height:1.5;white-space:pre-wrap}
+@media(max-width:420px){.dia-g{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -128,7 +139,7 @@ function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?
 function iniciais(n){ var p=String(n||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+((p.length>1?p[p.length-1]:'')[0]||'')).toUpperCase(); }
 var CORES=['#0A64DC','#0E7C86','#7B4DD6','#C2410C','#168A52','#B4235A','#0B2A4A','#8A6D00'];
 function av(n){ var h=0; n=String(n||'?'); for(var i=0;i<n.length;i++) h=(h*31+n.charCodeAt(i))>>>0; return '<span class="av" style="background:'+CORES[h%CORES.length]+'">'+esc(iniciais(n))+'</span>'; }
-var IC={car:'M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7.5 13h.01M16.5 13h.01',home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',wallet:'M20 7H5a2 2 0 0 1 0-4h13v4M3 5v14a2 2 0 0 0 2 2h15V7M16 14h.01',receipt:'M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2zM8 8h8M8 12h8M8 16h5',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',x:'M18 6 6 18M6 6l12 12',check:'M20 6 9 17l-5-5',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',download:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'};
+var IC={car:'M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7.5 13h.01M16.5 13h.01',home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',wallet:'M20 7H5a2 2 0 0 1 0-4h13v4M3 5v14a2 2 0 0 0 2 2h15V7M16 14h.01',receipt:'M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2zM8 8h8M8 12h8M8 16h5',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',x:'M18 6 6 18M6 6l12 12',check:'M20 6 9 17l-5-5',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5',download:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'};
 function ic(n,x){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" '+(x||'')+'><path d="'+IC[n]+'"/></svg>'; }
 function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
 function erroCaixa(m){ return '<div class="msg-err">'+esc(m)+'</div>'; }
@@ -154,7 +165,8 @@ var S={ d:null, atual:null, aba:'inicio', sel:{} };
 try{ var h=(location.hash||'').slice(1); if(h) S.aba=h; }catch(e){}
 var ABAS=[['inicio','Início','home'],['propinas','Propinas','wallet'],['recibos','Recibos','receipt'],['notas','Notas','grade'],['horario','Horário','cal']];
 var ABAS_CON=[['inicio','Início','home'],['aulas','Aulas','car'],['propinas','Prestações','wallet'],['recibos','Recibos','receipt']];
-function abas(){ var e=educando(); return e&&e.conducao?ABAS_CON:ABAS; }
+var ABAS_ESC=[['inicio','Início','home'],['diario','Diário','book'],['propinas','Propinas','wallet'],['recibos','Recibos','receipt'],['notas','Avaliação','grade']];
+function abas(){ var e=educando(); return e&&e.conducao?ABAS_CON:(e&&e.escolinha?ABAS_ESC:ABAS); }
 function educando(){ var L=(S.d&&S.d.educandos)||[]; return L.filter(function(e){ return e.id===S.atual; })[0] || L[0] || null; }
 
 function carregar(depois){
@@ -183,7 +195,7 @@ function casca(){
   pagina();
 }
 function ir(a){ S.aba=a; try{ history.replaceState(null,'','#'+a); }catch(e){} casca(); window.scrollTo(0,0); }
-function pagina(){ if(!abas().some(function(a){ return a[0]===S.aba; })) S.aba='inicio'; var f={inicio:pInicio,propinas:pPropinas,recibos:pRecibos,notas:pNotas,horario:pHorario,aulas:pAulasCond}[S.aba]||pInicio; f(); }
+function pagina(){ if(!abas().some(function(a){ return a[0]===S.aba; })) S.aba='inicio'; var f={inicio:pInicio,propinas:pPropinas,recibos:pRecibos,notas:pNotas,horario:pHorario,aulas:pAulasCond,diario:pDiarioP}[S.aba]||pInicio; f(); }
 function vazio(i,t,s){ return '<div class="vazio"><div class="ic">'+ic(i)+'</div><b>'+esc(t)+'</b>'+esc(s)+'</div>'; }
 
 /* ================= INÍCIO ================= */
@@ -203,13 +215,14 @@ function pInicio(){
     '</div>'+
     '<div class="pt-g2"><div class="mini"><div class="l">Por pagar</div><div class="v num">'+mt(e.em_aberto)+'</div><div class="d">'+abertas.length+' '+TP+'</div></div>'+
       '<div class="mini"><div class="l">Último pagamento</div><div class="v num">'+(ult?mt(ult.valor):'—')+'</div><div class="d">'+(ult?data(ult.data)+' · '+esc((METODO[ult.metodo]||[ult.metodo])[0]):'Ainda sem pagamentos')+'</div></div></div>'+
-    (e.conducao?blocoConducao(e):blocoFaltas(e))+
+    (e.conducao?blocoConducao(e):e.escolinha?blocoEscolinha(e):blocoFaltas(e))+
     '<div class="sec-t">Comunicados da escola</div>'+(e.comunicados&&e.comunicados.length ? '<div class="lista">'+e.comunicados.slice(0,S.todosCom?30:3).map(function(c){ var longo=c.texto.length>180; return '<div class="com-it"><b>'+esc(c.titulo)+'</b><small>'+data(c.data)+(c.turma?' · Turma '+esc(e.turma):' · Toda a escola')+'</small><p'+(longo?' class="corta"':'')+'>'+esc(c.texto)+'</p>'+(longo?'<button type="button" data-ler>Ler tudo</button>':'')+'</div>'; }).join('')+'</div>'+(e.comunicados.length>3&&!S.todosCom?'<div style="text-align:center;margin-top:10px"><button class="btn sm" id="todos-com">Ver todos ('+e.comunicados.length+')</button></div>':'') : vazio('mega','Sem comunicados','Quando a escola publicar avisos, aparecem aqui.'))+
     '<div class="sec-t">Contactos da escola</div><div class="lista"><div class="pt-it"><div class="tx"><b>'+esc(d.escola.nome)+'</b><small>'+esc([d.escola.telefone,d.escola.email].filter(Boolean).join(' · ')||'—')+'</small></div>'+(d.escola.telefone?'<a class="btn sm" href="tel:'+esc(String(d.escola.telefone).replace(/[^\d+]/g,''))+'">Ligar</a>':'')+'</div></div>';
   $$('[data-ler]').forEach(function(x){ x.onclick=function(){ x.previousElementSibling.classList.remove('corta'); x.remove(); }; });
   var tc=$('#todos-com'); if(tc) tc.onclick=function(){ S.todosCom=true; pInicio(); };
   var tf=$('#todas-f'); if(tf) tf.onclick=function(){ S.todasF=true; pInicio(); };
   var va=$('#ver-aulas'); if(va) va.onclick=function(){ ir('aulas'); };
+  if(e.escolinha) ligarEscolinha();
   var b=$('#pg-pagar'); if(b) b.onclick=function(){ S.sel={}; abertas.forEach(function(p){ if(p.estado==='atrasada') S.sel[p.id]=1; }); if(!Object.keys(S.sel).length && prox) S.sel[prox.id]=1; ir('propinas'); };
 }
 
@@ -224,6 +237,79 @@ function blocoFaltas(e){
     (L.length>4&&!S.todasF?'<div style="text-align:center;margin-top:10px"><button class="btn sm" id="todas-f">Ver todas ('+L.length+')</button></div>':'');
 }
 
+
+/* ================= ESCOLINHA ================= */
+var EMO_P={'Bem-disposto':'😊','Calmo':'🙂','Agitado':'😤','Choroso':'😢','Doente':'🤒'};
+var NIV_P={A:['Adquirido','ok'],E:['Em aquisição','warn'],N:['Não adquirido','bad']};
+function dLonga(x){ var d=new Date(x+'T12:00:00Z'), L=['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado']; return L[d.getUTCDay()]+', '+x.slice(8,10)+'/'+x.slice(5,7); }
+function cartaoDia(x){
+  var p=[];
+  if(x.refeicao) p.push('<div class="dia-l"><span>Refeição</span><b>'+esc(x.refeicao)+'</b></div>');
+  if(x.sesta) p.push('<div class="dia-l"><span>Sesta</span><b>'+esc(x.sesta)+'</b></div>');
+  if(x.humor) p.push('<div class="dia-l"><span>Humor</span><b>'+(EMO_P[x.humor]?EMO_P[x.humor]+' ':'')+esc(x.humor)+'</b></div>');
+  return '<div class="dia-c"><div class="dia-h"><b>'+esc(dLonga(x.data))+'</b>'+(x.por?'<small>'+esc(x.por)+'</small>':'')+'</div>'+
+    (p.length?'<div class="dia-g">'+p.join('')+'</div>':'')+
+    (x.actividades?'<div class="dia-t"><span>O que fizemos</span>'+esc(x.actividades)+'</div>':'')+
+    (x.recado?'<div class="dia-r"><span>Recado da educadora</span>'+esc(x.recado)+'</div>':'')+'</div>';
+}
+function blocoEscolinha(e){
+  var D=e.escolinha.diario||[], hoje=S.d.hoje||new Date(Date.now()+2*3600e3).toISOString().slice(0,10), h=D[0]&&D[0].data===hoje?D[0]:null, A=e.escolinha.autorizados||[];
+  return '<div class="sec-t">O dia de '+esc(e.nome.split(' ')[0])+(D.length?'<button type="button" id="ver-diario">Ver diário</button>':'')+'</div>'+
+    (h? cartaoDia(h) : '<div class="lista"><div class="pt-it"><div class="tx"><b>O diário de hoje ainda não foi escrito</b><small>'+(D[0]?'Último registo: '+esc(dLonga(D[0].data)):'A educadora regista a refeição, a sesta e o humor ao fim do dia.')+'</small></div></div></div>')+
+    '<div class="sec-t">Quem pode recolher'+(S.d.eu.papel==='Encarregado'?'<button type="button" id="ger-aut">Gerir</button>':'')+'</div>'+
+    '<div class="lista">'+(A.length? A.map(function(a){ return '<div class="pt-it">'+av(a.nome)+'<div class="tx"><b>'+esc(a.nome)+'</b><small>'+esc([a.parentesco,a.telefone].filter(Boolean).join(' · '))+'</small></div></div>'; }).join('')
+      : '<div class="pt-it"><div class="tx"><b>Só o encarregado</b><small>Acrescente avós, tios ou motorista que podem ir buscar a criança. A escola só entrega a quem estiver nesta lista.</small></div></div>')+'</div>';
+}
+function ligarEscolinha(){
+  var v=$('#ver-diario'); if(v) v.onclick=function(){ ir('diario'); };
+  var g=$('#ger-aut'); if(g) g.onclick=gerirAutorizados;
+}
+function pDiarioP(){
+  var e=educando(); if(!e||!e.escolinha){ pInicio(); return; }
+  var D=e.escolinha.diario||[];
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Diário · '+esc(e.nome.split(' ')[0])+' <span class="small muted" style="font:500 13px var(--f-body)">últimas 2 semanas</span></div>'+
+    (D.length? D.map(cartaoDia).join('') : vazio('cal','Ainda sem registos','Ao fim de cada dia, a educadora conta aqui como correu: refeição, sesta, humor e o que fizeram.'))+
+    '<div class="sec-t">Quem pode recolher'+(S.d.eu.papel==='Encarregado'?'<button type="button" id="ger-aut">Gerir</button>':'')+'</div>'+
+    '<div class="lista">'+((e.escolinha.autorizados||[]).length? e.escolinha.autorizados.map(function(a){ return '<div class="pt-it">'+av(a.nome)+'<div class="tx"><b>'+esc(a.nome)+'</b><small>'+esc([a.parentesco,a.telefone].filter(Boolean).join(' · '))+'</small></div></div>'; }).join('') : '<div class="pt-it"><div class="tx"><b>Só o encarregado</b><small>Ninguém mais está autorizado.</small></div></div>')+'</div>';
+  ligarEscolinha();
+}
+function gerirAutorizados(){
+  var e=educando(); if(!e||!e.escolinha) return;
+  function lista(){ var A=e.escolinha.autorizados||[];
+    return A.length? A.map(function(a){ return '<div class="pt-it" style="padding:10px 0">'+av(a.nome)+'<div class="tx"><b>'+esc(a.nome)+'</b><small>'+esc([a.parentesco,a.telefone].filter(Boolean).join(' · '))+'</small></div><button class="btn sm" data-tira="'+esc(a.id)+'">Retirar</button></div>'; }).join('') : '<p class="small muted" style="margin:0">Ainda não há ninguém além de si.</p>'; }
+  modal('<div class="modal-h"><h3>Quem pode recolher '+esc(e.nome.split(' ')[0])+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<div id="au-l">'+lista()+'</div>'+
+    '<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px"><b style="display:block;margin-bottom:8px">Acrescentar pessoa</b>'+
+    '<label class="field">Nome completo<input class="inp" id="au-n" maxlength="100" placeholder="Ex.: Maria José Cossa"></label>'+
+    '<label class="field">Parentesco<input class="inp" id="au-p" maxlength="30" placeholder="Ex.: Avó, Tio, Motorista"></label>'+
+    '<label class="field">Telemóvel<input class="inp" id="au-t" inputmode="tel" maxlength="13" placeholder="84 123 4567"></label>'+
+    '<div id="au-e"></div><p class="small muted" style="margin:6px 0 0">A escola confirma a identidade de quem vem buscar a criança. No máximo 8 pessoas.</p></div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Fechar</button><button class="btn pri" id="au-ok">Acrescentar</button></div>');
+  function ligar(){ $$('[data-tira]').forEach(function(b){ b.onclick=function(){ var id=b.getAttribute('data-tira'); if(!confirm('Retirar esta pessoa da lista?')) return; b.disabled=true;
+    api('/p/autorizado-apagar',{id:id}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; }
+      e.escolinha.autorizados=e.escolinha.autorizados.filter(function(a){ return a.id!==id; }); $('#au-l').innerHTML=lista(); ligar(); toast('Pessoa retirada'); pagina(); }); }; }); }
+  ligar();
+  $('#au-ok').onclick=function(){ var btn=this, n=$('#au-n').value.trim(), p=$('#au-p').value.trim(), t=$('#au-t').value.trim(); $('#au-e').innerHTML='';
+    btn.disabled=true;
+    api('/p/autorizado-guardar',{estudante:e.id, nome:n, parentesco:p, telefone:t}).then(function(r){ btn.disabled=false;
+      if(!r.ok){ $('#au-e').innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; }
+      var d9=t.replace(/\D/g,'').slice(-9);
+      e.escolinha.autorizados.push({id:r.id, nome:n, parentesco:p, telefone:d9.replace(/(\d{2})(\d{3})(\d{4})/,'$1 $2 $3')});
+      $('#au-n').value=''; $('#au-p').value=''; $('#au-t').value=''; $('#au-l').innerHTML=lista(); ligar(); toast('Pessoa acrescentada'); pagina(); }); };
+}
+function notasDescritivas(e, L){
+  var tris=[1,2,3].filter(function(t){ return L.some(function(d){ return d.trimestres[t]; }); });
+  if(S.tri==null || tris.indexOf(S.tri)<0) S.tri=tris[tris.length-1];
+  var linhas=L.filter(function(d){ return d.trimestres[S.tri]; });
+  var cont={A:0,E:0,N:0}; linhas.forEach(function(d){ var n=d.trimestres[S.tri].nivel; if(cont[n]!=null) cont[n]++; });
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Avaliação · '+esc(e.nome.split(' ')[0])+'</div>'+
+    '<div class="dias">'+tris.map(function(t){ return '<button class="'+(S.tri===t?'on':'')+'" data-tri="'+t+'">'+t+'º trimestre</button>'; }).join('')+'</div>'+
+    '<div class="pt-g2" style="grid-template-columns:repeat(3,1fr)"><div class="mini"><div class="l">Adquirido</div><div class="v" style="color:var(--ok)">'+cont.A+'</div></div><div class="mini"><div class="l">Em aquisição</div><div class="v" style="color:var(--warn)">'+cont.E+'</div></div><div class="mini"><div class="l">Não adquirido</div><div class="v" style="color:var(--bad)">'+cont.N+'</div></div></div>'+
+    '<div class="lista">'+linhas.map(function(d){ var t=d.trimestres[S.tri], n=NIV_P[t.nivel];
+      return '<div class="pt-it" style="align-items:flex-start"><div style="width:5px;align-self:stretch;border-radius:4px;background:'+esc(d.cor)+'"></div><div class="tx"><b>'+esc(d.disciplina)+'</b>'+(t.obs?'<small style="display:block;margin-top:2px;color:var(--ink)">'+esc(t.obs)+'</small>':'')+'</div>'+(n?'<span class="pill '+n[1]+'">'+n[0]+'</span>':'<span class="pill muted">Sem avaliação</span>')+'</div>'; }).join('')+'</div>'+
+    '<p class="small muted" style="margin:12px 2px 0">Na escolinha não há notas de 0 a 20. A educadora avalia cada área como Adquirido, Em aquisição ou Não adquirido, com uma observação.</p>';
+  $$('[data-tri]').forEach(function(b){ b.onclick=function(){ S.tri=+b.getAttribute('data-tri'); pNotas(); }; });
+}
 
 /* ================= ESCOLA DE CONDUÇÃO ================= */
 var DIAS_AB=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -349,7 +435,9 @@ function pRecibos(){
 
 /* ================= NOTAS E HORÁRIO (próxima fase) ================= */
 function pNotas(){
-  var e=educando(), L=(e&&e.notas)||[], ap=(S.d.escola.regras&&S.d.escola.regras.aprovacao)||10;
+  var e=educando(), L0=(e&&e.notas)||[], ap=(S.d.escola.regras&&S.d.escola.regras.aprovacao)||10;
+  if(L0.length && L0.every(function(d){ return d.descritiva; })){ notasDescritivas(e,L0); return; }
+  var L=L0.filter(function(d){ return !d.descritiva; });
   if(!L.length){ $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Notas</div>'+vazio('grade','As notas ainda não foram publicadas','Quando os professores publicarem as notas do trimestre, aparecem aqui por disciplina.'); return; }
   var tris=[1,2,3].filter(function(t){ return L.some(function(d){ return d.trimestres[t]; }); });
   if(S.tri==null || (S.tri!=='anual' && tris.indexOf(S.tri)<0)) S.tri=tris[tris.length-1];

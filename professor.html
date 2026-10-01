@@ -110,6 +110,23 @@ label.pt-it{cursor:pointer}
 .msg-err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:600}
 .method{cursor:pointer}
 .modal .btn.pri{justify-content:center}
+.dc{padding:14px 16px;border-bottom:1px solid var(--line)}
+.dc:last-child{border-bottom:0}
+.dc-h{display:flex;align-items:center;gap:10px;cursor:pointer}
+.dc-h .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--blue-soft);color:var(--blue);font:800 13px var(--f-display);flex:none}
+.dc-h .tx{flex:1;min-width:0}
+.dc-h .tx b{display:block;font-size:15px}
+.dc-h .tx small{color:var(--muted);font-size:12.5px}
+.dc-b{margin-top:12px;display:none}
+.dc.aberto .dc-b{display:block}
+.dc-g{font:700 12px var(--f-body);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:10px 0 6px}
+.ops{display:flex;flex-wrap:wrap;gap:6px}
+.ops button{border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font:600 13.5px var(--f-body);color:var(--ink);cursor:pointer}
+.ops button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.saude{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 10px;font-size:13.5px;font-weight:600;margin-top:10px}
+.recolha{background:var(--surface2);border-radius:8px;padding:8px 10px;font-size:13.5px;margin-top:10px;line-height:1.55}
+.diario-bar{position:sticky;bottom:72px;display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:14px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+@media(min-width:760px){.diario-bar{bottom:12px}}
 </style>
 </head>
 <body>
@@ -126,7 +143,7 @@ function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorA
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?'—':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
 function iniciais(n){ var p=String(n||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+((p.length>1?p[p.length-1]:'')[0]||'')).toUpperCase(); }
-var IC={car:'M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7.5 13h.01M16.5 13h.01',check:'M20 6 9 17l-5-5',list:'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'};
+var IC={car:'M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7.5 13h.01M16.5 13h.01',check:'M20 6 9 17l-5-5',list:'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'};
 function ic(n,x){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" '+(x||'')+'><path d="'+IC[n]+'"/></svg>'; }
 function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
 function vazio(i,t,s){ return '<div class="vazio"><div class="ic">'+ic(i)+'</div><b>'+esc(t)+'</b>'+esc(s)+'</div>'; }
@@ -147,8 +164,14 @@ var S={ d:null, aba:'inicio', par:'', tri:triActual(), ed:null, dia:0 };
 try{ var h=(location.hash||'').slice(1); if(h) S.aba=h; }catch(e){}
 var ABAS=[['inicio','Início','home'],['chamada','Chamada','list'],['notas','Notas','grade'],['horario','Horário','cal'],['avisos','Avisos','mega']];
 function soInstrutor(){ var d=S.d; return !!(d && d.conducao && !d.turmas.length && !d.aulas.length); }
-function abasP(){ var d=S.d; if(soInstrutor()) return [['inicio','Início','home'],['praticas','Aulas','car'],['avisos','Avisos','mega']]; return d && d.conducao ? ABAS.slice(0,4).concat([['praticas','Práticas','car'],ABAS[4]]) : ABAS; }
-function sujo(){ return (S.ed && S.ed.sujo()) || (S.ch && S.ch.sujo()); }
+function temESC(){ var d=S.d; return !!(d && d.turmas.some(function(t){ return t.esc; })); }
+function soESC(){ var d=S.d; return !!(d && d.turmas.length && d.turmas.every(function(t){ return t.esc; })); }
+function abasP(){ var d=S.d; if(soInstrutor()) return [['inicio','Início','home'],['praticas','Aulas','car'],['avisos','Avisos','mega']];
+  if(soESC()) return [['inicio','Início','home'],['diario','Diário','book'],['chamada','Presenças','list'],['notas','Avaliação','grade'],['avisos','Avisos','mega']];
+  var L = d && d.conducao ? ABAS.slice(0,4).concat([['praticas','Práticas','car'],ABAS[4]]) : ABAS.slice();
+  if(temESC()) L.splice(1,0,['diario','Diário','book']);
+  return L; }
+function sujo(){ return (S.ed && S.ed.sujo()) || (S.ch && S.ch.sujo()) || !!(S.di && S.di.sujo); }
 window.addEventListener('beforeunload',function(e){ if(sujo()){ e.preventDefault(); e.returnValue=''; } });
 
 function carregar(){
@@ -168,9 +191,9 @@ function casca(){
   $('#sair').onclick=function(){ if(sujo() && !confirm('Tem notas por guardar. Sair mesmo assim?')) return; sair(); };
   $$('[data-aba]').forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-aba')); }; });
   if(!abasP().some(function(a){ return a[0]===S.aba; })) S.aba='inicio';
-  ({inicio:soInstrutor()?pInicioInstrutor:pInicio,chamada:pChamada,notas:pNotas,horario:pHorario,avisos:pAvisos,praticas:pPraticas}[S.aba]||pInicio)();
+  ({inicio:soInstrutor()?pInicioInstrutor:pInicio,chamada:pChamada,notas:pNotas,horario:pHorario,avisos:pAvisos,praticas:pPraticas,diario:pDiario}[S.aba]||pInicio)();
 }
-function ir(a){ if(a!==S.aba && sujo() && !confirm('Tem notas por guardar. Sair desta página mesmo assim?')) return; if(a!=='notas') S.ed=null; if(a!=='chamada') S.ch=null; S.aba=a; try{ history.replaceState(null,'','#'+a); }catch(e){} casca(); window.scrollTo(0,0); }
+function ir(a){ if(a!==S.aba && sujo() && !confirm('Tem notas por guardar. Sair desta página mesmo assim?')) return; if(a!=='notas') S.ed=null; if(a!=='chamada') S.ch=null; if(a!=='diario') S.di=null; S.aba=a; try{ history.replaceState(null,'','#'+a); }catch(e){} casca(); window.scrollTo(0,0); }
 
 function aulaHtml(a, agora, comChamada){ return '<div class="aula'+(agora?' agora':'')+'"><div class="hr">'+a.i+'<br>'+a.f+'</div><div class="barra" style="background:'+esc(a.cor)+'"></div><div class="tx"><b>'+esc(a.disciplina)+' · '+esc(a.turma)+(agora?' <span class="pill info">Agora</span>':'')+'</b><small>'+esc(a.sala||'Sala da turma')+'</small></div>'+
   (comChamada?'<button class="btn sm '+(a.chamada?'':'pri')+'" style="align-self:center" data-ch="'+esc(a.turma_id+'|'+a.tempo)+'">'+(a.chamada?ic('check')+'Feita':'Chamada')+'</button>':'')+'</div>'; }
@@ -185,9 +208,10 @@ function pInicio(){
     '<div class="sec-t">Hoje · '+DIAS_L[hoje]+'</div>'+
     (deHoje.length? '<div class="lista">'+deHoje.map(function(a){ return aulaHtml(a, agoraM>=hm(a.i)&&agoraM<hm(a.f), true); }).join('')+'</div>' : vazio('cal','Sem aulas hoje', d.aulas.length?'Bom descanso.':'Quando a Direcção marcar o seu horário, as aulas aparecem aqui.'))+
     '<div class="sec-t">As minhas turmas</div>'+
-    (d.turmas.length? '<div class="lista">'+d.turmas.map(function(t){ return '<div class="pt-it"><div style="width:6px;align-self:stretch;border-radius:4px;background:'+esc(t.cor)+'"></div><div class="tx"><b>'+esc(t.disciplina_nome)+' · '+esc(t.turma_nome)+'</b><small>'+t.estudantes+' estudantes</small></div><button class="btn sm pri" data-lancar="'+esc(t.turma+'|'+t.disciplina)+'">Lançar notas</button></div>'; }).join('')+'</div>'
+    (d.turmas.length? '<div class="lista">'+d.turmas.map(function(t){ return '<div class="pt-it"><div style="width:6px;align-self:stretch;border-radius:4px;background:'+esc(t.cor)+'"></div><div class="tx"><b>'+esc(t.disciplina_nome)+' · '+esc(t.turma_nome)+'</b><small>'+t.estudantes+' estudantes</small></div>'+(t.esc?'<button class="btn sm pri" data-dir="'+esc(t.turma)+'">Diário</button>':'<button class="btn sm pri" data-lancar="'+esc(t.turma+'|'+t.disciplina)+'">Lançar notas</button>')+'</div>'; }).join('')+'</div>'
       : vazio('users','Ainda sem turmas','A Direcção liga-o às turmas pelo horário ou pelas disciplinas que dá. Fale com a secretaria.'));
   $$('[data-lancar]').forEach(function(b){ b.onclick=function(){ S.par=b.getAttribute('data-lancar'); ir('notas'); }; });
+  $$('[data-dir]').forEach(function(b){ b.onclick=function(){ S.diTurma=b.getAttribute('data-dir'); ir('diario'); }; });
   $$('[data-ch]').forEach(function(b){ b.onclick=function(){ S.chData=S.d.hoje.data; S.chAula=b.getAttribute('data-ch'); ir('chamada'); }; });
 }
 
@@ -240,6 +264,66 @@ function pNotas(){
   }
 }
 
+
+/* ================= DIÁRIO (ESCOLINHA) ================= */
+var EMO={'Bem-disposto':'😊','Calmo':'🙂','Agitado':'😤','Choroso':'😢','Doente':'🤒'};
+function pDiario(){
+  var d=S.d, T={}, turmas=[];
+  d.turmas.forEach(function(t){ if(t.esc && !T[t.turma]){ T[t.turma]=1; turmas.push(t); } });
+  if(!turmas.length){ $('#pg').innerHTML=vazio('book','Sem turmas da escolinha','O diário é para as turmas da escolinha.'); return; }
+  var hoje=d.hoje.data;
+  if(!T[S.diTurma]) S.diTurma=turmas[0].turma;
+  S.diData=S.diData||hoje;
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Diário da turma</div>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+      (turmas.length>1?'<select class="sel" id="di-t" style="height:42px;flex:1;min-width:180px">'+turmas.map(function(t){ return '<option value="'+esc(t.turma)+'"'+(t.turma===S.diTurma?' selected':'')+'>'+esc(t.turma_nome)+'</option>'; }).join('')+'</select>':'<div style="flex:1;align-self:center;font-weight:700">'+esc(turmas[0].turma_nome)+'</div>')+
+      '<input class="inp" type="date" id="di-d" value="'+S.diData+'" min="'+somaDias(hoje,-7)+'" max="'+hoje+'" style="height:42px;flex:none"></div>'+
+    '<div id="di"><div class="carregar"><div class="spinner"></div>A abrir o diário…</div></div>';
+  function trocar(f){ if(S.di && S.di.sujo && !confirm('Tem o diário por guardar. Mudar mesmo assim?')) return false; f(); S.di=null; abrir(); return true; }
+  var st=$('#di-t'); if(st) st.onchange=function(){ var v=this.value; if(!trocar(function(){ S.diTurma=v; })) this.value=S.diTurma; };
+  $('#di-d').onchange=function(){ var v=this.value; if(!v||v>hoje||v<somaDias(hoje,-7)){ toast('Escolha hoje ou um dos últimos 7 dias'); this.value=S.diData; return; }
+    if(!trocar(function(){ S.diData=v; })) this.value=S.diData; };
+  abrir();
+  function abrir(){
+    $('#di').innerHTML='<div class="carregar"><div class="spinner"></div>A abrir o diário…</div>';
+    api('/prof/diario',{turma:S.diTurma, data:S.diData}).then(function(r){
+      if(!r.ok){ $('#di').innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; }
+      montar(r);
+    });
+  }
+  function montar(r){
+    var O=r.opcoes, E={}, act=(r.criancas.filter(function(c){ return c.actividades; })[0]||{}).actividades||'';
+    r.criancas.forEach(function(c){ E[c.id]={refeicao:c.refeicao, sesta:c.sesta, humor:c.humor, recado:c.recado}; });
+    S.di={sujo:false};
+    if(!r.criancas.length){ $('#di').innerHTML=vazio('users','Turma sem crianças','A secretaria ainda não inscreveu crianças nesta turma.'); return; }
+    var feitos=r.criancas.filter(function(c){ return c.feito; }).length;
+    function ops(id,campo,lista){ return '<div class="ops" data-c="'+esc(id)+'" data-campo="'+campo+'">'+lista.map(function(o){ return '<button type="button" class="'+(E[id][campo]===o?'on':'')+'" data-o="'+esc(o)+'">'+(campo==='humor'&&EMO[o]?EMO[o]+' ':'')+esc(o)+'</button>'; }).join('')+'</div>'; }
+    function resumo(c){ var e=E[c.id], p=[e.refeicao,e.sesta,e.humor].filter(Boolean); return p.length? esc(p.join(' · ')) : '<span style="color:var(--warn)">Por preencher</span>'; }
+    function tel(t){ return '<a href="tel:'+esc(String(t).replace(/\s/g,''))+'">'+esc(t)+'</a>'; }
+    function recolha(c){ var p=[];
+      if(c.encarregado) p.push('<b>'+esc(c.encarregado.nome)+'</b>'+(c.encarregado.parentesco?' ('+esc(c.encarregado.parentesco)+')':'')+(c.encarregado.telefone?' · '+tel(c.encarregado.telefone):'')+' · encarregado');
+      c.autorizados.forEach(function(a){ p.push('<b>'+esc(a.nome)+'</b>'+(a.parentesco?' ('+esc(a.parentesco)+')':'')+(a.telefone?' · '+tel(a.telefone):'')); });
+      return '<div class="recolha"><div class="dc-g" style="margin:0 0 4px">Quem pode recolher</div>'+(p.length?p.join('<br>'):'<span class="muted">Ninguém registado. Peça à secretaria.</span>')+'</div>'; }
+    $('#di').innerHTML='<p class="small muted" style="margin:0 0 10px">'+feitos+' de '+r.criancas.length+' criança(s) com diário neste dia. Toque numa criança para escrever.</p>'+
+      '<section class="card card-b" style="margin-bottom:12px"><label class="field" style="margin:0">O que fizemos hoje (vai para todas as famílias)<textarea class="inp" id="di-act" rows="3" maxlength="600" placeholder="Ex.: Pintámos com as mãos, cantámos as cores e brincámos no pátio.">'+esc(act)+'</textarea></label></section>'+
+      '<div class="lista">'+r.criancas.map(function(c){ return '<div class="dc" data-dc="'+esc(c.id)+'"><div class="dc-h"><span class="av">'+esc(iniciais(c.nome))+'</span><div class="tx"><b>'+esc(c.nome)+'</b><small data-res="'+esc(c.id)+'">'+resumo(c)+'</small></div>'+(c.saude?'<span class="pill warn">Saúde</span>':'')+(c.feito?'<span class="pill ok">Feito</span>':'')+'</div>'+
+        '<div class="dc-b">'+(c.saude?'<div class="saude">'+esc(c.saude)+'</div>':'')+
+          '<div class="dc-g">Refeição</div>'+ops(c.id,'refeicao',O.refeicao)+'<div class="dc-g">Sesta</div>'+ops(c.id,'sesta',O.sesta)+'<div class="dc-g">Humor</div>'+ops(c.id,'humor',O.humor)+
+          '<div class="dc-g">Recado para a família</div><textarea class="inp" rows="2" maxlength="400" data-rec="'+esc(c.id)+'" placeholder="Ex.: Precisa de fraldas amanhã.">'+esc(c.recado)+'</textarea>'+recolha(c)+'</div></div>'; }).join('')+'</div>'+
+      '<div class="diario-bar"><span class="small muted" id="di-st">Sem alterações</span><button class="btn pri" id="di-g">'+ic('check')+'Guardar diário</button></div>';
+    function marcar(){ S.di.sujo=true; var e=$('#di-st'); e.textContent='Alterações por guardar'; e.style.color='var(--warn)'; }
+    $$('.dc-h').forEach(function(h){ h.onclick=function(){ h.parentNode.classList.toggle('aberto'); }; });
+    $$('.ops').forEach(function(g){ var id=g.getAttribute('data-c'), campo=g.getAttribute('data-campo');
+      $$('button',g).forEach(function(b){ b.onclick=function(){ var o=b.getAttribute('data-o'); E[id][campo]= E[id][campo]===o?'':o;
+        $$('button',g).forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-o')===E[id][campo]); });
+        var c=r.criancas.filter(function(z){ return z.id===id; })[0]; $('[data-res="'+id+'"]').innerHTML=resumo(c); marcar(); }; }); });
+    $$('[data-rec]').forEach(function(t){ t.oninput=function(){ E[t.getAttribute('data-rec')].recado=t.value; marcar(); }; });
+    $('#di-act').oninput=marcar;
+    $('#di-g').onclick=function(){ var btn=this; btn.disabled=true;
+      api('/prof/diario-guardar',{turma:S.diTurma, data:S.diData, actividades:$('#di-act').value, entradas:E}).then(function(x){ btn.disabled=false;
+        if(!x.ok){ toast(x.erro); return; } S.di.sujo=false; toast('Diário guardado · '+x.guardados+' criança(s)'); abrir(); }); };
+  }
+}
 
 /* ================= INSTRUTOR (ESCOLA DE CONDUÇÃO) ================= */
 var EST_P={marcada:['Marcada','info'],feita:['Feita','ok'],faltou:['Faltou','bad']};

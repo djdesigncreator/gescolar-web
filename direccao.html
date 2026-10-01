@@ -405,12 +405,13 @@ function pEstudantes(){
     var L=d.estudantes;
     $('#page').innerHTML=ph('Arranque','Estudantes', L.length? L.length+' estudantes'+(S.filtroTurma&&tm[S.filtroTurma]?' em '+esc(tm[S.filtroTurma].nome):' matriculados')+'.' : 'Matricule os estudantes. Cada um recebe um número e fica ligado ao encarregado.',
       '<select class="sel" id="e-f"><option value="">Todas as turmas</option>'+S.turmas.map(function(t){ return '<option value="'+t.id+'"'+(t.id===S.filtroTurma?' selected':'')+'>'+esc(t.nome)+'</option>'; }).join('')+'</select><button class="btn" id="fam">'+ic('users')+'Acesso das famílias</button><button class="btn pri" id="mat">'+ic('plus')+'Matricular</button>')+
-      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Estudante</th><th>Turma</th><th>Encarregado</th><th>Nascimento</th></tr></thead><tbody>'+
-        L.map(function(e){ return '<tr><td><div class="person">'+av(e.nome)+'<div><b>'+esc(e.nome)+'</b><small class="mono">'+esc(e.numero||'')+'</small></div></div></td><td>'+(tm[e.turma]?'<span class="tag">'+esc(tm[e.turma].nome)+'</span>':'—')+'</td><td class="small">'+(e.encarregado?esc(e.encarregado.nome)+'<div class="mono muted">'+esc(e.encarregado.telefone)+'</div>':'<span class="muted">—</span>')+'</td><td class="small num">'+data(e.nascimento)+'</td></tr>'; }).join('')+'</tbody></table></div></section>'
+      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Estudante</th><th>Turma</th><th>Encarregado</th><th>Nascimento</th><th></th></tr></thead><tbody>'+
+        L.map(function(e){ return '<tr><td><div class="person">'+av(e.nome)+'<div><b>'+esc(e.nome)+'</b><small class="mono">'+esc(e.numero||'')+'</small></div></div></td><td>'+(tm[e.turma]?'<span class="tag">'+esc(tm[e.turma].nome)+'</span>':'—')+'</td><td class="small">'+(e.encarregado?esc(e.encarregado.nome)+'<div class="mono muted">'+esc(e.encarregado.telefone)+'</div>':'<span class="muted">—</span>')+'</td><td class="small num">'+data(e.nascimento)+'</td><td class="r"><button class="btn sm" data-rec="'+e.id+'" data-nome="'+esc(e.nome)+'">Recolha</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
         : (S.turmas.length? vazio('users','Matricule o primeiro estudante','Precisa do nome, da turma e do contacto do encarregado.') : vazio('layers','Crie primeiro uma turma','Os estudantes são matriculados numa turma. Vá a "Turmas e salas".')));
     $('#e-f').onchange=function(){ S.filtroTurma=this.value; pEstudantes(); };
     $('#mat').onclick=function(){ if(!S.turmas.length){ toast('Crie primeiro uma turma'); ir('turmas'); return; } formMatricula(); };
     $('#fam').onclick=acessoFamilias;
+    $$('[data-rec]').forEach(function(b){ b.onclick=function(){ autorizadosModal(b.getAttribute('data-rec')); }; });
   });
 }
 function formMatricula(){
@@ -451,6 +452,22 @@ function acessoFamilias(){
         $('#fa-r').innerHTML='<div class="small" style="color:var(--ok);font-weight:700">Enviado a '+x.enviados+' encarregados'+(x.falhas?' · '+x.falhas+' falharam':'')+'.</div>';
       });
     };
+  });
+}
+
+function autorizadosModal(estId){
+  modal('<div class="modal-h"><h3>Quem pode recolher</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b" id="au-b"><div class="carregar" style="padding:24px"><div class="spinner"></div></div></div>');
+  api('/autorizados',{estudante:estId}).then(function(d){
+    var b=$('#au-b'); if(!b) return;
+    if(!d.ok){ b.innerHTML=erroCaixa(d.erro); return; }
+    b.innerHTML='<p style="margin:0"><b>'+esc(d.estudante.nome)+'</b><br><span class="small muted">Só estas pessoas podem levar a criança. A educadora vê esta lista no telemóvel. O encarregado também a pode mudar no portal.</span></p>'+
+      (d.encarregado?'<div class="card card-b" style="background:var(--bg)"><b>'+esc(d.encarregado.nome)+'</b> <span class="tag">Encarregado'+(d.encarregado.parentesco?' · '+esc(d.encarregado.parentesco):'')+'</span><div class="small mono muted">'+esc(d.encarregado.telefone)+'</div></div>':'')+
+      (d.autorizados.length? d.autorizados.map(function(a){ return '<div class="card card-b" style="display:flex;gap:10px;align-items:center"><div style="flex:1"><b>'+esc(a.nome)+'</b>'+(a.parentesco?' <span class="tag">'+esc(a.parentesco)+'</span>':'')+'<div class="small mono muted">'+esc(a.telefone)+'</div><div class="small muted">Registado por '+esc(a.criado_por)+'</div></div><button class="btn sm danger" data-au="'+a.id+'">'+ic('trash')+'</button></div>'; }).join('') : '<p class="small muted" style="margin:0">Ainda não há outras pessoas autorizadas.</p>')+
+      '<div class="eyebrow">Acrescentar pessoa</div><div class="frow"><label class="field">Nome completo<input class="inp" id="au-n"></label><label class="field">Telemóvel<input class="inp mono" id="au-t" inputmode="numeric" placeholder="84 000 0000"></label></div>'+
+      '<label class="field">Parentesco<select class="sel" id="au-p"><option>Mãe</option><option>Pai</option><option>Avó</option><option>Avô</option><option>Tia</option><option>Tio</option><option>Irmã</option><option>Irmão</option><option>Motorista</option><option>Outro</option></select></label><div id="au-e"></div>'+
+      '<button class="btn pri" id="au-ok" style="align-self:flex-start">'+ic('plus')+'Acrescentar</button>';
+    $('#au-ok').onclick=function(){ var btn=this; aGravar(btn,true); api('/autorizado-guardar',{estudante:estId, nome:$('#au-n').value, telefone:$('#au-t').value, parentesco:$('#au-p').value}).then(function(r){ if(!r.ok){ aGravar(btn,false); $('#au-e').innerHTML=erroCaixa(r.erro); return; } toast('Pessoa autorizada'); autorizadosModal(estId); }); };
+    $$('[data-au]').forEach(function(x){ x.onclick=function(){ if(!confirm('Retirar esta autorização?')) return; x.disabled=true; api('/autorizado-apagar',{id:x.getAttribute('data-au')}).then(function(r){ toast(r.ok?'Autorização retirada':r.erro); autorizadosModal(estId); }); }; });
   });
 }
 
@@ -833,7 +850,7 @@ function resumoPautas(){
     if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
     var ap=d.regras.aprovacao, D=d.disciplinas, E=d.estudantes;
     var pub=D.filter(function(x){ return x.publicado; }).length, exis=D.filter(function(x){ return x.existe; }).length;
-    function cel(v){ return v==null?'<td class="v muted">—</td>':'<td class="v '+(Math.round(v)>=ap?'pos':'neg')+'">'+GSPauta.fmt(v)+'</td>'; }
+    function cel(v){ if(typeof v==='string'){ var n=GSPauta.NIV[v]||[v,'muted']; return '<td class="v"><span class="pill '+n[1]+'" title="'+esc(n[0])+'">'+esc(v)+'</span></td>'; } return v==null?'<td class="v muted">—</td>':'<td class="v '+(Math.round(v)>=ap?'pos':'neg')+'">'+GSPauta.fmt(v)+'</td>'; }
     $('#page').innerHTML=ph('Escola','Pautas e notas', 'Turma <b>'+esc(d.turma.nome)+'</b> · '+d.trimestre+'º trimestre · '+exis+' de '+D.length+' disciplinas com notas · '+pub+' publicadas às famílias.',
         '<select class="sel" id="p-t">'+S.turmas.map(function(t){ return '<option value="'+t.id+'"'+(t.id===S.P.turma?' selected':'')+'>'+esc(t.nome)+'</option>'; }).join('')+'</select>'+
         '<select class="sel" id="p-tri">'+[1,2,3].map(function(t){ return '<option value="'+t+'"'+(t===S.P.tri?' selected':'')+'>'+t+'º trimestre</option>'; }).join('')+'</select>'+
@@ -842,7 +859,7 @@ function resumoPautas(){
         : vazio('book','Esta turma não tem disciplinas','Ligue as disciplinas à turma (Turmas e salas → Editar) ou marque-as no horário.'))+
       (D.length && E.length ? '<section class="card"><div class="tbl-wrap" style="max-height:70vh;overflow:auto"><table class="mx"><thead><tr><th class="nm">Estudante</th>'+
         D.map(function(x){ return '<th class="dc" data-dc="'+x.id+'" style="border-top-color:'+esc(x.cor)+'" title="'+esc(x.nome)+'">'+esc(x.nome.length>12?x.nome.slice(0,11)+'.':x.nome)+'</th>'; }).join('')+'<th>Média</th><th>Neg.</th></tr></thead><tbody>'+
-        E.map(function(e){ var vs=D.map(function(x){ return e.medias[x.id]; }).filter(function(v){ return v!=null; }), med=vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:null, neg=vs.filter(function(v){ return Math.round(v)<ap; }).length;
+        E.map(function(e){ var vs=D.map(function(x){ return e.medias[x.id]; }).filter(function(v){ return typeof v==='number'; }), med=vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:null, neg=vs.filter(function(v){ return Math.round(v)<ap; }).length;
           return '<tr><td class="nm"><b>'+esc(e.nome)+'</b><div class="small muted mono">'+esc(e.numero)+'</div></td>'+D.map(function(x){ return cel(e.medias[x.id]); }).join('')+cel(med)+'<td class="v '+(neg?'neg':'')+'">'+(vs.length?neg:'—')+'</td></tr>'; }).join('')+
         '</tbody></table></div></section><p class="small muted no-print" style="margin-top:10px">Clique numa disciplina para lançar ou corrigir as notas. A vermelho, médias abaixo de '+ap+'.</p>'
         : (D.length? vazio('users','Sem estudantes nesta turma','Matricule os estudantes para lançar as notas.') : ''));
