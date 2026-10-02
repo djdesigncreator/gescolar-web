@@ -44,7 +44,7 @@ function montar(el, C, op){
     var box=el.querySelector('[data-gc=cont]'); if(box) box.innerHTML='<span class="p">'+(c.P+c.A)+' presentes</span><span class="f">'+c.F+' faltas</span><span class="a">'+c.A+' atrasos</span>'+(c.J||op.podeJustificar?'<span class="j">'+c.J+' justificadas</span>':'');
   }
   function desenhar(erro){
-    el.innerHTML='<div class="gc-top"><div><h3>'+esc(C.disciplina.nome)+' · '+esc(C.turma.nome)+'</h3><div class="gc-sub">'+dataLonga(C.data)+' · '+esc(C.i)+'–'+esc(C.f)+(C.feita?' · chamada feita'+(C.feita_por?' por '+esc(C.feita_por):''):' · chamada por fazer')+'</div></div>'+
+    el.innerHTML='<div class="gc-top"><div><h3>'+esc(C.disciplina.nome)+' · '+esc(C.turma.nome)+'</h3><div class="gc-sub">'+dataLonga(C.data)+(C.i?' · '+esc(C.i)+'–'+esc(C.f):' · dia inteiro')+(C.feita?' · chamada feita'+(C.feita_por?' por '+esc(C.feita_por):''):' · chamada por fazer')+'</div></div>'+
       '<button class="btn sm" type="button" data-gc="todos">Todos presentes</button></div>'+
       (erro?'<div class="gc-err">'+esc(erro)+'</div>':'')+
       '<div class="gc-cont" data-gc="cont"></div>'+
