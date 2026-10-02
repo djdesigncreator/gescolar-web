@@ -257,11 +257,13 @@ function pNotas(){
   var d=S.d;
   if(!d.turmas.length){ $('#pg').innerHTML=vazio('grade','Ainda sem turmas','Quando a Direcção o ligar a uma turma, pode lançar as notas aqui.'); return; }
   if(!d.turmas.some(function(t){ return t.turma+'|'+t.disciplina===S.par; })) S.par=d.turmas[0].turma+'|'+d.turmas[0].disciplina;
+  var parA=d.turmas.filter(function(t){ return t.turma+'|'+t.disciplina===S.par; })[0], semP=!!(parA&&parA.sem);
+  if(semP && S.tri>2) S.tri=(new Date().getMonth()<7?1:2);
   $('#pg').innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">'+
       '<select class="sel" id="n-par" style="flex:1;min-width:200px;height:42px">'+d.turmas.map(function(t){ var k=t.turma+'|'+t.disciplina; return '<option value="'+esc(k)+'"'+(k===S.par?' selected':'')+'>'+esc(t.disciplina_nome+' · '+t.turma_nome)+'</option>'; }).join('')+'</select>'+
-      '<select class="sel" id="n-tri" style="height:42px">'+[1,2,3].map(function(t){ return '<option value="'+t+'"'+(t===S.tri?' selected':'')+'>'+t+'º trimestre</option>'; }).join('')+'</select></div>'+
+      '<select class="sel" id="n-tri" style="height:42px">'+(semP?[1,2]:[1,2,3]).map(function(t){ return '<option value="'+t+'"'+(t===S.tri?' selected':'')+'>'+t+'º '+(semP?'semestre':'trimestre')+'</option>'; }).join('')+'</select></div>'+
     '<section class="card card-b" id="ed"><div class="carregar"><div class="spinner"></div>A abrir a pauta…</div></section>';
-  function mudar(){ var np=$('#n-par').value, nt=+$('#n-tri').value; if(sujo() && !confirm('Tem notas por guardar. Mudar mesmo assim?')){ $('#n-par').value=S.par; $('#n-tri').value=S.tri; return; } S.par=np; S.tri=nt; abrir(); }
+  function mudar(){ var np=$('#n-par').value, nt=+$('#n-tri').value; if(sujo() && !confirm('Tem notas por guardar. Mudar mesmo assim?')){ $('#n-par').value=S.par; $('#n-tri').value=S.tri; return; } S.par=np; S.tri=nt; var nv=d.turmas.filter(function(t){ return t.turma+'|'+t.disciplina===np; })[0]; if(!!(nv&&nv.sem)!==semP){ pNotas(); return; } abrir(); }
   $('#n-par').onchange=mudar; $('#n-tri').onchange=mudar;
   abrir();
   function abrir(){

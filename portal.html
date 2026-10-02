@@ -311,6 +311,39 @@ function notasDescritivas(e, L){
   $$('[data-tri]').forEach(function(b){ b.onclick=function(){ S.tri=+b.getAttribute('data-tri'); pNotas(); }; });
 }
 
+/* ================= ENSINO SUPERIOR / TÉCNICO ================= */
+var EST_P={sem:['Sem notas','muted'],dispensado:['Dispensado','ok'],excluido:['Excluído','bad'],admitido:['Admitido a exame','info'],aprovado:['Aprovado','ok'],recorrencia:['Vai à recorrência','warn'],reprovado:['Reprovado','bad']};
+function vNota(v,ap){ return v==null?'<span class="muted">—</span>':'<span style="color:'+(Math.round(v)>=ap?'var(--ok)':'var(--bad)')+'">'+String(Math.round(v*10)/10).replace('.',',')+'</span>'; }
+function resumoSem(linhas){ var cr=0, soma=0, peso=0, feitas=0;
+  linhas.forEach(function(x){ var t=x.t; if(!t.aprovado) return; feitas++; var c=x.d.creditos||0; cr+=c; var w=c||1; soma+=t.final*w; peso+=w; });
+  return { creditos:cr, media:peso?soma/peso:null, feitas:feitas }; }
+function notasSemestrais(e, L){
+  var ap=(S.d.escola.regras&&S.d.escola.regras.aprovacao)||10;
+  var sems=[1,2].filter(function(t){ return L.some(function(d){ return d.trimestres[t]; }); });
+  if(S.tri==null || (S.tri!=='anual' && sems.indexOf(S.tri)<0)) S.tri=sems[sems.length-1];
+  var corpo;
+  if(S.tri==='anual'){
+    var todas=[]; L.forEach(function(d){ [1,2].forEach(function(k){ if(d.trimestres[k]) todas.push({d:d,t:d.trimestres[k]}); }); });
+    var r=resumoSem(todas), tot=L.reduce(function(a,d){ return a+(d.creditos||0); },0);
+    corpo='<div class="pt-g2"><div class="mini"><div class="l">Créditos obtidos</div><div class="v">'+r.creditos+(tot?'<span class="muted" style="font-size:14px"> / '+tot+'</span>':'')+'</div><div class="d">'+r.feitas+' de '+L.length+' cadeira(s) feitas</div></div><div class="mini"><div class="l">Média</div><div class="v">'+(r.media==null?'—':vNota(r.media,ap))+'</div><div class="d">Ponderada pelos créditos</div></div></div>'+
+      '<div class="lista">'+L.map(function(d){ var cel=[1,2].map(function(k){ var t=d.trimestres[k]; return t?(k+'º sem. '+vNota(t.final,ap)):''; }).filter(Boolean).join(' · ');
+        var ok=[1,2].some(function(k){ return d.trimestres[k]&&d.trimestres[k].aprovado; });
+        return '<div class="pt-it"><div style="width:5px;align-self:stretch;border-radius:4px;background:'+esc(d.cor)+'"></div><div class="tx"><b>'+esc(d.disciplina)+'</b><small>'+(d.creditos?d.creditos+' créditos · ':'')+cel+'</small></div>'+(ok?'<span class="pill ok">Feita</span>':'<span class="pill muted">Por fazer</span>')+'</div>'; }).join('')+'</div>';
+  } else {
+    var linhas=L.filter(function(d){ return d.trimestres[S.tri]; }).map(function(d){ return {d:d,t:d.trimestres[S.tri]}; }), r2=resumoSem(linhas);
+    corpo='<div class="pt-g2"><div class="mini"><div class="l">Créditos do semestre</div><div class="v">'+r2.creditos+'</div><div class="d">'+r2.feitas+' de '+linhas.length+' cadeira(s) feitas</div></div><div class="mini"><div class="l">Média</div><div class="v">'+(r2.media==null?'—':vNota(r2.media,ap))+'</div><div class="d">Das cadeiras feitas</div></div></div>'+
+      '<div class="lista">'+linhas.map(function(x){ var d=x.d, t=x.t, s=EST_P[t.estado]||EST_P.sem;
+        return '<div class="pt-it" style="align-items:flex-start"><div style="width:5px;align-self:stretch;border-radius:4px;background:'+esc(d.cor)+'"></div><div class="tx"><b>'+esc(d.disciplina)+(d.creditos?' <span class="muted" style="font-weight:500;font-size:12.5px">· '+d.creditos+' créd.</span>':'')+'</b>'+
+          '<small style="display:block">'+t.colunas.map(function(c){ return esc(c.nome)+': '+vNota(c.nota,ap); }).join(' · ')+'</small>'+
+          '<small style="display:block">Frequência '+vNota(t.freq,ap)+(t.exame!=null?' · Exame '+vNota(t.exame,ap):'')+(t.recorrencia!=null?' · Recorrência '+vNota(t.recorrencia,ap):'')+'</small>'+
+          '<div style="margin-top:6px"><span class="pill '+s[1]+'">'+s[0]+'</span></div></div><div class="vl"><small>Final</small><b style="font-size:18px">'+vNota(t.final,ap)+'</b></div></div>'; }).join('')+'</div>';
+  }
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Notas · '+esc(e.nome.split(' ')[0])+'</div>'+
+    '<div class="dias">'+sems.map(function(t){ return '<button class="'+(S.tri===t?'on':'')+'" data-tri="'+t+'">'+t+'º semestre</button>'; }).join('')+'<button class="'+(S.tri==='anual'?'on':'')+'" data-tri="anual">Resumo</button></div>'+corpo+
+    '<p class="small muted" style="margin:12px 2px 0">Notas de 0 a 20. Frequência = média dos testes e trabalhos: com '+((S.d.escola.regras&&S.d.escola.regras.dispensa)||14)+' ou mais fica dispensado do exame. A cadeira fica feita com nota final de '+ap+' ou mais.</p>';
+  $$('[data-tri]').forEach(function(b){ b.onclick=function(){ var v=b.getAttribute('data-tri'); S.tri=v==='anual'?'anual':+v; pNotas(); }; });
+}
+
 /* ================= ESCOLA DE CONDUÇÃO ================= */
 var DIAS_AB=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 function dCurta(x){ var d=new Date(x+'T12:00:00Z'); return DIAS_AB[d.getUTCDay()]+' '+x.slice(8,10)+'/'+x.slice(5,7); }
@@ -437,6 +470,8 @@ function pRecibos(){
 function pNotas(){
   var e=educando(), L0=(e&&e.notas)||[], ap=(S.d.escola.regras&&S.d.escola.regras.aprovacao)||10;
   if(L0.length && L0.every(function(d){ return d.descritiva; })){ notasDescritivas(e,L0); return; }
+  if(L0.length && L0.every(function(d){ return d.semestral; })){ notasSemestrais(e,L0); return; }
+  L0=L0.filter(function(d){ return !d.semestral; });
   var L=L0.filter(function(d){ return !d.descritiva; });
   if(!L.length){ $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Notas</div>'+vazio('grade','As notas ainda não foram publicadas','Quando os professores publicarem as notas do trimestre, aparecem aqui por disciplina.'); return; }
   var tris=[1,2,3].filter(function(t){ return L.some(function(d){ return d.trimestres[t]; }); });

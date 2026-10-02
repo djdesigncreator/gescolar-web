@@ -849,24 +849,34 @@ function pPautas(){
     resumoPautas();
   });
 }
+var SEMN={SUP:1,TEC:1};
+function turmaSem(){ var t=(S.turmas||[]).filter(function(x){ return x.id===S.P.turma; })[0]; return !!(t && SEMN[t.nivel]); }
 function resumoPautas(){
   aCarregar();
+  var semT=turmaSem(); if(semT && S.P.tri>2) S.P.tri=2;
+  var PER=semT?'semestre':'trimestre';
   api('/pautas-turma',{turma:S.P.turma, trimestre:S.P.tri}).then(function(d){
     if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
     var ap=d.regras.aprovacao, D=d.disciplinas, E=d.estudantes;
     var pub=D.filter(function(x){ return x.publicado; }).length, exis=D.filter(function(x){ return x.existe; }).length;
+    var SEMD=d.modo==='semestral', ES=GSPauta.EST_SEM||{};
+    function celSem(v,est){ var s=ES[est]; if(v==null) return est&&est!=='sem'&&s?'<td class="v"><span class="pill '+s[1]+'" title="'+esc(s[0])+'">'+(est==='admitido'?'Exame':esc(s[0]))+'</span></td>':'<td class="v muted">—</td>';
+      return '<td class="v '+(est==='aprovado'||est==='dispensado'?'pos':'neg')+'" title="'+esc(s?s[0]:'')+'">'+GSPauta.fmt(v)+(est==='dispensado'?'<sup>D</sup>':est==='recorrencia'?'<sup>R</sup>':'')+'</td>'; }
     function cel(v){ if(typeof v==='string'){ var n=GSPauta.NIV[v]||[v,'muted']; return '<td class="v"><span class="pill '+n[1]+'" title="'+esc(n[0])+'">'+esc(v)+'</span></td>'; } return v==null?'<td class="v muted">—</td>':'<td class="v '+(Math.round(v)>=ap?'pos':'neg')+'">'+GSPauta.fmt(v)+'</td>'; }
-    $('#page').innerHTML=ph('Escola','Pautas e notas', 'Turma <b>'+esc(d.turma.nome)+'</b> · '+d.trimestre+'º trimestre · '+exis+' de '+D.length+' disciplinas com notas · '+pub+' publicadas às famílias.',
+    $('#page').innerHTML=ph('Escola','Pautas e notas', 'Turma <b>'+esc(d.turma.nome)+'</b> · '+d.trimestre+'º '+PER+' · '+exis+' de '+D.length+(SEMD?' cadeiras':' disciplinas')+' com notas · '+pub+' publicadas'+(SEMD?' aos estudantes.':' às famílias.'),
         '<select class="sel" id="p-t">'+S.turmas.map(function(t){ return '<option value="'+t.id+'"'+(t.id===S.P.turma?' selected':'')+'>'+esc(t.nome)+'</option>'; }).join('')+'</select>'+
-        '<select class="sel" id="p-tri">'+[1,2,3].map(function(t){ return '<option value="'+t+'"'+(t===S.P.tri?' selected':'')+'>'+t+'º trimestre</option>'; }).join('')+'</select>'+
-        (exis?'<button class="btn" id="p-pub">'+(pub<exis?'Publicar todas':'Ocultar das famílias')+'</button>':'')+'<button class="btn" id="p-print">Imprimir pauta</button>')+
+        '<select class="sel" id="p-tri">'+(semT?[1,2]:[1,2,3]).map(function(t){ return '<option value="'+t+'"'+(t===S.P.tri?' selected':'')+'>'+t+'º '+PER+'</option>'; }).join('')+'</select>'+
+        (exis?'<button class="btn" id="p-pub">'+(pub<exis?'Publicar todas':(SEMD?'Ocultar dos estudantes':'Ocultar das famílias'))+'</button>':'')+'<button class="btn" id="p-print">Imprimir pauta</button>')+
       (D.length? '<div class="dcs">'+D.map(function(x){ return '<button class="dc-card" data-dc="'+x.id+'" style="border-left-color:'+esc(x.cor)+'"><b>'+esc(x.nome)+'</b><small>'+esc(x.professores.join(', ')||'Sem professor')+'</small><small>'+x.lancadas+'/'+E.length+' com notas · '+(x.publicado?'<span style="color:var(--ok);font-weight:700">publicada</span>':x.existe?'rascunho':'por lançar')+'</small></button>'; }).join('')+'</div>'
         : vazio('book','Esta turma não tem disciplinas','Ligue as disciplinas à turma (Turmas e salas → Editar) ou marque-as no horário.'))+
       (D.length && E.length ? '<section class="card"><div class="tbl-wrap" style="max-height:70vh;overflow:auto"><table class="mx"><thead><tr><th class="nm">Estudante</th>'+
-        D.map(function(x){ return '<th class="dc" data-dc="'+x.id+'" style="border-top-color:'+esc(x.cor)+'" title="'+esc(x.nome)+'">'+esc(x.nome.length>12?x.nome.slice(0,11)+'.':x.nome)+'</th>'; }).join('')+'<th>Média</th><th>Neg.</th></tr></thead><tbody>'+
-        E.map(function(e){ var vs=D.map(function(x){ return e.medias[x.id]; }).filter(function(v){ return typeof v==='number'; }), med=vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:null, neg=vs.filter(function(v){ return Math.round(v)<ap; }).length;
+        D.map(function(x){ return '<th class="dc" data-dc="'+x.id+'" style="border-top-color:'+esc(x.cor)+'" title="'+esc(x.nome)+'">'+esc(x.nome.length>12?x.nome.slice(0,11)+'.':x.nome)+'</th>'; }).join('')+'<th>Média</th><th>'+(SEMD?'Créd.':'Neg.')+'</th></tr></thead><tbody>'+
+        E.map(function(e){ if(SEMD){ var fin=D.map(function(x){ return e.medias[x.id]; }).filter(function(v){ return typeof v==='number'; }), cr=0;
+            D.forEach(function(x){ var st=(e.estados||{})[x.id]; if(st==='aprovado'||st==='dispensado') cr+=(x.creditos||0); });
+            return '<tr><td class="nm"><b>'+esc(e.nome)+'</b><div class="small muted mono">'+esc(e.numero)+'</div></td>'+D.map(function(x){ return celSem(e.medias[x.id],(e.estados||{})[x.id]); }).join('')+cel(fin.length?fin.reduce(function(a,b){return a+b;},0)/fin.length:null)+'<td class="v">'+cr+'</td></tr>'; }
+          var vs=D.map(function(x){ return e.medias[x.id]; }).filter(function(v){ return typeof v==='number'; }), med=vs.length?vs.reduce(function(a,b){return a+b;},0)/vs.length:null, neg=vs.filter(function(v){ return Math.round(v)<ap; }).length;
           return '<tr><td class="nm"><b>'+esc(e.nome)+'</b><div class="small muted mono">'+esc(e.numero)+'</div></td>'+D.map(function(x){ return cel(e.medias[x.id]); }).join('')+cel(med)+'<td class="v '+(neg?'neg':'')+'">'+(vs.length?neg:'—')+'</td></tr>'; }).join('')+
-        '</tbody></table></div></section><p class="small muted no-print" style="margin-top:10px">Clique numa disciplina para lançar ou corrigir as notas. A vermelho, médias abaixo de '+ap+'.</p>'
+        '</tbody></table></div></section><p class="small muted no-print" style="margin-top:10px">'+(SEMD?'Clique numa cadeira para lançar testes, trabalhos, exame e recorrência. <sup>D</sup> dispensado · <sup>R</sup> vai à recorrência · Créd. = créditos das cadeiras feitas neste semestre.':'Clique numa disciplina para lançar ou corrigir as notas. A vermelho, médias abaixo de '+ap+'.')+'</p>'
         : (D.length? vazio('users','Sem estudantes nesta turma','Matricule os estudantes para lançar as notas.') : ''));
     $('#p-t').onchange=function(){ S.P.turma=this.value; resumoPautas(); };
     $('#p-tri').onchange=function(){ S.P.tri=+this.value; resumoPautas(); };
