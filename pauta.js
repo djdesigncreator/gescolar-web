@@ -78,8 +78,98 @@ function montarDescritiva(el, P, op){
   return { sujo:function(){ return sujo; } };
 }
 
+/* Ensino superior e técnico: pauta semestral (frequência, exame, recorrência) */
+var SEM=['','1º semestre','2º semestre'];
+var EST_SEM={sem:['Sem notas','muted'],dispensado:['Dispensado','ok'],excluido:['Excluído','bad'],admitido:['Admitido a exame','info'],aprovado:['Aprovado','ok'],recorrencia:['Vai à recorrência','warn'],reprovado:['Reprovado','bad']};
+function mediasSem(cols, n, R){
+  R=R||{}; var ap=R.aprovacao||10, disp=R.dispensa||14, adm=R.admissao||10, p=(R.peso_exame||50)/100;
+  var fs=[]; cols.forEach(function(c){ if(c.tipo==='F' && typeof n[c.id]==='number') fs.push(n[c.id]); });
+  var freq=fs.length? r1(fs.reduce(function(a,b){ return a+b; },0)/fs.length) : null;
+  var ex=typeof n.ex==='number'?n.ex:null, rc=typeof n.rc==='number'?n.rc:null, o={freq:freq, exame:ex, recorrencia:rc, final:null, estado:'sem'};
+  if(freq===null) return o;
+  if(Math.round(freq)>=disp){ o.estado='dispensado'; o.final=freq; }
+  else if(Math.round(freq)<adm){ o.estado='excluido'; o.final=freq; }
+  else { var e=rc!==null?rc:ex; if(e===null) o.estado='admitido'; else { o.final=r1(freq*(1-p)+e*p); o.estado=Math.round(o.final)>=ap?'aprovado':(rc!==null?'reprovado':'recorrencia'); } }
+  return o;
+}
+function montarSemestral(el, P, op){
+  estilo(); op=op||{};
+  var R=P.regras||{}, aprov=R.aprovacao||10;
+  var G=JSON.parse(JSON.stringify(P.grelha||{})); G.modo='semestral'; G.notas=G.notas||{}; G.colunas=G.colunas||[];
+  var pub=!!P.publicado, sujo=false, aGuardar=false;
+  function F(){ return G.colunas.filter(function(c){ return c.tipo==='F'; }); }
+  function todas(){ return F().concat([{id:'ex',tipo:'EX',nome:'Exame'},{id:'rc',tipo:'RC',nome:'Recorrência'}]); }
+  function marcarSujo(v){ sujo=v; var b=el.querySelector('[data-gp=save]'); if(b) b.textContent='Guardar'+(sujo?' *':''); if(op.sujo) op.sujo(sujo); }
+  function proxId(){ var n=1; while(G.colunas.some(function(c){ return c.id==='a'+n; })) n++; return 'a'+n; }
+  function desenhar(erro){
+    var cols=todas(), nF=F().length;
+    el.innerHTML='<div class="gp-top"><div><h3>'+esc(P.disciplina.nome)+' · '+esc(P.turma.nome)+'</h3><div class="gp-sub">'+SEM[P.trimestre]+' · '+P.estudantes.length+' estudantes'+(P.disciplina.creditos?' · '+P.disciplina.creditos+' créditos':'')+(P.actualizado_por?' · última gravação: '+esc(P.actualizado_por):'')+'</div></div>'+
+      '<div class="gp-acts"><button class="btn sm" type="button" data-gp="addf"'+(nF>=8?' disabled':'')+'>+ Teste/Trabalho</button>'+
+      '<label class="gp-pub"><input type="checkbox" data-gp="pub"'+(pub?' checked':'')+'> Publicar aos estudantes</label><button class="btn" type="button" data-gp="print">Imprimir</button>'+
+      '<button class="btn pri" type="button" data-gp="save">Guardar'+(sujo?' *':'')+'</button></div></div>'+
+      (erro?'<div class="gp-err">'+esc(erro)+'</div>':'')+
+      (P.estudantes.length? '<div class="gp-wrap"><table class="gp"><thead><tr><th class="nm">Estudante</th>'+
+        cols.map(function(c,i){ return c.tipo==='F'?'<th class="col" data-col="'+i+'" title="Clique para mudar o nome ou tirar a coluna">'+esc(c.nome)+'</th>':'<th class="acp">'+esc(c.nome)+'</th>'; }).join('')+
+        '<th>Freq.</th><th>Final</th><th>Situação</th></tr></thead><tbody>'+
+        P.estudantes.map(function(e,ri){ var l=G.notas[e.id]||{};
+          return '<tr data-e="'+esc(e.id)+'"><td class="nm"><b>'+esc(e.nome)+'</b><small>'+esc(e.numero)+'</small></td>'+
+            cols.map(function(c,ci){ var v=l[c.id]; return '<td><input inputmode="decimal" maxlength="4" data-r="'+ri+'" data-c="'+ci+'" value="'+(typeof v==='number'?String(v).replace('.',','):'')+'"'+(typeof v==='number'&&v<aprov?' class="neg"':'')+' aria-label="'+esc(c.nome)+' de '+esc(e.nome)+'"></td>'; }).join('')+
+            '<td class="calc" data-m="freq"></td><td class="calc mt" data-m="fin"></td><td data-m="sit"></td></tr>'; }).join('')+'</tbody></table></div>'
+        : '<div class="gp-err" style="background:var(--surface2,#EEF2F8);color:var(--muted)">Esta turma ainda não tem estudantes inscritos.</div>')+
+      '<div class="gp-foot" data-gp="foot"></div>'+
+      '<p class="gp-hint small muted" style="margin:10px 0 0">Frequência = média dos testes e trabalhos. Com '+(R.dispensa||14)+' ou mais fica dispensado; abaixo de '+(R.admissao||10)+' fica excluído. Admitido: Final = '+(100-(R.peso_exame||50))+'% frequência + '+(R.peso_exame||50)+'% exame. A recorrência substitui o exame.</p>';
+    P.estudantes.forEach(function(e){ linha(e.id); }); rodape(); ligar();
+  }
+  function linha(eid){
+    var tr=el.querySelector('tr[data-e="'+String(eid).replace(/["\\]/g,'\\$&')+'"]'); if(!tr) return;
+    var m=mediasSem(G.colunas, G.notas[eid]||{}, R), s=EST_SEM[m.estado]||EST_SEM.sem;
+    tr.querySelector('[data-m=freq]').textContent=fmt(m.freq);
+    var f=tr.querySelector('[data-m=fin]'); f.textContent=fmt(m.final); f.className='calc mt '+(m.final==null?'':(Math.round(m.final)>=aprov?'pos':'neg'));
+    tr.querySelector('[data-m=sit]').innerHTML='<span class="pill '+s[1]+'">'+s[0]+'</span>';
+    var exame=m.estado!=='dispensado' && m.estado!=='excluido' && m.freq!==null;
+    Array.prototype.forEach.call(tr.querySelectorAll('input'),function(i){ var c=todas()[+i.getAttribute('data-c')]; if(c.tipo==='EX'||c.tipo==='RC'){ var vazio=i.value===''; i.style.opacity=(exame||!vazio)?'1':'.35'; } });
+  }
+  function rodape(){
+    var f=el.querySelector('[data-gp=foot]'); if(!f) return; var c={}; P.estudantes.forEach(function(e){ var m=mediasSem(G.colunas,G.notas[e.id]||{},R); c[m.estado]=(c[m.estado]||0)+1; });
+    f.innerHTML=['dispensado','admitido','aprovado','recorrencia','reprovado','excluido'].map(function(k){ return '<span>'+EST_SEM[k][0]+': <b>'+(c[k]||0)+'</b></span>'; }).join('');
+  }
+  function ligar(){
+    Array.prototype.forEach.call(el.querySelectorAll('input[data-r]'),function(inp){
+      inp.oninput=function(){ var ri=+inp.getAttribute('data-r'), c=todas()[+inp.getAttribute('data-c')], e=P.estudantes[ri], v=ler(inp.value);
+        inp.classList.toggle('mau', isNaN(v)); inp.classList.toggle('neg', typeof v==='number' && !isNaN(v) && v<aprov);
+        var l=G.notas[e.id]=G.notas[e.id]||{}; if(v===null||isNaN(v)) delete l[c.id]; else l[c.id]=v; linha(e.id); rodape(); marcarSujo(true); };
+      inp.onkeydown=function(ev){ var ri=+inp.getAttribute('data-r'), ci=+inp.getAttribute('data-c'), alvo=null;
+        if(ev.key==='Enter'||ev.key==='ArrowDown') alvo=[ri+1,ci]; else if(ev.key==='ArrowUp') alvo=[ri-1,ci]; if(!alvo) return; ev.preventDefault();
+        var n=el.querySelector('input[data-r="'+alvo[0]+'"][data-c="'+alvo[1]+'"]'); if(n){ n.focus(); n.select(); } };
+      inp.onfocus=function(){ inp.select(); };
+    });
+    Array.prototype.forEach.call(el.querySelectorAll('th[data-col]'),function(th){ th.onclick=function(){ var c=todas()[+th.getAttribute('data-col')]; if(!c||c.tipo!=='F') return;
+      var tem=P.estudantes.some(function(e){ return typeof (G.notas[e.id]||{})[c.id]==='number'; });
+      var nome=window.prompt('Nome da avaliação (ex.: Teste 1, Trabalho, Mini-teste).\nEscreva APAGAR para tirar a coluna'+(tem?' e as notas dela':'')+'.', c.nome);
+      if(nome==null) return; nome=nome.trim();
+      if(nome.toUpperCase()==='APAGAR'){ if(F().length===1){ if(op.aviso) op.aviso('A pauta precisa de pelo menos um teste ou trabalho.'); return; }
+        G.colunas=G.colunas.filter(function(x){ return x.id!==c.id; }); Object.keys(G.notas).forEach(function(k){ delete G.notas[k][c.id]; }); marcarSujo(true); desenhar(); return; }
+      if(nome){ c.nome=nome.slice(0,16); marcarSujo(true); desenhar(); } }; });
+    var a=el.querySelector('[data-gp=addf]'); if(a) a.onclick=function(){ G.colunas=F().concat([{id:proxId(),tipo:'F',nome:'Avaliação '+(F().length+1)}]); marcarSujo(true); desenhar(); };
+    el.querySelector('[data-gp=pub]').onchange=function(){ pub=this.checked; marcarSujo(true); };
+    el.querySelector('[data-gp=print]').onclick=function(){ window.print(); };
+    el.querySelector('[data-gp=save]').onclick=function(){ if(aGuardar) return;
+      if(el.querySelector('input.mau')){ desenhar('Há notas inválidas (a vermelho). As notas vão de 0 a 20.'); return; }
+      var b=this; aGuardar=true; b.disabled=true; b.textContent='A guardar…';
+      G.colunas=todas();
+      op.guardar(G,pub).then(function(r){ aGuardar=false;
+        if(!r||!r.ok){ b.disabled=false; G.colunas=F(); desenhar((r&&r.erro)||'Não foi possível guardar.'); return; }
+        G=JSON.parse(JSON.stringify(r.grelha)); G.notas=G.notas||{}; G.colunas=(G.colunas||[]).filter(function(c){ return c.tipo==='F'; }); pub=!!r.publicado; P.publicado=pub;
+        marcarSujo(false); desenhar(); if(op.aviso) op.aviso(pub?'Pauta guardada e publicada aos estudantes':'Pauta guardada (ainda não publicada)'); }); };
+  }
+  G.colunas=F();
+  desenhar();
+  return { sujo:function(){ return sujo; } };
+}
+
 function montar(el, P, op){
   if(P.modo==='descritiva' || (P.grelha && P.grelha.modo==='descritiva')) return montarDescritiva(el, P, op);
+  if(P.modo==='semestral' || (P.grelha && P.grelha.modo==='semestral')) return montarSemestral(el, P, op);
   estilo(); op=op||{};
   var aprov = (P.regras && P.regras.aprovacao) || 10;
   var G = JSON.parse(JSON.stringify(P.grelha||{colunas:[],notas:{}}));
@@ -178,5 +268,5 @@ function montar(el, P, op){
   desenhar();
   return { sujo:function(){ return sujo; } };
 }
-window.GSPauta = { montar:montar, medias:medias, fmt:fmt, TRI:TRI, NIV:NIV };
+window.GSPauta = { montar:montar, medias:medias, mediasSem:mediasSem, fmt:fmt, TRI:TRI, SEM:SEM, NIV:NIV, EST_SEM:EST_SEM };
 })();
