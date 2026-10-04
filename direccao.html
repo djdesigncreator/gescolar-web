@@ -240,6 +240,7 @@ function indicadores(fresco){
   api('/painel-indicadores',{fresco:!!fresco}).then(function(d){
     box=$('#pn'); if(!box) return;
     if(!d.ok){ box.innerHTML=erroCaixa(d.erro||'Não foi possível calcular os indicadores.'); return; }
+    var avisoFalta=(d.faltam&&d.faltam.length)?'<div style="background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:12px 14px;font-size:14px;font-weight:600;margin-bottom:14px">Configuração em falta no Bubble: '+esc(d.faltam.join(', '))+'. Os números destas partes ficam a zero até criar a tabela (ou o campo que falta).</div>':'';
     var $d=d.dinheiro, h=d.hoje_aulas, fa=d.faltas, nt=d.notas;
     var mesNome=MESES_L[+d.mes.slice(5,7)];
     var C=d.conducao;
@@ -256,7 +257,7 @@ function indicadores(fresco){
     ];
     var metodos=Object.keys($d.por_metodo).sort(function(a,b){ return $d.por_metodo[b]-$d.por_metodo[a]; });
     var totMet=metodos.reduce(function(s,k){ return s+$d.por_metodo[k]; },0);
-    box.innerHTML=
+    box.innerHTML=avisoFalta+
       (C && C.alertas.length ? '<section class="card card-b" style="margin-bottom:16px;border-color:var(--warn)"><div class="eyebrow" style="color:var(--warn)">Viaturas: documentos a terminar</div><div class="pn-lista">'+C.alertas.map(function(a){ return '<div class="pn-it"><div class="tx"><b>'+esc(a.matricula)+' · '+esc(a.tipo)+'</b><small>'+(a.dias<0?'Terminou há '+(-a.dias)+' dia(s)':'Termina em '+a.dias+' dia(s)')+' · '+data(a.ate)+'</small></div><span class="pill '+(a.dias<0?'bad':'warn')+'">'+(a.dias<0?'Vencido':'A terminar')+'</span></div>'; }).join('')+'</div><button class="btn sm" data-go2="viaturas" style="margin-top:8px">Ver viaturas</button></section>' : '')+
       '<div class="grid g4" style="margin-bottom:16px">'+tiles.map(function(t){ return '<div class="card kpi"><div class="l">'+t[0]+'</div><div class="v num '+t[3]+'">'+t[1]+'</div><div class="d">'+esc(t[2])+'</div></div>'; }).join('')+'</div>'+
       '<div class="grid g2" style="margin-bottom:16px">'+
