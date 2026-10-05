@@ -424,15 +424,21 @@ function formMatricula(){
   modal('<div class="modal-h"><h3>Matricular estudante</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
     '<div class="frow"><label class="field">Nome completo<input class="inp" id="m-nome" placeholder="Ex.: Délcio Tembe"></label><label class="field">Turma<select class="sel" id="m-turma">'+S.turmas.map(function(t){ return '<option value="'+t.id+'"'+(t.id===S.filtroTurma?' selected':'')+'>'+esc(t.nome)+'</option>'; }).join('')+'</select></label></div>'+
     '<div class="frow"><label class="field">Sexo<select class="sel" id="m-sexo"><option value="">—</option><option value="F">Feminino</option><option value="M">Masculino</option></select></label><label class="field">Data de nascimento<input class="inp" id="m-nasc" type="date"></label></div>'+
-    '<div class="eyebrow" style="margin-top:4px">Encarregado de educação</div>'+
+    '<div id="m-encw"><div class="eyebrow" style="margin-top:4px">Encarregado de educação</div>'+
     '<div class="frow"><label class="field">Nome completo<input class="inp" id="m-enc" placeholder="Ex.: Rosa Tembe"></label><label class="field">Telemóvel<input class="inp mono" id="m-tel" inputmode="numeric" placeholder="84 000 0000"></label></div>'+
     '<div class="frow"><label class="field">Parentesco<select class="sel" id="m-par"><option>Mãe</option><option>Pai</option><option>Avó</option><option>Avô</option><option>Tia</option><option>Tio</option><option>Irmã</option><option>Irmão</option><option>Outro</option></select></label><label class="field">Email (opcional)<input class="inp" id="m-email" type="email"></label></div>'+
-    '<p class="small muted" style="margin:0">Se o telemóvel já pertencer a um encarregado da escola, o estudante fica ligado a ele (irmãos na mesma família).</p>'+
-    '<div class="frow"><label class="field">Telemóvel do estudante (opcional)<input class="inp mono" id="m-tel-est" inputmode="numeric" placeholder="84 000 0000"><span class="small muted" style="font-weight:400">Para estudantes com telemóvel próprio entrarem no portal.</span></label><label class="field">Notas de saúde (opcional)<input class="inp" id="m-saude" placeholder="Alergias ou cuidados especiais"></label></div>'+
+    '<p class="small muted" style="margin:0">Se o telemóvel já pertencer a um encarregado da escola, o estudante fica ligado a ele (irmãos na mesma família).</p></div>'+
+    '<div class="frow"><label class="field"><span id="m-tel-l">Telemóvel do estudante (opcional)</span><input class="inp mono" id="m-tel-est" inputmode="numeric" placeholder="84 000 0000"><span class="small muted" style="font-weight:400" id="m-tel-h">Para estudantes com telemóvel próprio entrarem no portal.</span></label><label class="field">Notas de saúde (opcional)<input class="inp" id="m-saude" placeholder="Alergias ou cuidados especiais"></label></div>'+
+    '<p class="small" style="margin:0;background:var(--blue-soft);color:var(--blue);border-radius:8px;padding:9px 11px;font-weight:600" id="m-sms">Ao matricular, é enviado um SMS com o número de estudante e o link de acesso ao portal.</p>'+
     '<div id="m-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="m-ok">'+ic('save')+'Matricular</button></div>');
+  function verSup(){ var t=(S.turmas||[]).filter(function(x){ return x.id===$('#m-turma').value; })[0], sup=!!(t&&t.nivel==='SUP');
+    $('#m-encw').style.display=sup?'none':'';
+    $('#m-tel-l').textContent=sup?'Telemóvel do estudante (obrigatório)':'Telemóvel do estudante (opcional)';
+    $('#m-tel-h').textContent=sup?'No ensino superior não há encarregado: o estudante recebe o acesso neste número.':'Para estudantes com telemóvel próprio entrarem no portal.'; }
+  $('#m-turma').onchange=verSup; verSup();
   $('#m-ok').onclick=function(){ var btn=this; aGravar(btn,true);
     api('/matricular',{ nome:$('#m-nome').value, turma:$('#m-turma').value, sexo:$('#m-sexo').value, nascimento:$('#m-nasc').value, enc_nome:$('#m-enc').value, enc_telefone:$('#m-tel').value, enc_parentesco:$('#m-par').value, enc_email:$('#m-email').value, saude:$('#m-saude').value, telefone:$('#m-tel-est').value })
-      .then(function(r){ if(r.ok){ fechar(); toast('Matriculado · Nº '+r.numero); S.filtroTurma=$('#m-turma')?$('#m-turma').value:S.filtroTurma; pEstudantes(); } else { aGravar(btn,false); $('#m-err').innerHTML=erroCaixa(r.erro); } }); };
+      .then(function(r){ if(r.ok){ fechar(); toast('Matriculado · Nº '+r.numero+(r.sms?' · SMS enviado':' · sem SMS (nenhum telemóvel)')); S.filtroTurma=$('#m-turma')?$('#m-turma').value:S.filtroTurma; pEstudantes(); } else { aGravar(btn,false); $('#m-err').innerHTML=erroCaixa(r.erro); } }); };
 }
 
 
@@ -977,14 +983,14 @@ function formInscricao(cursoId){
       '<div class="frow"><label class="field">Data de nascimento<input class="inp" type="date" id="i-d" max="'+hoje+'"></label><label class="field">Sexo<select class="sel" id="i-s"><option value="">—</option><option value="F">Feminino</option><option value="M">Masculino</option></select></label></div>'+
       '<div class="frow"><label class="field">Prestações<select class="sel" id="i-p"></select></label><label class="field">Primeira prestação vence a<input class="inp" type="date" id="i-i" value="'+hoje+'"></label></div>'+
       '<div class="card card-b" style="background:var(--blue-soft);border-color:transparent" id="i-r"></div>'+
-      '<label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600"><input type="checkbox" id="i-sms" checked> Enviar SMS de boas-vindas com o número e o link do portal</label>'+
+      '<p class="small" style="margin:0;background:var(--blue-soft);color:var(--blue);border-radius:8px;padding:9px 11px;font-weight:600">O instruendo recebe logo um SMS de boas-vindas com o número e o link de acesso.</p>'+
       '<div id="i-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="i-ok">'+ic('save')+'Inscrever</button></div>');
     function curso(){ return C.filter(function(c){ return c.id===$('#i-c').value; })[0]; }
     function prest(){ var c=curso(), v=$('#i-p').value; $('#i-p').innerHTML=''; for(var k=1;k<=c.prestacoes;k++) $('#i-p').insertAdjacentHTML('beforeend','<option value="'+k+'"'+(String(k)===v||(!v&&k===c.prestacoes)?' selected':'')+'>'+(k===1?'Pagamento único':k+' prestações')+'</option>'); resumo(); }
     function resumo(){ var c=curso(), n=+$('#i-p').value||1, base=Math.floor(c.preco/n), r=c.preco-base*n; $('#i-r').innerHTML='<b>'+mt(c.preco)+'</b> · '+(n===1?'um pagamento':n+' prestações: '+mt(base+r)+' agora e '+(n-1)+'× '+mt(base)+' de mês a mês')+'<div class="small muted" style="margin-top:4px">Idade mínima: '+c.idade+' anos · '+c.teoricas+' aulas teóricas · '+c.praticas+' práticas</div>'; }
     $('#i-c').onchange=prest; $('#i-p').onchange=resumo; prest();
     $('#i-ok').onclick=function(){ var btn=this; aGravar(btn,true);
-      api('/inscrever',{curso:$('#i-c').value, nome:$('#i-n').value, telefone:$('#i-t').value, nascimento:$('#i-d').value, sexo:$('#i-s').value, prestacoes:$('#i-p').value, inicio:$('#i-i').value, sms:$('#i-sms').checked}).then(function(r){
+      api('/inscrever',{curso:$('#i-c').value, nome:$('#i-n').value, telefone:$('#i-t').value, nascimento:$('#i-d').value, sexo:$('#i-s').value, prestacoes:$('#i-p').value, inicio:$('#i-i').value, sms:true}).then(function(r){
         if(!r.ok){ aGravar(btn,false); $('#i-err').innerHTML=erroCaixa(r.erro); return; }
         fechar(); toast('Inscrito · Nº '+r.numero+(r.sms?' · SMS enviado':'')); if(S.pag==='instruendos') pInstruendos(); else ir('instruendos'); });
     };
