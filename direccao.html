@@ -292,13 +292,13 @@ function indicadores(fresco){
 // TURMAS
 function pTurmas(){
   aCarregar();
-  Promise.all([api('/turmas'), api('/professores')]).then(function(r){
+  Promise.all([api('/turmas'), api('/professores'), api('/disciplinas')]).then(function(r){
     var d=r[0]; if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
-    S.turmas=d.turmas; S.professores=r[1].ok?r[1].professores:[];
+    S.turmas=d.turmas; S.professores=r[1].ok?r[1].professores:[]; S.disciplinas=r[2].ok?r[2].disciplinas:(S.disciplinas||[]);
     var L=d.turmas, PN={}; S.professores.forEach(function(p){ PN[p.id]=p.nome; });
     $('#page').innerHTML = ph('Arranque','Turmas e salas', L.length? L.length+' turmas activas.' : 'Ainda não há turmas. Crie a primeira.', '<button class="btn pri" id="nova">'+ic('plus')+'Nova turma</button>')+
       (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Nível</th><th>Turno</th><th>Sala</th><th class="r">Estudantes</th><th class="r">Propina</th><th></th></tr></thead><tbody>'+
-        L.map(function(t){ return '<tr><td><b>'+esc(t.nome)+'</b><div class="small muted mono">'+esc(t.codigo)+'</div>'+(t.titular&&PN[t.titular]?'<div class="small muted">Titular: '+esc(PN[t.titular])+'</div>':'')+'</td><td><span class="tag">'+esc(NIVEL[t.nivel]||t.nivel)+'</span></td><td>'+esc(t.turno)+'</td><td>'+esc(t.sala||'—')+'</td><td class="r num">'+(t.estudantes||0)+' / '+(t.capacidade||0)+'</td><td class="r num">'+(t.propina?mt(t.propina):'—')+'</td>'+
+        L.map(function(t){ return '<tr><td><b>'+esc(t.nome)+'</b><div class="small muted mono">'+esc(t.codigo)+'</div>'+'<div class="small muted">'+(t.disciplinas||[]).length+' disciplina(s)'+(t.titular&&PN[t.titular]?' · Titular: '+esc(PN[t.titular]):'')+'</div></td><td><span class="tag">'+esc(NIVEL[t.nivel]||t.nivel)+'</span></td><td>'+esc(t.turno)+'</td><td>'+esc(t.sala||'—')+'</td><td class="r num">'+(t.estudantes||0)+' / '+(t.capacidade||0)+'</td><td class="r num">'+(t.propina?mt(t.propina):'—')+'</td>'+
           '<td class="r"><button class="btn sm" data-ed="'+t.id+'">Editar</button> <button class="btn sm danger" data-del="'+t.id+'">'+ic('trash')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
         : vazio('layers','Crie as turmas da escola','Por exemplo "10ª Classe A" ou "Sala dos 4 anos". Pode criar quantas precisar.'));
     $('#nova').onclick=function(){ formTurma(null); };
@@ -322,14 +322,23 @@ function formTurma(t){
     '<div class="frow"><label class="field">Sala<input class="inp" id="t-sala" value="'+esc(t.sala||'')+'" placeholder="Ex.: Bloco B · 21"></label><label class="field">Capacidade<input class="inp" id="t-cap" type="number" min="1" value="'+(t.capacidade||40)+'"></label></div>'+
     '<div class="frow"><label class="field">Propina mensal (MT)<input class="inp mono" id="t-prop" type="number" min="0" step="50" value="'+(t.propina||'')+'" placeholder="Ex.: 2500"></label>'+
     '<label class="field">Director(a) de turma<select class="sel" id="t-dir"><option value="">— escolher depois —</option>'+profs.map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.director?' selected':'')+'>'+esc(p.nome)+'</option>'; }).join('')+'</select></label></div>'+
+    '<div class="field"><span style="display:flex;justify-content:space-between;align-items:center;gap:8px">Disciplinas desta turma<span><button type="button" class="btn sm ghost" id="t-dall">Todas</button> <button type="button" class="btn sm ghost" id="t-dnone">Nenhuma</button></span></span><div id="t-discs"></div><span class="small muted" style="font-weight:400">Marque só as disciplinas que esta turma tem. Só estas aparecem no horário, nas pautas e no portal.</span></div>'+
     '<div id="t-titw"><label class="field">Professor(a) titular<select class="sel" id="t-tit"><option value="">— sem titular (cada disciplina tem o seu professor) —</option>'+profs.map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.titular?' selected':'')+'>'+esc(p.nome)+'</option>'; }).join('')+'</select></label>'+
       '<p class="small muted" style="margin:6px 0 0">No primário e na escolinha, um só professor dá todas as disciplinas e faz uma chamada por dia. Uma disciplina marcada no horário com outro professor (ex.: Educação Física) fica com esse professor.</p></div>'+
-    (t.id?'':'<p class="small muted" style="margin:0">As disciplinas do mesmo nível que já existirem ficam ligadas à turma automaticamente.</p>')+
+
     '<div id="t-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="t-ok">'+ic('save')+'Guardar</button></div>');
   function verTit(){ $('#t-titw').style.display=MONO[$('#t-nivel').value]?'':'none'; }
-  $('#t-nivel').onchange=verTit; verTit();
+  // disciplinas do nível escolhido; nova turma: todas marcadas; editar: as que a turma já tem
+  var marcadas={}; (t.id? (t.disciplinas||[]) : []).forEach(function(id){ marcadas[id]=1; });
+  function verDiscs(primeira){ var nv=$('#t-nivel').value, L=(S.disciplinas||[]).filter(function(x){ return x.nivel===nv; });
+    if(!primeira) $$('.t-d').forEach(function(c){ marcadas[c.value]=c.checked?1:0; });
+    $('#t-discs').innerHTML = L.length? '<div class="chk">'+L.map(function(x){ var on=t.id? !!marcadas[x.id] : (marcadas[x.id]!==0); return '<label><input type="checkbox" class="t-d" value="'+x.id+'"'+(on?' checked':'')+'><span class="dot" style="background:'+esc(x.cor)+'"></span>'+esc(x.nome)+'</label>'; }).join('')+'</div>'
+      : '<div class="small muted" style="font-weight:500;padding:8px 0">Ainda não há disciplinas de '+esc(NIVEL[nv]||nv)+'. Crie-as em "Disciplinas" (pode carregar o currículo modelo) e depois volte aqui.</div>'; }
+  $('#t-nivel').onchange=function(){ verTit(); verDiscs(); }; verTit(); verDiscs(true);
+  $('#t-dall').onclick=function(){ $$('.t-d').forEach(function(c){ c.checked=true; }); };
+  $('#t-dnone').onclick=function(){ $$('.t-d').forEach(function(c){ c.checked=false; }); };
   $('#t-ok').onclick=function(){ var btn=this; aGravar(btn,true);
-    api('/turma-guardar',{ id:t.id, nome:$('#t-nome').value, nivel:$('#t-nivel').value, classe:$('#t-classe').value, turno:$('#t-turno').value, sala:$('#t-sala').value, capacidade:$('#t-cap').value, propina:$('#t-prop').value, director:$('#t-dir').value||null, titular: MONO[$('#t-nivel').value]?$('#t-tit').value:'', disciplinas: t.id? t.disciplinas : undefined })
+    api('/turma-guardar',{ id:t.id, nome:$('#t-nome').value, nivel:$('#t-nivel').value, classe:$('#t-classe').value, turno:$('#t-turno').value, sala:$('#t-sala').value, capacidade:$('#t-cap').value, propina:$('#t-prop').value, director:$('#t-dir').value||null, titular: MONO[$('#t-nivel').value]?$('#t-tit').value:'', disciplinas: $$('.t-d').length? $$('.t-d').filter(function(c){ return c.checked; }).map(function(c){ return c.value; }) : (t.id? t.disciplinas : undefined) })
       .then(function(x){ if(x.ok){ fechar(); toast(t.id?'Turma actualizada':'Turma criada'); pTurmas(); } else { aGravar(btn,false); $('#t-err').innerHTML=erroCaixa(x.erro); } }); };
 }
 
