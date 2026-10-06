@@ -275,7 +275,8 @@ function pNotas(){
     api('/prof/pauta',{turma:p[0], disciplina:p[1], trimestre:S.tri}).then(function(r){
       if(vez!==S.vez || !el0.isConnected) return;
       if(!r.ok){ $('#ed').innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; }
-      S.ed=GSPauta.montar($('#ed'), r.pauta, { aviso:toast, guardar:function(g,pub){ return api('/prof/pauta-guardar',{turma:p[0], disciplina:p[1], trimestre:S.tri, grelha:g, publicado:pub}); } });
+      S.ed=GSPauta.montar($('#ed'), r.pauta, { aviso:toast, guardar:function(g,pub){ return api('/prof/pauta-guardar',{turma:p[0], disciplina:p[1], trimestre:S.tri, grelha:g, publicado:pub}); },
+        ia:function(g,todas){ return api('/prof/ia-apreciacoes',{turma:p[0], disciplina:p[1], trimestre:S.tri, grelha:g, todas:!!todas}); } });
     });
   }
 }

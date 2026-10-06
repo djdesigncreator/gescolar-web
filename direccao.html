@@ -940,7 +940,8 @@ function editarPauta(disc){
   api('/pauta',{turma:S.P.turma, disciplina:disc, trimestre:S.P.tri}).then(function(r){
     var el=$('#pe'); if(!el) return;
     if(!r.ok){ el.innerHTML=erroCaixa(r.erro); return; }
-    ed=GSPauta.montar(el, r.pauta, { aviso:toast, guardar:function(g,pub){ return api('/pauta-guardar',{turma:S.P.turma, disciplina:disc, trimestre:S.P.tri, grelha:g, publicado:pub}); } });
+    ed=GSPauta.montar(el, r.pauta, { aviso:toast, guardar:function(g,pub){ return api('/pauta-guardar',{turma:S.P.turma, disciplina:disc, trimestre:S.P.tri, grelha:g, publicado:pub}); },
+      ia:function(g,todas){ return api('/ia-apreciacoes',{turma:S.P.turma, disciplina:disc, trimestre:S.P.tri, grelha:g, todas:!!todas}); } });
   });
 }
 
