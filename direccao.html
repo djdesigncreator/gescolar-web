@@ -97,6 +97,8 @@ textarea.inp{height:auto;min-height:130px;padding:10px;line-height:1.45;resize:v
 .sd-l b{color:var(--ink)}
 .sd-box{display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:10px;padding:12px 14px}
 .sd-box b{font:800 20px var(--f-display)}
+.ce{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:16px;border-left:4px solid var(--blue)}
+.ce-l{flex:1;min-width:220px}.ce-l span{display:block;word-break:break-all}
 .chips label:has(input:checked){background:var(--blue);border-color:var(--blue);color:#fff}
 </style>
 </head>
@@ -202,6 +204,12 @@ function pagina(){
 }
 
 // PAINEL — arranque guiado
+function linkAcesso(){ return location.href.replace(/[^\/]*$/,'')+'acesso.html?e='+encodeURIComponent((S.escola&&S.escola.subdominio)||''); }
+function codigoEscola(){ var sub=(S.escola&&S.escola.subdominio)||''; if(!sub) return '';
+  setTimeout(function(){ var a=$('#ce-c'), b=$('#ce-l'); if(a) a.onclick=function(){ copiarTexto(sub); }; if(b) b.onclick=function(){ copiarTexto(linkAcesso()); }; },0);
+  return '<section class="card card-b ce"><div><div class="small muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.06em">Código da escola</div><b class="mono" style="font-size:22px">'+esc(sub)+'</b></div>'+
+    '<div class="ce-l"><div class="small muted">Famílias, alunos e professores entram em</div><span class="mono small">'+esc(linkAcesso().replace(/^https?:\/\//,''))+'</span></div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn sm" id="ce-c">Copiar código</button><button class="btn sm pri" id="ce-l">Copiar link</button></div></section>'; }
 function pPainel(){
   aCarregar();
   api('/painel').then(function(d){
@@ -223,7 +231,7 @@ function pPainel(){
           '<button class="btn '+(i===prox?'pri':'')+' sm" data-go2="'+p[0]+'">'+(p[3]?'Ver':'Começar')+'</button></div>'; }).join('')+'</section>';
     $('#page').innerHTML = ph('Painel da Direcção','Olá, '+esc(primeiro), falta ? 'Faltam <b>'+falta+' '+(falta===1?'passo':'passos')+'</b> para a '+esc(S.escola.nome)+' funcionar em pleno.' : esc(S.escola.nome)+' · '+(soCON()? pl(c.instruendos,'instruendo em curso','instruendos em curso')+' · '+pl(c.cursos,'curso','cursos')+' · '+pl(c.professores,'instrutor','instrutores') : pl(c.estudantes,'estudante','estudantes')+' · '+pl(c.turmas,'turma','turmas')+' · '+pl(c.professores,'professor','professores'))+'.',
         '<button class="btn" id="pn-r">Actualizar</button>')+
-      (falta?arranque:'')+'<div id="pn"><div class="carregar"><div class="spinner"></div>A calcular os números da escola…</div></div>'+(falta?'':'<details style="margin-top:16px"><summary class="small muted" style="cursor:pointer">Passos de arranque</summary><div style="margin-top:10px">'+arranque+'</div></details>');
+      codigoEscola()+(falta?arranque:'')+'<div id="pn"><div class="carregar"><div class="spinner"></div>A calcular os números da escola…</div></div>'+(falta?'':'<details style="margin-top:16px"><summary class="small muted" style="cursor:pointer">Passos de arranque</summary><div style="margin-top:10px">'+arranque+'</div></details>');
     $$('[data-go2]').forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-go2')); }; });
     $('#pn-r').onclick=function(){ indicadores(true); };
     indicadores(false);

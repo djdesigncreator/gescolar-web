@@ -172,8 +172,17 @@
   function sucesso(d){
     var app=document.getElementById('gsr-app');
     app.innerHTML='<div class="wrap done" style="gap:16px">'+brand()+'<div class="okc">\u2713</div><h2>'+esc(S.nome.trim())+' está <mark>pronta</mark></h2>'+
-      '<p class="sub" style="max-width:52ch">Endereço: <b class="mono">'+esc(d.subdominio)+'.gescolar.co.mz</b>. Período de teste até '+esc(d.teste_ate)+'. Já tem sessão iniciada neste dispositivo.</p>'+
+      '<div style="width:100%;max-width:460px;background:#fff;border:2px solid var(--blue,#0A64DC);border-radius:16px;padding:18px 20px;text-align:left">'+
+        '<div style="font-size:13px;font-weight:700;color:#5A6A80;text-transform:uppercase;letter-spacing:.06em">Código da escola</div>'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px"><b class="mono" style="font-size:28px;letter-spacing:.02em">'+esc(d.subdominio)+'</b><button type="button" class="btn" id="cp-cod">Copiar</button></div>'+
+        '<div style="font-size:13px;font-weight:700;color:#5A6A80;text-transform:uppercase;letter-spacing:.06em;margin-top:14px">Link para famílias, alunos e professores</div>'+
+        '<div class="mono" style="font-size:13.5px;word-break:break-all;margin-top:4px">'+esc(d.acesso||'')+'</div><button type="button" class="btn" id="cp-lk" style="margin-top:8px">Copiar link</button>'+
+        '<p style="font-size:13.5px;color:#5A6A80;margin:12px 0 0">'+(d.sms?'Enviámos o código e os links por SMS para o seu telemóvel. ':'')+'Guarde o código: vai precisar dele para dar acesso às famílias.</p></div>'+
+      '<p class="sub" style="max-width:52ch">Período de teste até '+esc(d.teste_ate)+'. Já tem sessão iniciada neste dispositivo.</p>'+
       '<a class="btn pri" href="'+(d.pagina||'direccao')+'.html">Abrir o painel da Direcção</a></div>';
+    function cp(t,b){ try{ navigator.clipboard.writeText(t).then(function(){ b.textContent='Copiado ✓'; }); }catch(e){ b.textContent='Copie à mão'; } }
+    document.getElementById('cp-cod').onclick=function(){ cp(d.subdominio,this); };
+    document.getElementById('cp-lk').onclick=function(){ cp(d.acesso||'',this); };
   }
 
   render();
