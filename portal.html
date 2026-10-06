@@ -164,7 +164,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape') fechar(); 
 var S={ d:null, atual:null, aba:'inicio', sel:{} };
 try{ var h=(location.hash||'').slice(1); if(h) S.aba=h; }catch(e){}
 var ABAS=[['inicio','Início','home'],['propinas','Propinas','wallet'],['recibos','Recibos','receipt'],['notas','Notas','grade'],['horario','Horário','cal']];
-var ABAS_CON=[['inicio','Início','home'],['aulas','Aulas','car'],['propinas','Prestações','wallet'],['recibos','Recibos','receipt']];
+var ABAS_CON=[['inicio','Início','home'],['aulas','Aulas','car'],['codigo','Código','book'],['propinas','Prestações','wallet'],['recibos','Recibos','receipt']];
 var ABAS_ESC=[['inicio','Início','home'],['diario','Diário','book'],['propinas','Propinas','wallet'],['recibos','Recibos','receipt'],['notas','Avaliação','grade']];
 function abas(){ var e=educando(); return e&&e.conducao?ABAS_CON:(e&&e.escolinha?ABAS_ESC:ABAS); }
 function educando(){ var L=(S.d&&S.d.educandos)||[]; return L.filter(function(e){ return e.id===S.atual; })[0] || L[0] || null; }
@@ -195,7 +195,7 @@ function casca(){
   pagina();
 }
 function ir(a){ S.aba=a; try{ history.replaceState(null,'','#'+a); }catch(e){} casca(); window.scrollTo(0,0); }
-function pagina(){ if(!abas().some(function(a){ return a[0]===S.aba; })) S.aba='inicio'; var f={inicio:pInicio,propinas:pPropinas,recibos:pRecibos,notas:pNotas,horario:pHorario,aulas:pAulasCond,diario:pDiarioP}[S.aba]||pInicio; f(); }
+function pagina(){ if(!abas().some(function(a){ return a[0]===S.aba; })) S.aba='inicio'; var f={inicio:pInicio,propinas:pPropinas,recibos:pRecibos,notas:pNotas,horario:pHorario,aulas:pAulasCond, codigo:pCodigoP,diario:pDiarioP}[S.aba]||pInicio; f(); }
 function vazio(i,t,s){ return '<div class="vazio"><div class="ic">'+ic(i)+'</div><b>'+esc(t)+'</b>'+esc(s)+'</div>'; }
 
 /* ================= INÍCIO ================= */
@@ -362,7 +362,16 @@ function blocoConducao(e){
 function pAulasCond(){
   var e=educando(), c=e&&e.conducao;
   if(!c){ $('#pg').innerHTML=vazio('car','Sem curso de condução',''); return; }
-  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Próximas aulas práticas</div>'+
+  var P=c.processo||null, C=c.codigo||{};
+  var pct=function(a,b){ return b?Math.min(100,Math.round(a*100/b)):0; };
+  var barra=function(nome,a,b,extra){ return '<div style="padding:12px 16px;border-bottom:1px solid var(--line)"><div style="display:flex;justify-content:space-between;font-weight:700;font-size:14.5px"><span>'+nome+'</span><span class="mono">'+a+(b?'/'+b:'')+'</span></div><div style="height:6px;border-radius:3px;background:var(--line);margin-top:6px;overflow:hidden"><i style="display:block;height:100%;width:'+pct(a,b)+'%;background:var(--blue)"></i></div>'+(extra?'<div class="small muted" style="margin-top:4px">'+extra+'</div>':'')+'</div>'; };
+  var percurso='<div class="sec-t" style="margin-top:4px">O meu percurso · carta '+esc(c.categoria)+'</div><div class="lista">'+
+    barra('Aulas teóricas', c.teoricas_feitas||0, c.teoricas)+barra('Aulas práticas', c.praticas.feitas, c.praticas.total, c.praticas.faltou?c.praticas.faltou+' falta(s)':'')+
+    '<div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700;font-size:14.5px">Treino do código</span>'+(C.testes?'<span class="pill '+(C.pronto?'ok':'info')+'">'+(C.pronto?'Pronto':'Média '+C.media+'%')+'</span>':'<button class="btn" style="height:32px;font-size:13px" id="ac-cod">Começar</button>')+'</div></div>'+
+    (P? '<div class="sec-t">Processo da carta</div><div class="lista"><div style="padding:14px 16px"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>'+esc(P.processo_nome)+'</b><span class="pill '+(P.faltam.length?'warn':'ok')+'">'+P.docs_entregues+'/'+P.docs_total+' documentos</span></div>'+
+      (P.faltam.length?'<div class="small" style="margin-top:6px;color:var(--warn);font-weight:700">Falta entregar: '+esc(P.faltam.join(', '))+'</div>':'<div class="small" style="margin-top:6px;color:var(--ok);font-weight:700">Documentos completos</div>')+
+      (P.licenca&&P.licenca.validade?'<div class="small" style="margin-top:6px;'+(P.licenca.dias!=null&&P.licenca.dias<=30?'color:var(--bad);font-weight:700':'color:var(--muted)')+'">Licença de aprendizagem'+(P.licenca.numero?' nº '+esc(P.licenca.numero):'')+' '+(P.licenca.dias<0?'caducou a ':'válida até ')+data(P.licenca.validade)+'</div>':'')+'</div></div>':'');
+  $('#pg').innerHTML=percurso+'<div class="sec-t">Próximas aulas práticas</div>'+
     (c.proximas.length? '<div class="lista">'+c.proximas.map(function(a){ return '<div class="aula"><div class="hr">'+esc(dCurta(a.data))+'<br>'+esc(a.inicio)+'</div><div class="barra" style="background:var(--blue)"></div><div class="tx"><b>'+esc(a.inicio)+'–'+esc(a.fim)+' · '+esc(a.instrutor)+'</b><small>'+esc(a.viatura+(a.modelo?' · '+a.modelo:''))+'</small></div></div>'; }).join('')+'</div>'
       : vazio('car','Sem aulas marcadas','A escola marca as aulas e envia um SMS com o dia e a hora.'))+
     '<div class="sec-t">Exames</div>'+
@@ -371,6 +380,65 @@ function pAulasCond(){
     '<div class="sec-t">Aulas feitas</div>'+
     (c.historico.length? '<div class="lista">'+c.historico.map(function(a){ return '<div class="pt-it"><div class="tx"><b>'+esc(dCurta(a.data)+' · '+a.inicio)+'</b><small>'+esc(a.instrutor+(a.notas?' · '+a.notas:''))+'</small></div><span class="pill '+(a.estado==='feita'?'ok':'bad')+'">'+(a.estado==='feita'?'Feita':'Faltou')+'</span></div>'; }).join('')+'</div>'
       : '<p class="small muted">Ainda sem aulas feitas.</p>');
+  var bc=$('#ac-cod'); if(bc) bc.onclick=function(){ ir('codigo'); };
+}
+
+
+/* ================= TREINO DO CÓDIGO (condução, v5.10) ================= */
+var SINAIS={
+  stop:'<svg viewBox="0 0 100 100"><polygon points="30,3 70,3 97,30 97,70 70,97 30,97 3,70 3,30" fill="#fff" stroke="#bbb" stroke-width="1"/><polygon points="31.5,7 68.5,7 93,31.5 93,68.5 68.5,93 31.5,93 7,68.5 7,31.5" fill="#D21F26"/><text x="50" y="60" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="27" fill="#fff">STOP</text></svg>',
+  ceder:'<svg viewBox="0 0 100 100"><polygon points="4,10 96,10 50,92" fill="#D21F26"/><polygon points="19,18.5 81,18.5 50,73.5" fill="#fff"/></svg>',
+  sentido_proibido:'<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#D21F26"/><rect x="17" y="41" width="66" height="18" rx="2" fill="#fff"/></svg>',
+  perigo:'<svg viewBox="0 0 100 100"><polygon points="50,5 97,90 3,90" fill="#D21F26"/><polygon points="50,21 84,82 16,82" fill="#fff"/><rect x="46" y="40" width="8" height="25" rx="2" fill="#111"/><circle cx="50" cy="73" r="4.5" fill="#111"/></svg>',
+  proibicao:'<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#D21F26"/><circle cx="50" cy="50" r="35" fill="#fff"/></svg>',
+  semaforo_vermelho:'<svg viewBox="0 0 60 120"><rect x="8" y="3" width="44" height="114" rx="10" fill="#1f2328"/><circle cx="30" cy="25" r="13" fill="#E3262E"/><circle cx="30" cy="60" r="13" fill="#4a3d10"/><circle cx="30" cy="95" r="13" fill="#123a1f"/></svg>',
+  semaforo_amarelo:'<svg viewBox="0 0 60 120"><rect x="8" y="3" width="44" height="114" rx="10" fill="#1f2328"/><circle cx="30" cy="25" r="13" fill="#4a1414"/><circle cx="30" cy="60" r="13" fill="#F5B301"/><circle cx="30" cy="95" r="13" fill="#123a1f"/></svg>'
+};
+function imgCodigo(k,tam){ tam=tam||96; if(!k) return ''; if(SINAIS[k]) return '<div style="width:'+tam+'px;height:'+tam+'px;margin:0 auto 12px">'+SINAIS[k].replace('<svg ','<svg width="100%" height="100%" ')+'</div>';
+  if(/^https:\/\//i.test(k)) return '<img src="'+esc(k)+'" alt="" referrerpolicy="no-referrer" style="display:block;width:'+(tam*1.6)+'px;max-width:100%;height:'+tam+'px;object-fit:contain;margin:0 auto 12px">'; return ''; }
+function pCodigoP(){
+  var e=educando(), c=e&&e.conducao;
+  if(!c){ $('#pg').innerHTML=vazio('book','Sem curso de condução',''); return; }
+  if(S.teste && S.teste.est===e.id){ if(S.teste.fim) resultadoCodigo(); else perguntaCodigo(); return; }
+  var C=c.codigo||{testes:0,alvo:80};
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Treino do código</div>'+
+    '<div class="saldo'+(C.pronto?' ok':'')+'"><div class="l">'+(C.pronto?'Pronto para o exame':'Prepare o exame de código')+'</div><div class="v">'+(C.media==null?'Comece hoje':C.media+'%')+'</div><div class="d">'+(C.media==null?'Testes de 20 perguntas, com a correcção e a explicação no fim.':'Média dos últimos 3 testes. Meta: '+C.alvo+'% ou mais em 3 testes seguidos.')+'</div>'+
+      '<button class="btn" id="cd-go">'+ic('book')+(C.testes?'Fazer novo teste':'Fazer o primeiro teste')+'</button></div>'+
+    '<div class="pt-g2"><div class="mini"><div class="l">Testes feitos</div><div class="v">'+(C.testes||0)+'</div></div><div class="mini"><div class="l">Último resultado</div><div class="v" style="color:'+(C.ultimo?(C.ultimo.pct>=C.alvo?'var(--ok)':'var(--bad)'):'inherit')+'">'+(C.ultimo?C.ultimo.pct+'%':'—')+'</div>'+(C.ultimo?'<div class="d">'+data(C.ultimo.data)+'</div>':'')+'</div></div>'+
+    '<p class="small muted" style="margin:6px 2px 0">As perguntas são preparadas pela sua escola. A escola vê os seus resultados para saber quando está pronto para marcar o exame de código no INATRO.</p>';
+  $('#cd-go').onclick=function(){ var b=this; b.disabled=true; b.textContent='A preparar o teste…';
+    api('/p/codigo-teste',{estudante:e.id}).then(function(r){ if(!r.ok){ b.disabled=false; b.textContent='Tentar outra vez'; toast(r.erro); return; }
+      S.teste={est:e.id, token:r.token, q:r.perguntas, r:{}, k:0}; window.scrollTo(0,0); pCodigoP(); }); };
+}
+function perguntaCodigo(){
+  var T=S.teste, q=T.q[T.k], n=T.q.length, feitas=Object.keys(T.r).length;
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Pergunta '+(T.k+1)+' de '+n+'<button type="button" id="cd-sair">Desistir</button></div>'+
+    '<div style="height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-bottom:14px"><i style="display:block;height:100%;width:'+Math.round(feitas*100/n)+'%;background:var(--blue)"></i></div>'+
+    '<div class="lista" style="padding:18px 16px">'+imgCodigo(q.imagem)+'<div class="small muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">'+esc(q.tema)+'</div><div style="font:700 17px/1.35 var(--f-display);margin-bottom:14px">'+esc(q.pergunta)+'</div>'+
+      '<div style="display:grid;gap:8px">'+q.opcoes.map(function(o,k){ var on=T.r[q.id]===k; return '<button type="button" data-op="'+k+'" style="text-align:left;padding:13px 14px;border-radius:12px;border:2px solid '+(on?'var(--blue)':'var(--line)')+';background:'+(on?'var(--blue-soft)':'var(--surface)')+';color:var(--ink);font:600 15px/1.35 var(--f-body);cursor:pointer;display:flex;gap:10px;align-items:flex-start"><b style="flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:13px;background:'+(on?'var(--blue)':'var(--surface2)')+';color:'+(on?'#fff':'var(--muted)')+'">'+'ABCD'[k]+'</b><span>'+esc(o)+'</span></button>'; }).join('')+'</div></div>'+
+    '<div style="display:flex;gap:10px;margin-top:14px"><button class="btn" id="cd-ant"'+(T.k?'':' disabled')+' style="flex:1;justify-content:center;height:46px">Anterior</button>'+
+      (T.k<n-1?'<button class="btn pri" id="cd-seg" style="flex:2;justify-content:center;height:46px">Seguinte</button>':'<button class="btn pri" id="cd-fim" style="flex:2;justify-content:center;height:46px">Entregar teste</button>')+'</div>'+
+    (feitas<n?'<p class="small muted" style="text-align:center;margin-top:10px">'+(n-feitas)+' pergunta(s) por responder</p>':'');
+  $$('[data-op]').forEach(function(b){ b.onclick=function(){ T.r[q.id]=+b.getAttribute('data-op'); if(T.k<n-1){ T.k++; } perguntaCodigo(); }; });
+  $('#cd-ant').onclick=function(){ if(T.k){ T.k--; perguntaCodigo(); } };
+  var s=$('#cd-seg'); if(s) s.onclick=function(){ T.k++; perguntaCodigo(); };
+  $('#cd-sair').onclick=function(){ if(confirm('Desistir deste teste? As respostas não ficam guardadas.')){ S.teste=null; pCodigoP(); } };
+  var f=$('#cd-fim'); if(f) f.onclick=function(){ var falta=n-Object.keys(T.r).length; if(falta && !confirm('Ainda tem '+falta+' pergunta(s) sem resposta. Contam como erradas. Entregar mesmo assim?')) return;
+    f.disabled=true; f.textContent='A corrigir…';
+    api('/p/codigo-corrigir',{estudante:T.est, token:T.token, respostas:T.r}).then(function(r){ if(!r.ok){ f.disabled=false; f.textContent='Entregar teste'; toast(r.erro); return; }
+      T.fim=r; var e=educando(); if(e&&e.conducao&&r.resumo) e.conducao.codigo=r.resumo; window.scrollTo(0,0); resultadoCodigo(); }); };
+}
+function resultadoCodigo(){
+  var T=S.teste, r=T.fim, alvo=(r.resumo&&r.resumo.alvo)||80, bom=r.pct>=alvo, erradas=r.correccao.filter(function(x){ return !x.acertou; });
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Resultado do teste</div>'+
+    '<div class="saldo '+(bom?'ok':'bad')+'"><div class="l">'+(bom?'Muito bem!':'Continue a treinar')+'</div><div class="v">'+r.acertos+' / '+r.total+' · '+r.pct+'%</div><div class="d">'+(bom?'Acima da meta de '+alvo+'%.':'A meta é '+alvo+'%. Leia as explicações abaixo e tente outra vez.')+(r.resumo&&r.resumo.pronto?(bom?' Já está pronto para o exame de código.':' A média dos últimos 3 testes ainda chega à meta, mas reveja estes erros.'):'')+'</div>'+
+      '<button class="btn" id="cd-novo">'+ic('book')+'Fazer novo teste</button></div>'+
+    (r.guardado===false?'<p class="small" style="color:var(--warn);font-weight:700">O resultado não ficou guardado na escola. Avise a secretaria.</p>':'')+
+    (erradas.length? '<div class="sec-t">Para rever ('+erradas.length+')</div>'+erradas.map(function(x){ return '<div class="lista" style="padding:16px;margin-bottom:10px">'+imgCodigo(x.imagem,72)+'<b style="display:block;margin-bottom:8px">'+esc(x.pergunta)+'</b>'+
+        (x.escolhida!=null?'<div class="small" style="color:var(--bad);font-weight:700;margin-bottom:4px">✗ A sua resposta: '+esc(x.opcoes[x.escolhida]||'')+'</div>':'<div class="small" style="color:var(--bad);font-weight:700;margin-bottom:4px">✗ Sem resposta</div>')+
+        '<div class="small" style="color:var(--ok);font-weight:700">✓ Certa: '+esc(x.opcoes[x.certa]||'')+'</div>'+(x.explicacao?'<div class="small muted" style="margin-top:8px;line-height:1.45">'+esc(x.explicacao)+'</div>':'')+'</div>'; }).join('')
+      : '<div class="vazio"><div class="ic">'+ic('check')+'</div><b>Tudo certo!</b>Acertou todas as perguntas deste teste.</div>');
+  $('#cd-novo').onclick=function(){ S.teste=null; pCodigoP(); setTimeout(function(){ var b=$('#cd-go'); if(b) b.click(); },0); };
 }
 
 /* ================= PROPINAS ================= */
