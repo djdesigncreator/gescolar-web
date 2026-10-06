@@ -1,5 +1,7 @@
 /* Gescolar · editor de pautas (usado em professor.html e direccao.html)
-   GSPauta.montar(elemento, pauta, { guardar: function(grelha, publicado){ return Promise<{ok, erro, grelha, publicado}> }, aviso: function(texto){} })
+   GSPauta.montar(elemento, pauta, { guardar: function(grelha, publicado){ return Promise<{ok, erro, grelha, publicado}> }, aviso: function(texto){},
+                                     ia: function(grelha, todas){ return Promise<{ok, erro, apreciacoes:{id:texto}, feitas, usados, limite}> } (opcional) })
+   v5.9: cada estudante tem uma apreciação (grelha.obs[id]; na escolinha é a observação notas[id].o). O botão «Apreciações com IA» sugere-as.
    pauta = { turma:{nome}, disciplina:{nome,cor}, trimestre, estudantes:[{id,nome,numero}], grelha:{colunas,notas}, publicado, actualizado_por, regras:{aprovacao} }
    Média do trimestre: MT = (2 x MACS + ACP) / 3 ; sem ACP, MT = MACS */
 (function(){
@@ -32,7 +34,13 @@ var CSS = '' +
 '.gp-foot b{color:var(--ink);font-family:var(--f-mono)}' +
 '.gp-err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:600;margin-bottom:10px}' +
 '.gp-pub{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 12px;border:1px solid var(--line);border-radius:9px;font-weight:600;font-size:14px;cursor:pointer;background:var(--surface);color:var(--ink)}' +
-'@media print{.gp-acts,.gp-hint{display:none!important}.gp-wrap{max-height:none;overflow:visible;border:0}.gp input{border:0;width:auto}}';
+'.gp td.ap{text-align:left;min-width:280px;white-space:normal}' +
+'.gp td.ap textarea{display:block;width:100%;min-width:260px;min-height:38px;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font:400 13px/1.35 var(--f-body);resize:vertical;background:var(--surface);color:var(--ink)}' +
+'.gp td.ap textarea:focus{outline:2px solid var(--blue);outline-offset:-1px}' +
+'.gp .ia-nova{background:#F3F0FF!important;border-color:#B9A8F5!important}' +
+'.gp-ia{background:linear-gradient(135deg,#6D4AFF,#0A64DC)!important;color:#fff!important;border-color:transparent!important}' +
+'.gp-ia[disabled]{opacity:.7}' +
+'@media print{.gp-acts,.gp-hint{display:none!important}.gp-wrap{max-height:none;overflow:visible;border:0}.gp input{border:0;width:auto}.gp td.ap textarea{border:0;resize:none;padding:0}.gp .ia-nova{background:none!important}}';
 function estilo(){ if(document.getElementById('gp-css')) return; var s=document.createElement('style'); s.id='gp-css'; s.textContent=CSS; document.head.appendChild(s); }
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function r1(n){ return Math.round(n*10)/10; }
@@ -46,33 +54,63 @@ function medias(cols, linha){
   return { macs:macs, acp:acp, mt:mt, completa: macs!==null && acp!==null };
 }
 var TRI=['','1º trimestre','2º trimestre','3º trimestre'];
+/* ---------- IA: sugestão de apreciações ---------- */
+var IA_TXT='✨ Apreciações com IA';
+function botaoIA(P, op){ return (P.ia && op.ia) ? '<button class="btn sm gp-ia" type="button" data-gp="ia" title="A IA sugere uma apreciação para cada estudante com notas. Pode editar antes de guardar.">'+IA_TXT+'</button>' : ''; }
+/* ctx: { grelha:fn → grelha a enviar, notas:fn(id) → tem notas?, tem:fn(id) → já tem apreciação?, aplicar:fn({id:texto}) } */
+function ligarIA(el, P, op, ctx){
+  var b=el.querySelector('[data-gp=ia]'); if(!b) return;
+  b.onclick=function(){
+    if(b.disabled) return;
+    var com=P.estudantes.filter(function(e){ return ctx.notas(e.id); });
+    if(!com.length){ if(op.aviso) op.aviso('Lance primeiro as notas: a IA escreve as apreciações a partir delas.'); return; }
+    var todas=false;
+    if(!com.some(function(e){ return !ctx.tem(e.id); })){
+      if(!window.confirm('Todos os estudantes com notas já têm apreciação.\nPedir à IA para reescrever todas? As actuais serão substituídas.')) return;
+      todas=true;
+    }
+    b.disabled=true; b.textContent='A IA está a escrever…';
+    Promise.resolve(op.ia(ctx.grelha(), todas)).then(function(r){
+      b.disabled=false; b.textContent=IA_TXT;
+      if(!r || !r.ok){ if(op.aviso) op.aviso((r&&r.erro)||'A IA não respondeu. Tente de novo.'); return; }
+      ctx.aplicar(r.apreciacoes||{});
+      if(op.aviso) op.aviso('A IA escreveu '+(r.feitas||0)+' apreciação(ões). Reveja e clique em Guardar.'+(r.limite?' ('+r.usados+' de '+r.limite+' pedidos este mês)':''));
+    }, function(){ b.disabled=false; b.textContent=IA_TXT; if(op.aviso) op.aviso('A IA não respondeu. Verifique a internet e tente de novo.'); });
+  };
+}
+function celAp(G, e, ri, novas){ var v=(G.obs||{})[e.id]||''; return '<td class="ap"><textarea data-ap="'+ri+'" rows="2" maxlength="400" placeholder="Apreciação (opcional)"'+(novas[e.id]?' class="ia-nova"':'')+' aria-label="Apreciação de '+esc(e.nome)+'">'+esc(v)+'</textarea></td>'; }
+function ligarAp(el, P, G, novas, marcarSujo){
+  Array.prototype.forEach.call(el.querySelectorAll('textarea[data-ap]'),function(t){ t.oninput=function(){ var e=P.estudantes[+t.getAttribute('data-ap')]; G.obs=G.obs||{}; var v=t.value; if(v.trim()) G.obs[e.id]=v; else delete G.obs[e.id]; delete novas[e.id]; t.classList.remove('ia-nova'); marcarSujo(true); }; });
+}
 
 var NIV={A:['Adquirido','ok'],E:['Em aquisição','warn'],N:['Não adquirido','bad']};
 /* Escolinha: avaliação descritiva (A adquirido · E em aquisição · N não adquirido + observação) */
 function montarDescritiva(el, P, op){
   estilo(); op=op||{};
-  var G={modo:'descritiva', notas:JSON.parse(JSON.stringify((P.grelha&&P.grelha.notas)||{}))}, pub=!!P.publicado, sujo=false, aGuardar=false;
+  var G={modo:'descritiva', notas:JSON.parse(JSON.stringify((P.grelha&&P.grelha.notas)||{}))}, pub=!!P.publicado, sujo=false, aGuardar=false, novas={};
   function marcarSujo(){ sujo=true; var b=el.querySelector('[data-gp=save]'); if(b) b.textContent='Guardar *'; if(op.sujo) op.sujo(true); }
   function desenhar(erro){
     el.innerHTML='<div class="gp-top"><div><h3>'+esc(P.disciplina.nome)+' · '+esc(P.turma.nome)+'</h3><div class="gp-sub">'+TRI[P.trimestre]+' · avaliação descritiva · '+P.estudantes.length+' crianças'+(P.actualizado_por?' · última gravação: '+esc(P.actualizado_por):'')+'</div></div>'+
-      '<div class="gp-acts"><label class="gp-pub"><input type="checkbox" data-gp="pub"'+(pub?' checked':'')+'> Publicar às famílias</label><button class="btn" type="button" data-gp="print">Imprimir</button><button class="btn pri" type="button" data-gp="save">Guardar'+(sujo?' *':'')+'</button></div></div>'+
+      '<div class="gp-acts">'+botaoIA(P,op)+'<label class="gp-pub"><input type="checkbox" data-gp="pub"'+(pub?' checked':'')+'> Publicar às famílias</label><button class="btn" type="button" data-gp="print">Imprimir</button><button class="btn pri" type="button" data-gp="save">Guardar'+(sujo?' *':'')+'</button></div></div>'+
       (erro?'<div class="gp-err">'+esc(erro)+'</div>':'')+
       (P.estudantes.length? '<div class="gp-wrap"><table class="gp" style="width:100%"><thead><tr><th class="nm" style="max-width:none;position:static;white-space:normal">Crianças</th></tr></thead><tbody>'+
         P.estudantes.map(function(e,ri){ var l=G.notas[e.id]||{};
           return '<tr><td class="nm" style="max-width:none;min-width:0;position:static;white-space:normal"><div style="display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:wrap"><div style="min-width:0"><b>'+esc(e.nome)+'</b><small>'+esc(e.numero)+'</small></div>'+
             '<div style="white-space:nowrap">'+['A','E','N'].map(function(k){ return '<button type="button" class="btn sm" data-r="'+ri+'" data-n="'+k+'" title="'+NIV[k][0]+'" style="min-width:38px;margin:0 2px;'+(l.n===k?'background:var(--'+(NIV[k][1]==='ok'?'ok':NIV[k][1]==='warn'?'warn':'bad')+');border-color:transparent;color:#fff':'')+'">'+k+'</button>'; }).join('')+'</div></div>'+
-            '<input data-o="'+ri+'" maxlength="400" value="'+esc(l.o||'')+'" placeholder="Observação (opcional)" style="display:block;width:100%;margin-top:8px;text-align:left;font:400 14px var(--f-body);height:34px;padding:0 8px;border:1px solid var(--line,#DDE3EC);border-radius:8px"></td></tr>'; }).join('')+'</tbody></table></div>' : '<div class="gp-err" style="background:var(--surface2,#EEF2F8);color:var(--muted)">Esta turma ainda não tem crianças matriculadas.</div>')+
+            '<textarea data-o="'+ri+'" maxlength="400" rows="2" placeholder="Observação (opcional)"'+(novas[e.id]?' class="ia-nova"':'')+' style="display:block;width:100%;margin-top:8px;text-align:left;font:400 14px/1.35 var(--f-body);min-height:38px;padding:6px 8px;border:1px solid var(--line,#DDE3EC);border-radius:8px;resize:vertical;background:var(--surface);color:var(--ink)">'+esc(l.o||'')+'</textarea></td></tr>'; }).join('')+'</tbody></table></div>' : '<div class="gp-err" style="background:var(--surface2,#EEF2F8);color:var(--muted)">Esta turma ainda não tem crianças matriculadas.</div>')+
       '<div class="gp-foot" data-gp="foot"></div><p class="gp-hint small muted" style="margin:10px 0 0">A = adquirido · E = em aquisição · N = não adquirido. A observação aparece às famílias no portal.</p>';
     rodape(); ligar();
   }
   function rodape(){ var c={A:0,E:0,N:0}, n=0; P.estudantes.forEach(function(e){ var l=G.notas[e.id]; if(l&&l.n){ c[l.n]++; n++; } }); var f=el.querySelector('[data-gp=foot]'); if(f) f.innerHTML='<span>Avaliadas: <b>'+n+'/'+P.estudantes.length+'</b></span><span>Adquirido: <b>'+c.A+'</b></span><span>Em aquisição: <b>'+c.E+'</b></span><span>Não adquirido: <b>'+c.N+'</b></span>'; }
   function ligar(){
     Array.prototype.forEach.call(el.querySelectorAll('[data-n]'),function(b){ b.onclick=function(){ var e=P.estudantes[+b.getAttribute('data-r')], l=G.notas[e.id]=G.notas[e.id]||{}, k=b.getAttribute('data-n'); l.n = l.n===k ? '' : k; if(!l.n) delete l.n; marcarSujo(); desenhar(); }; });
-    Array.prototype.forEach.call(el.querySelectorAll('[data-o]'),function(i){ i.oninput=function(){ var e=P.estudantes[+i.getAttribute('data-o')], l=G.notas[e.id]=G.notas[e.id]||{}; l.o=i.value; marcarSujo(); }; });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-o]'),function(i){ i.oninput=function(){ var e=P.estudantes[+i.getAttribute('data-o')], l=G.notas[e.id]=G.notas[e.id]||{}; l.o=i.value; delete novas[e.id]; i.classList.remove('ia-nova'); marcarSujo(); }; });
+    ligarIA(el, P, op, { grelha:function(){ return G; }, notas:function(id){ return !!(G.notas[id]&&G.notas[id].n); }, tem:function(id){ return !!(G.notas[id]&&String(G.notas[id].o||'').trim()); },
+      aplicar:function(m){ Object.keys(m).forEach(function(id){ var l=G.notas[id]=G.notas[id]||{}; l.o=m[id]; novas[id]=1; }); marcarSujo(); desenhar(); } });
     el.querySelector('[data-gp=pub]').onchange=function(){ pub=this.checked; marcarSujo(); };
     el.querySelector('[data-gp=print]').onclick=function(){ window.print(); };
     el.querySelector('[data-gp=save]').onclick=function(){ if(aGuardar) return; aGuardar=true; var b=this; b.disabled=true; b.textContent='A guardar…';
-      op.guardar(G,pub).then(function(r){ aGuardar=false; if(!r||!r.ok){ desenhar((r&&r.erro)||'Não foi possível guardar.'); return; } G={modo:'descritiva',notas:(r.grelha&&r.grelha.notas)||{}}; pub=!!r.publicado; sujo=false; if(op.sujo) op.sujo(false); desenhar(); if(op.aviso) op.aviso(pub?'Avaliação guardada e publicada às famílias':'Avaliação guardada (ainda não publicada)'); }); };
+      op.guardar(G,pub).then(function(r){ aGuardar=false; if(!r||!r.ok){ desenhar((r&&r.erro)||'Não foi possível guardar.'); return; } G={modo:'descritiva',notas:(r.grelha&&r.grelha.notas)||{}}; pub=!!r.publicado; sujo=false; novas={}; if(op.sujo) op.sujo(false); desenhar(); if(op.aviso) op.aviso(pub?'Avaliação guardada e publicada às famílias':'Avaliação guardada (ainda não publicada)'); }); };
   }
   desenhar();
   return { sujo:function(){ return sujo; } };
@@ -95,8 +133,8 @@ function mediasSem(cols, n, R){
 function montarSemestral(el, P, op){
   estilo(); op=op||{};
   var R=P.regras||{}, aprov=R.aprovacao||10;
-  var G=JSON.parse(JSON.stringify(P.grelha||{})); G.modo='semestral'; G.notas=G.notas||{}; G.colunas=G.colunas||[];
-  var pub=!!P.publicado, sujo=false, aGuardar=false;
+  var G=JSON.parse(JSON.stringify(P.grelha||{})); G.modo='semestral'; G.notas=G.notas||{}; G.colunas=G.colunas||[]; G.obs=G.obs||{};
+  var pub=!!P.publicado, sujo=false, aGuardar=false, novas={};
   function F(){ return G.colunas.filter(function(c){ return c.tipo==='F'; }); }
   function todas(){ return F().concat([{id:'ex',tipo:'EX',nome:'Exame'},{id:'rc',tipo:'RC',nome:'Recorrência'}]); }
   function marcarSujo(v){ sujo=v; var b=el.querySelector('[data-gp=save]'); if(b) b.textContent='Guardar'+(sujo?' *':''); if(op.sujo) op.sujo(sujo); }
@@ -104,17 +142,17 @@ function montarSemestral(el, P, op){
   function desenhar(erro){
     var cols=todas(), nF=F().length;
     el.innerHTML='<div class="gp-top"><div><h3>'+esc(P.disciplina.nome)+' · '+esc(P.turma.nome)+'</h3><div class="gp-sub">'+SEM[P.trimestre]+' · '+P.estudantes.length+' estudantes'+(P.disciplina.creditos?' · '+P.disciplina.creditos+' créditos':'')+(P.actualizado_por?' · última gravação: '+esc(P.actualizado_por):'')+'</div></div>'+
-      '<div class="gp-acts"><button class="btn sm" type="button" data-gp="addf"'+(nF>=8?' disabled':'')+'>+ Teste/Trabalho</button>'+
+      '<div class="gp-acts">'+botaoIA(P,op)+'<button class="btn sm" type="button" data-gp="addf"'+(nF>=8?' disabled':'')+'>+ Teste/Trabalho</button>'+
       '<label class="gp-pub"><input type="checkbox" data-gp="pub"'+(pub?' checked':'')+'> Publicar aos estudantes</label><button class="btn" type="button" data-gp="print">Imprimir</button>'+
       '<button class="btn pri" type="button" data-gp="save">Guardar'+(sujo?' *':'')+'</button></div></div>'+
       (erro?'<div class="gp-err">'+esc(erro)+'</div>':'')+
       (P.estudantes.length? '<div class="gp-wrap"><table class="gp"><thead><tr><th class="nm">Estudante</th>'+
         cols.map(function(c,i){ return c.tipo==='F'?'<th class="col" data-col="'+i+'" title="Clique para mudar o nome ou tirar a coluna">'+esc(c.nome)+'</th>':'<th class="acp">'+esc(c.nome)+'</th>'; }).join('')+
-        '<th>Freq.</th><th>Final</th><th>Situação</th></tr></thead><tbody>'+
+        '<th>Freq.</th><th>Final</th><th>Situação</th><th style="text-align:left">Apreciação</th></tr></thead><tbody>'+
         P.estudantes.map(function(e,ri){ var l=G.notas[e.id]||{};
           return '<tr data-e="'+esc(e.id)+'"><td class="nm"><b>'+esc(e.nome)+'</b><small>'+esc(e.numero)+'</small></td>'+
             cols.map(function(c,ci){ var v=l[c.id]; return '<td><input inputmode="decimal" maxlength="4" data-r="'+ri+'" data-c="'+ci+'" value="'+(typeof v==='number'?String(v).replace('.',','):'')+'"'+(typeof v==='number'&&v<aprov?' class="neg"':'')+' aria-label="'+esc(c.nome)+' de '+esc(e.nome)+'"></td>'; }).join('')+
-            '<td class="calc" data-m="freq"></td><td class="calc mt" data-m="fin"></td><td data-m="sit"></td></tr>'; }).join('')+'</tbody></table></div>'
+            '<td class="calc" data-m="freq"></td><td class="calc mt" data-m="fin"></td><td data-m="sit"></td>'+celAp(G,e,ri,novas)+'</tr>'; }).join('')+'</tbody></table></div>'
         : '<div class="gp-err" style="background:var(--surface2,#EEF2F8);color:var(--muted)">Esta turma ainda não tem estudantes inscritos.</div>')+
       '<div class="gp-foot" data-gp="foot"></div>'+
       '<p class="gp-hint small muted" style="margin:10px 0 0">Frequência = média dos testes e trabalhos. Com '+(R.dispensa||14)+' ou mais fica dispensado; abaixo de '+(R.admissao||10)+' fica excluído. Admitido: Final = '+(100-(R.peso_exame||50))+'% frequência + '+(R.peso_exame||50)+'% exame. A recorrência substitui o exame.</p>';
@@ -151,6 +189,9 @@ function montarSemestral(el, P, op){
         G.colunas=G.colunas.filter(function(x){ return x.id!==c.id; }); Object.keys(G.notas).forEach(function(k){ delete G.notas[k][c.id]; }); marcarSujo(true); desenhar(); return; }
       if(nome){ c.nome=nome.slice(0,16); marcarSujo(true); desenhar(); } }; });
     var a=el.querySelector('[data-gp=addf]'); if(a) a.onclick=function(){ G.colunas=F().concat([{id:proxId(),tipo:'F',nome:'Avaliação '+(F().length+1)}]); marcarSujo(true); desenhar(); };
+    ligarAp(el, P, G, novas, marcarSujo);
+    ligarIA(el, P, op, { grelha:function(){ return {modo:'semestral', colunas:todas(), notas:G.notas, obs:G.obs}; }, notas:function(id){ var l=G.notas[id]||{}; return F().some(function(c){ return typeof l[c.id]==='number'; }); },
+      tem:function(id){ return !!String(G.obs[id]||'').trim(); }, aplicar:function(m){ Object.keys(m).forEach(function(id){ G.obs[id]=m[id]; novas[id]=1; }); marcarSujo(true); desenhar(); } });
     el.querySelector('[data-gp=pub]').onchange=function(){ pub=this.checked; marcarSujo(true); };
     el.querySelector('[data-gp=print]').onclick=function(){ window.print(); };
     el.querySelector('[data-gp=save]').onclick=function(){ if(aGuardar) return;
@@ -159,7 +200,7 @@ function montarSemestral(el, P, op){
       G.colunas=todas();
       op.guardar(G,pub).then(function(r){ aGuardar=false;
         if(!r||!r.ok){ b.disabled=false; G.colunas=F(); desenhar((r&&r.erro)||'Não foi possível guardar.'); return; }
-        G=JSON.parse(JSON.stringify(r.grelha)); G.notas=G.notas||{}; G.colunas=(G.colunas||[]).filter(function(c){ return c.tipo==='F'; }); pub=!!r.publicado; P.publicado=pub;
+        G=JSON.parse(JSON.stringify(r.grelha)); G.notas=G.notas||{}; G.obs=G.obs||{}; novas={}; G.colunas=(G.colunas||[]).filter(function(c){ return c.tipo==='F'; }); pub=!!r.publicado; P.publicado=pub;
         marcarSujo(false); desenhar(); if(op.aviso) op.aviso(pub?'Pauta guardada e publicada aos estudantes':'Pauta guardada (ainda não publicada)'); }); };
   }
   G.colunas=F();
@@ -173,8 +214,8 @@ function montar(el, P, op){
   estilo(); op=op||{};
   var aprov = (P.regras && P.regras.aprovacao) || 10;
   var G = JSON.parse(JSON.stringify(P.grelha||{colunas:[],notas:{}}));
-  G.notas = G.notas || {};
-  var pub = !!P.publicado, sujo=false, aGuardar=false;
+  G.notas = G.notas || {}; G.obs = G.obs || {};
+  var pub = !!P.publicado, sujo=false, aGuardar=false, novas={};
   function marcarSujo(v){ sujo=v; var b=el.querySelector('[data-gp=save]'); if(b) b.textContent = 'Guardar'+(sujo?' *':''); if(op.sujo) op.sujo(sujo); }
   function proxId(){ var n=1; while(G.colunas.some(function(c){ return c.id==='acs'+n; })) n++; return 'acs'+n; }
   function ordenar(){ G.colunas.sort(function(a,b){ return (a.tipo==='ACP')-(b.tipo==='ACP'); }); }
@@ -184,7 +225,7 @@ function montar(el, P, op){
     var cols=G.colunas;
     el.innerHTML =
       '<div class="gp-top"><div><h3>'+esc(P.disciplina.nome)+' · '+esc(P.turma.nome)+'</h3><div class="gp-sub">'+TRI[P.trimestre]+' · '+P.estudantes.length+' estudantes'+(P.actualizado_por?' · última gravação: '+esc(P.actualizado_por):'')+'</div></div>'+
-      '<div class="gp-acts"><button class="btn sm" type="button" data-gp="addacs"'+(cols.length>=10?' disabled':'')+'>+ ACS</button>'+
+      '<div class="gp-acts">'+botaoIA(P,op)+'<button class="btn sm" type="button" data-gp="addacs"'+(cols.length>=10?' disabled':'')+'>+ ACS</button>'+
       (cols.some(function(c){ return c.tipo==='ACP'; })?'':'<button class="btn sm" type="button" data-gp="addacp">+ ACP</button>')+
       '<label class="gp-pub"><input type="checkbox" data-gp="pub"'+(pub?' checked':'')+'> Publicar às famílias</label>'+
       '<button class="btn" type="button" data-gp="print">Imprimir</button>'+
@@ -192,11 +233,11 @@ function montar(el, P, op){
       (erro?'<div class="gp-err">'+esc(erro)+'</div>':'')+
       (P.estudantes.length ? '<div class="gp-wrap"><table class="gp"><thead><tr><th class="nm">Estudante</th>'+
         cols.map(function(c,i){ return '<th class="col'+(c.tipo==='ACP'?' acp':'')+'" data-col="'+i+'" title="Clique para mudar o nome ou tirar a coluna">'+esc(c.nome)+'</th>'; }).join('')+
-        '<th>MACS</th><th>MT</th><th>Situação</th></tr></thead><tbody>'+
+        '<th>MACS</th><th>MT</th><th>Situação</th><th style="text-align:left">Apreciação</th></tr></thead><tbody>'+
         P.estudantes.map(function(e,ri){ var l=G.notas[e.id]||{};
           return '<tr data-e="'+esc(e.id)+'"><td class="nm"><b>'+esc(e.nome)+'</b><small>'+esc(e.numero)+'</small></td>'+
             cols.map(function(c,ci){ var v=l[c.id]; return '<td><input inputmode="decimal" maxlength="4" data-r="'+ri+'" data-c="'+ci+'" value="'+(typeof v==='number'?String(v).replace('.',','):'')+'"'+(typeof v==='number'&&v<aprov?' class="neg"':'')+' aria-label="'+esc(c.nome)+' de '+esc(e.nome)+'"></td>'; }).join('')+
-            '<td class="calc" data-m="macs"></td><td class="calc mt" data-m="mt"></td><td data-m="sit"></td></tr>'; }).join('')+
+            '<td class="calc" data-m="macs"></td><td class="calc mt" data-m="mt"></td><td data-m="sit"></td>'+celAp(G,e,ri,novas)+'</tr>'; }).join('')+
         '</tbody></table></div>' : '<div class="gp-err" style="background:var(--surface2,#EEF2F8);color:var(--muted)">Esta turma ainda não tem estudantes matriculados.</div>')+
       '<div class="gp-foot" data-gp="foot"></div>'+
       '<p class="gp-hint small muted" style="margin:10px 0 0">Notas de 0 a 20 (pode usar vírgula: 12,5). Enter ou ↓ passa ao estudante seguinte. MT = (2 × MACS + ACP) ÷ 3.</p>';
@@ -241,6 +282,9 @@ function montar(el, P, op){
     el.querySelector('[data-gp=pub]').onchange=function(){ pub=this.checked; marcarSujo(true); };
     el.querySelector('[data-gp=print]').onclick=function(){ window.print(); };
     el.querySelector('[data-gp=save]').onclick=guardar;
+    ligarAp(el, P, G, novas, marcarSujo);
+    ligarIA(el, P, op, { grelha:function(){ return G; }, notas:function(id){ return Object.keys(G.notas[id]||{}).length>0; }, tem:function(id){ return !!String(G.obs[id]||'').trim(); },
+      aplicar:function(m){ Object.keys(m).forEach(function(id){ G.obs[id]=m[id]; novas[id]=1; }); marcarSujo(true); desenhar(); } });
   }
   function coluna(i){
     var c=G.colunas[i]; if(!c) return;
@@ -260,7 +304,7 @@ function montar(el, P, op){
     op.guardar(G, pub).then(function(r){
       aGuardar=false;
       if(!r || !r.ok){ b.disabled=false; desenhar((r&&r.erro)||'Não foi possível guardar.'); return; }
-      G=JSON.parse(JSON.stringify(r.grelha)); G.notas=G.notas||{}; pub=!!r.publicado; P.publicado=pub;
+      G=JSON.parse(JSON.stringify(r.grelha)); G.notas=G.notas||{}; G.obs=G.obs||{}; novas={}; pub=!!r.publicado; P.publicado=pub;
       marcarSujo(false); desenhar();
       if(op.aviso) op.aviso(pub ? 'Notas guardadas e publicadas às famílias' : 'Notas guardadas (ainda não publicadas)');
     });
