@@ -122,12 +122,12 @@
         '<div class="row"><label class="f">Palavra-passe<input class="inp" id="r-ap" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></label>'+
         '<label class="f">Repetir a palavra-passe<input class="inp" id="r-ap2" type="password" autocomplete="new-password"></label></div><span class="hint" id="r-ap-h"></span></div>';
     } else if(S.step===4){
-      body='<div><h2>Escolha o plano</h2><p class="sub">30 dias grátis em qualquer plano. Só paga no fim, por M-Pesa, e-Mola ou cartão.</p></div>'+
+      body='<div><h2>Escolha o plano</h2><p class="sub">7 dias grátis em qualquer plano. Só paga no fim, por M-Pesa, e-Mola ou cartão.</p></div>'+
         '<div class="cards">'+PLANOS.map(function(p){ return '<button type="button" class="lvc '+(S.plano===p[0]?'on':'')+'" data-pl="'+p[0]+'"><b>'+p[0]+'</b><span style="font-family:Montserrat,sans-serif;font-size:24px;font-weight:800">'+p[1]+(p[1]!=='Sob consulta'?' <small>MT/mês</small>':'')+'</span><small>'+p[2]+'</small></button>'; }).join('')+'</div>';
     } else {
       var niv=S.niveis.map(function(k){ return LVL.filter(function(l){return l.k===k;})[0].n; }).join(', ');
       body='<div><h2>Confirme e crie a escola</h2></div><div class="card sum">'+
-        [['Instituição',esc(S.nome)],['NUIT','<span class="mono">'+esc(S.nuit)+'</span>'],['Localização',esc((S.cidade?S.cidade+', ':'')+S.prov)],['Endereço','<span class="mono">'+esc(S.sub||slug(S.nome))+'.gescolar.co.mz</span>'],['Tipos de ensino',esc(niv)],['Administrador',esc(S.an)+' · '+esc(S.ae)],['Plano',S.plano+' · 30 dias grátis']].map(function(r){ return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'; }).join('')+'</div>'+
+        [['Instituição',esc(S.nome)],['NUIT','<span class="mono">'+esc(S.nuit)+'</span>'],['Localização',esc((S.cidade?S.cidade+', ':'')+S.prov)],['Endereço','<span class="mono">'+esc(S.sub||slug(S.nome))+'.gescolar.co.mz</span>'],['Tipos de ensino',esc(niv)],['Administrador',esc(S.an)+' · '+esc(S.ae)],['Plano',S.plano+' · 7 dias grátis']].map(function(r){ return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'; }).join('')+'</div>'+
         (S.erro?'<div class="msg bad">'+esc(S.erro)+'</div>':'');
     }
     var nextLbl = S.step===5 ? (S.aEnviar?'<span class="spin"></span>A criar a escola…':'Criar a escola') : 'Continuar';
