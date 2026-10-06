@@ -69,9 +69,9 @@ function casca(){
   carregar();
 }
 function carregar(){
-  api('/pl/resumo').then(function(d){
+  Promise.all([api('/pl/resumo'), api('/pl/saques')]).then(function(r){ var d=r[0];
     if(!d.ok){ $('#pg').innerHTML=erroCaixa(d.erro); return; }
-    S.d=d; desenhar();
+    S.d=d; S.saques=r[1].ok?r[1].saques:[]; desenhar();
   });
 }
 function desenhar(){
@@ -86,6 +86,12 @@ function desenhar(){
       ['A transferir às escolas',mt(t.a_transferir),'saldo na carteira única',t.a_transferir?'bad':'ok'],
       ['Assinaturas este mês',mt(t.assinaturas_mes),mt(t.assinaturas)+' desde o início','']
     ].map(function(k){ return '<div class="card kpi"><div class="l">'+k[0]+'</div><div class="v num '+k[3]+'" style="font-size:24px">'+k[1]+'</div><div class="d">'+esc(k[2])+'</div></div>'; }).join('')+'</div>'+
+    (S.saques&&S.saques.length? '<section class="card" style="margin-bottom:16px;border-left:4px solid var(--warn)"><div class="card-b"><b style="font-size:16px">Saques e levantamentos por resolver ('+S.saques.length+')</b>'+
+      '<div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Data</th><th>Escola</th><th>Canal</th><th class="r">Valor</th><th>Para</th><th>Estado</th><th></th></tr></thead><tbody>'+
+      S.saques.map(function(q,i){ return '<tr><td class="small">'+data(q.data)+'</td><td><b>'+esc(q.escola_nome)+'</b><div class="small muted">'+esc(q.por)+'</div></td><td>'+esc(q.canal_nome||q.canal)+'</td><td class="r num"><b>'+mt(q.valor)+'</b></td>'+
+        '<td class="small" style="max-width:260px;white-space:normal">'+esc(q.numero||q.notas.replace(/^Enviar para: /,''))+'</td><td><span class="pill warn">'+(q.estado==='pedido'?'Saque pedido':'Levantamento sem confirmação')+'</span></td>'+
+        '<td class="r" style="white-space:nowrap"><button class="btn sm pri" data-sq="'+i+'" data-e="concluida">Pago</button> <button class="btn sm" data-sq="'+i+'" data-e="falhada">Falhou</button></td></tr>'; }).join('')+
+      '</tbody></table></div><p class="small muted" style="margin:8px 0 0">Saque de cartão: pague à escola pelo destino indicado e carregue em Pago com a referência. Levantamento sem confirmação: veja na MozPayment se o dinheiro saiu.</p></div></section>' : '')+
     '<div class="filtro"><input class="inp" id="f" placeholder="Procurar escola, cidade, província…" value="'+esc(S.filtro)+'" style="flex:1;min-width:220px">'+
       '<select class="sel" id="o"><option value="saldo"'+(S.ordem==='saldo'?' selected':'')+'>Maior saldo a transferir</option><option value="validade"'+(S.ordem==='validade'?' selected':'')+'>Validade mais próxima</option><option value="estudantes"'+(S.ordem==='estudantes'?' selected':'')+'>Mais estudantes</option><option value="nome"'+(S.ordem==='nome'?' selected':'')+'>Nome</option></select>'+
       '<button class="btn" id="r">Actualizar</button></div>'+
@@ -99,6 +105,9 @@ function desenhar(){
   $('#o').onchange=function(){ S.ordem=this.value; desenhar(); };
   $('#r').onclick=function(){ $('#pg').innerHTML='<div class="carregar"><div class="spinner"></div>A calcular…</div>'; carregar(); };
   $$('[data-tr]').forEach(function(b){ b.onclick=function(){ transferir(L[+b.getAttribute('data-tr')]); }; });
+  $$('[data-sq]').forEach(function(b){ b.onclick=function(){ var q=S.saques[+b.getAttribute('data-sq')], e=b.getAttribute('data-e'), ref='';
+    if(e==='concluida'){ ref=window.prompt('Referência do pagamento à escola (opcional):',''); if(ref===null) return; } else if(!confirm('Marcar como falhado? O valor volta ao saldo da escola.')) return;
+    b.disabled=true; api('/pl/saque-estado',{id:q.id, estado:e, referencia:ref}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast(e==='concluida'?'Marcado como pago · SMS à escola':'Marcado como falhado'); carregar(); }); }; });
   $$('[data-ver]').forEach(function(b){ b.onclick=function(){ verEscola(L[+b.getAttribute('data-ver')]); }; });
 }
 function transferir(e, depois){
