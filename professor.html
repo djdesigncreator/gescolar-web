@@ -243,7 +243,9 @@ function pChamada(){
   if(L.length) abrir();
   function abrir(){
     var p=S.chAula.split('|'); $('#ch').innerHTML='<div class="carregar"><div class="spinner"></div>A abrir a chamada…</div>';
+    var vez=S.vez=(S.vez||0)+1, el0=$('#ch');
     api('/prof/chamada',{turma:p[0], data:S.chData, tempo:+p[1]}).then(function(r){
+      if(vez!==S.vez || !el0.isConnected) return;   // o professor já mudou de aula ou de página
       if(!r.ok){ $('#ch').innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; }
       S.ch=GSChamada.montar($('#ch'), r.chamada, { hoje:hoje, aviso:toast,
         guardar:function(m,sum,sms){ return api('/prof/chamada-guardar',{turma:p[0], data:S.chData, tempo:+p[1], marcas:m, sumario:sum, sms:sms}); },
@@ -269,7 +271,9 @@ function pNotas(){
   function abrir(){
     var p=S.par.split('|'); S.ed=null;
     $('#ed').innerHTML='<div class="carregar"><div class="spinner"></div>A abrir a pauta…</div>';
+    var vez=S.vez=(S.vez||0)+1, el0=$('#ed');
     api('/prof/pauta',{turma:p[0], disciplina:p[1], trimestre:S.tri}).then(function(r){
+      if(vez!==S.vez || !el0.isConnected) return;
       if(!r.ok){ $('#ed').innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; }
       S.ed=GSPauta.montar($('#ed'), r.pauta, { aviso:toast, guardar:function(g,pub){ return api('/prof/pauta-guardar',{turma:p[0], disciplina:p[1], trimestre:S.tri, grelha:g, publicado:pub}); } });
     });
@@ -298,7 +302,9 @@ function pDiario(){
   abrir();
   function abrir(){
     $('#di').innerHTML='<div class="carregar"><div class="spinner"></div>A abrir o diário…</div>';
+    var vez=S.vez=(S.vez||0)+1, el0=$('#di');
     api('/prof/diario',{turma:S.diTurma, data:S.diData}).then(function(r){
+      if(vez!==S.vez || !el0.isConnected) return;
       if(!r.ok){ $('#di').innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; }
       montar(r);
     });
