@@ -78,6 +78,19 @@ textarea.inp{height:auto;min-height:130px;padding:10px;line-height:1.45;resize:v
 .pn-vazio{color:var(--muted);font-size:14px;padding:6px 0}
 .kpi .v.bad{color:var(--bad)} .kpi .v.ok{color:var(--ok)}
 .msg-err{background:var(--bad-soft);color:var(--bad);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:600}
+.lk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.lk.on{box-shadow:0 0 0 2px var(--blue)}
+.lk-t{display:block;font:800 16px var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lk-n{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted)}
+.lk-n b{color:var(--ink);font-family:var(--f-mono)}
+.lk-url{margin-top:8px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--surface2);border-radius:7px;padding:6px 8px}
+.lk-cor{width:30px;height:30px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--line);cursor:pointer}
+.lk-cor.on{box-shadow:0 0 0 2px var(--ink)}
+.lk-prev{height:110px;border-radius:10px;background-size:cover;background-position:center;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.lk-qi{display:grid;grid-template-columns:1fr 130px auto auto;gap:8px;align-items:center;margin-bottom:8px;padding:8px;border:1px solid var(--line);border-radius:10px}
+.lk-qi .inp,.lk-qi .sel{height:38px}
+@media(max-width:600px){.lk-qi{grid-template-columns:1fr 1fr}}
+.chips label:has(input:checked){background:var(--blue);border-color:var(--blue);color:#fff}
 </style>
 </head>
 <body>
@@ -100,7 +113,7 @@ function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?
 function iniciais(n){ var p=String(n||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+((p.length>1?p[p.length-1]:'')[0]||'')).toUpperCase(); }
 var CORES=['#0A64DC','#0E7C86','#7B4DD6','#C2410C','#168A52','#B4235A','#0B2A4A','#8A6D00'];
 function av(n){ var h=0; for(var i=0;i<n.length;i++) h=(h*31+n.charCodeAt(i))>>>0; return '<span class="av" style="background:'+CORES[h%CORES.length]+'">'+esc(iniciais(n))+'</span>'; }
-var IC={home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',layers:'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zM6.5 17A2.5 2.5 0 0 0 4 19.5 2.5 2.5 0 0 0 6.5 22H20v-5',board:'M2 3h20M4 3v11h16V3M12 14v4M8 21l4-3 4 3',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',wallet:'M20 7H5a2 2 0 0 1 0-4h13v4M3 5v14a2 2 0 0 0 2 2h15V7M16 14h.01',receipt:'M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2zM8 8h8M8 12h8M8 16h5',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',cog:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',plus:'M12 5v14M5 12h14',x:'M18 6 6 18M6 6l12 12',menu:'M3 6h18M3 12h18M3 18h18',save:'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8',check:'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',trash:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',sparkle:'M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z'};
+var IC={home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',layers:'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zM6.5 17A2.5 2.5 0 0 0 4 19.5 2.5 2.5 0 0 0 6.5 22H20v-5',board:'M2 3h20M4 3v11h16V3M12 14v4M8 21l4-3 4 3',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',wallet:'M20 7H5a2 2 0 0 1 0-4h13v4M3 5v14a2 2 0 0 0 2 2h15V7M16 14h.01',receipt:'M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2zM8 8h8M8 12h8M8 16h5',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',cog:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',plus:'M12 5v14M5 12h14',x:'M18 6 6 18M6 6l12 12',menu:'M3 6h18M3 12h18M3 18h18',save:'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8',check:'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',trash:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',link:'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',sparkle:'M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z'};
 IC.car='M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7.5 13h.01M16.5 13h.01'; IC.download='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'; IC.image='M3 5h18v14H3zM8.5 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M21 15l-5-5L5 19';
 function ic(n,x){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" '+(x||'')+'><path d="'+IC[n]+'"/></svg>'; }
 function pl(n,a,b){ return n+' '+(n===1?a:b); }
@@ -127,7 +140,7 @@ var S = { pag:'painel', escola:null, nome:'', painel:null, turmas:null, discipli
 try{ var h=(location.hash||'').slice(1); if(h) S.pag=h; }catch(e){}
 
 /* ---------- casca ---------- */
-var NAV = [['Arranque'],['painel','Painel','home'],['turmas','Turmas e salas','layers'],['disciplinas','Disciplinas','book'],['professores','Professores','board'],['estudantes','Estudantes','users'],
+var NAV = [['Arranque'],['painel','Painel','home'],['turmas','Turmas e salas','layers'],['disciplinas','Disciplinas','book'],['professores','Professores','board'],['estudantes','Estudantes','users'],['inscricoes','Inscrições online','link'],
   ['Financeiro'],['propinas','Propinas e multas','wallet'],['facturas','Facturas e recibos','receipt'],
   ['Escola'],['horarios','Horários','cal'],['presencas','Presenças e faltas','check'],['pautas','Pautas e notas','grade'],['comunicados','Comunicados','mega'],
   ['Conta'],['equipa','Equipa da escola','users',0,1],['assinatura','Assinatura do Gescolar','receipt',0,1]];
@@ -177,7 +190,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos, aulas:pAulas, viaturas:pViaturas, exames:pExames }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos, aulas:pAulas, viaturas:pViaturas, exames:pExames, inscricoes:pInscricoes }[S.pag] || pPainel;
   f();
 }
 
@@ -913,6 +926,136 @@ function editarPauta(disc){
     if(!r.ok){ el.innerHTML=erroCaixa(r.erro); return; }
     ed=GSPauta.montar(el, r.pauta, { aviso:toast, guardar:function(g,pub){ return api('/pauta-guardar',{turma:S.P.turma, disciplina:disc, trimestre:S.P.tri, grelha:g, publicado:pub}); } });
   });
+}
+
+/* ================= INSCRIÇÕES ONLINE ================= */
+var EST_INSC={pendente:['À espera do pagamento','warn'],paga:['Paga · por matricular','info'],falhada:['Pagamento falhou','bad'],matriculada:['Matriculada','ok'],recusada:['Recusada','muted']};
+var CORES_LINK=['#0A64DC','#14582A','#7C3AED','#C2410C','#BE123C','#0F766E','#1E293B'];
+function copiarTexto(t){ try{ navigator.clipboard.writeText(t).then(function(){ toast('Link copiado'); },function(){ toast(t); }); }catch(e){ toast(t); } }
+function pInscricoes(){
+  aCarregar();
+  api('/links').then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    S.LINKS=d.links;
+    var L=d.links;
+    if(S.LK && !L.some(function(l){ return l.id===S.LK; })) S.LK=null;
+    if(!S.LK && L.length) S.LK=(L.filter(function(l){ return l.pagas; })[0]||L[0]).id;
+    $('#page').innerHTML=ph('Arranque','Inscrições online', L.length? L.length+' link(s) · '+L.reduce(function(s,l){ return s+l.pagas; },0)+' inscrição(ões) paga(s) por matricular.' : 'Crie uma página de inscrição com a cara da escola. Os candidatos preenchem os dados e pagam a taxa por M-Pesa, e-Mola ou cartão.',
+        '<button class="btn pri" id="lk-novo">'+ic('plus')+'Novo link</button>')+
+      (L.length? '<div class="lk-grid">'+L.map(function(l){
+        return '<section class="card lk'+(S.LK===l.id?' on':'')+'" style="border-top:4px solid '+esc(l.cor)+'"><div class="card-b">'+
+          '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><div style="min-width:0"><b class="lk-t">'+esc(l.titulo)+'</b><div class="small muted">'+(l.preco?mt(l.preco):'Gratuito')+(l.prazo?' · até '+l.prazo.slice(8,10)+'/'+l.prazo.slice(5,7):'')+(l.vagas?' · '+l.vagas+' vagas':'')+(l.nivel?' · '+esc(NIVEL[l.nivel]||l.nivel):'')+'</div></div>'+
+          '<span class="pill '+(l.aberto?'ok':'muted')+'" title="'+esc(l.motivo)+'">'+(l.aberto?'Aberto':'Fechado')+'</span></div>'+
+          '<div class="lk-n"><span><b>'+l.pagas+'</b> por matricular</span><span><b>'+l.matriculadas+'</b> matriculadas</span><span><b>'+l.pendentes+'</b> à espera</span></div>'+
+          '<div class="lk-url mono small">'+esc(l.url.replace(/^https?:\/\//,''))+'</div>'+
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><button class="btn sm pri" data-ver="'+l.id+'">Inscrições</button><button class="btn sm" data-cp="'+l.id+'">Copiar link</button><a class="btn sm" href="'+esc(l.url)+'" target="_blank" rel="noopener" style="text-decoration:none">Abrir</a><button class="btn sm" data-ed="'+l.id+'">Editar</button>'+
+          '<button class="btn sm ghost" data-on="'+l.id+'" data-v="'+(l.activo?'0':'1')+'">'+(l.activo?'Fechar':'Reabrir')+'</button></div></div></section>'; }).join('')+'</div><div id="lk-lista"></div>'
+        : vazio('users','Ainda não há links de inscrição','Exemplo: "Inscrições 2027 · 8ª Classe", com taxa de 500 MT, prazo até 31 de Janeiro e 120 vagas. Partilhe o link no WhatsApp e no Facebook da escola.'));
+    $('#lk-novo').onclick=function(){ editarLink(null); };
+    $$('[data-ver]').forEach(function(b){ b.onclick=function(){ S.LK=b.getAttribute('data-ver'); $$('.lk').forEach(function(c){ c.classList.remove('on'); }); b.closest('.lk').classList.add('on'); listaInscricoes(); }; });
+    $$('[data-cp]').forEach(function(b){ b.onclick=function(){ var l=L.filter(function(x){ return x.id===b.getAttribute('data-cp'); })[0]; copiarTexto(l.url); }; });
+    $$('[data-ed]').forEach(function(b){ b.onclick=function(){ api('/link',{id:b.getAttribute('data-ed')}).then(function(r){ if(!r.ok){ toast(r.erro); return; } editarLink(r.link); }); }; });
+    $$('[data-on]').forEach(function(b){ b.onclick=function(){ b.disabled=true; api('/link-estado',{id:b.getAttribute('data-on'), activo:b.getAttribute('data-v')==='1'}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast(r.activo?'Link reaberto':'Link fechado'); pInscricoes(); }); }; });
+    if(S.LK) listaInscricoes();
+  });
+}
+function listaInscricoes(){
+  var box=$('#lk-lista'); if(!box) return; var lk=(S.LINKS||[]).filter(function(l){ return l.id===S.LK; })[0]; if(!lk) return;
+  S.LF=S.LF||'paga';
+  box.innerHTML='<div class="carregar"><div class="spinner"></div>A carregar…</div>';
+  api('/inscricoes-online',{link:lk.id}).then(function(d){
+    if(!d.ok){ box.innerHTML=erroCaixa(d.erro); return; }
+    var T=d.inscricoes, F={paga:'Por matricular',matriculada:'Matriculadas',pendente:'À espera',todas:'Todas'};
+    var L=S.LF==='todas'?T:T.filter(function(i){ return i.estado===S.LF; });
+    box.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0 10px"><h2 style="margin:0;font:800 18px var(--f-display)">'+esc(lk.titulo)+'</h2><div class="chips">'+
+        Object.keys(F).map(function(k){ var n=k==='todas'?T.length:T.filter(function(i){ return i.estado===k; }).length; return '<label><input type="radio" name="lf" value="'+k+'"'+(S.LF===k?' checked':'')+' style="display:none">'+F[k]+' ('+n+')</label>'; }).join('')+'</div></div>'+
+      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Candidato</th><th class="hide-sm">Contactos</th><th class="hide-sm">Pagamento</th><th>Estado</th><th></th></tr></thead><tbody>'+
+        L.map(function(i,k){ var e=EST_INSC[i.estado]||[i.estado,'muted'];
+          return '<tr><td><b>'+esc(i.nome)+'</b><div class="small muted">'+(i.nascimento?'Nasc. '+i.nascimento.slice(8,10)+'/'+i.nascimento.slice(5,7)+'/'+i.nascimento.slice(0,4)+' · ':'')+data(i.pago_em||i.criado)+(i.numero?' · Nº <span class="mono">'+esc(i.numero)+'</span>':'')+'</div>'+
+            (Object.keys(i.respostas).length?'<button class="btn sm ghost" data-rsp="'+k+'" style="padding:0;height:auto;margin-top:2px">Ver respostas ('+Object.keys(i.respostas).length+')</button>':'')+'</td>'+
+            '<td class="small hide-sm">'+(i.telefone?esc(i.telefone)+'<br>':'')+(i.enc_nome?'<span class="muted">Enc.:</span> '+esc(i.enc_nome)+' · '+esc(i.enc_telefone)+'<br>':'')+(i.email?esc(i.email):'')+'</td>'+
+            '<td class="small hide-sm">'+(i.valor?mt(i.valor)+'<div class="muted">'+esc({mpesa:'M-Pesa',emola:'e-Mola',cartao:'Cartão'}[i.metodo]||i.metodo)+'</div>':'Gratuito')+'</td>'+
+            '<td><span class="pill '+e[1]+'">'+e[0]+'</span></td>'+
+            '<td class="r" style="white-space:nowrap">'+(i.estado==='paga'?'<button class="btn sm pri" data-mat="'+k+'">Matricular</button> <button class="btn sm ghost" data-rec="'+k+'">Recusar</button>':'')+'</td></tr>'; }).join('')+'</tbody></table></div></section>'
+        : '<p class="small muted">Nenhuma inscrição '+(S.LF==='todas'?'':'nesta lista ')+'ainda. Partilhe o link: <a href="'+esc(lk.url)+'" target="_blank" rel="noopener">'+esc(lk.url.replace(/^https?:\/\//,''))+'</a></p>');
+    $$('input[name=lf]').forEach(function(r){ r.onchange=function(){ S.LF=r.value; listaInscricoes(); }; });
+    $$('[data-rsp]').forEach(function(b){ b.onclick=function(){ var i=L[+b.getAttribute('data-rsp')];
+      modal('<div class="modal-h"><h3>'+esc(i.nome)+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+Object.keys(i.respostas).map(function(k){ return '<div><div class="small muted" style="font-weight:600">'+esc(k)+'</div><div style="white-space:pre-wrap">'+esc(i.respostas[k])+'</div></div>'; }).join('<hr style="border:0;border-top:1px solid var(--line);margin:4px 0">')+'</div><div class="modal-f"><button class="btn pri" data-fechar>Fechar</button></div>'); }; });
+    $$('[data-rec]').forEach(function(b){ b.onclick=function(){ var i=L[+b.getAttribute('data-rec')]; if(!confirm('Recusar a inscrição de '+i.nome+'? O dinheiro não é devolvido automaticamente: se for o caso, devolva por M-Pesa.')) return; b.disabled=true;
+      api('/inscricao-online-recusar',{id:i.id}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast('Inscrição recusada'); pInscricoes(); }); }; });
+    $$('[data-mat]').forEach(function(b){ b.onclick=function(){ matricularInscricao(L[+b.getAttribute('data-mat')], lk); }; });
+  });
+}
+function matricularInscricao(i, lk){
+  var con=lk.nivel==='CON';
+  modal('<div class="modal-h"><h3>Matricular '+esc(i.nome)+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b" id="mi-b"><div class="carregar"><div class="spinner"></div>A carregar…</div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="mi-ok" disabled>'+ic('save')+(con?'Inscrever no curso':'Matricular')+'</button></div>');
+  api(con?'/cursos':'/turmas').then(function(r){
+    var b=$('#mi-b'); if(!b) return;
+    if(!r.ok){ b.innerHTML=erroCaixa(r.erro); return; }
+    var L=con? r.cursos : r.turmas.filter(function(t){ return !lk.nivel || t.nivel===lk.nivel; });
+    if(!L.length){ b.innerHTML=erroCaixa(con?'Crie primeiro o curso em "Cursos e categorias".':'Não há turmas'+(lk.nivel?' de '+(NIVEL[lk.nivel]||lk.nivel):'')+'. Crie a turma primeiro.'); return; }
+    b.innerHTML='<label class="field">'+(con?'Curso':'Turma')+'<select class="sel" id="mi-s">'+L.map(function(x){ return '<option value="'+x.id+'">'+esc(con?'Carta '+x.categoria+' · '+x.nome+' · '+mt(x.preco):x.nome+(x.estudantes!=null?' · '+x.estudantes+'/'+(x.capacidade||'—')+' estudantes':''))+'</option>'; }).join('')+'</select></label>'+
+      '<div class="small" style="background:var(--surface2);border-radius:8px;padding:10px 12px;line-height:1.6"><b>'+esc(i.nome)+'</b>'+(i.nascimento?' · nasc. '+esc(i.nascimento):'')+'<br>'+(i.telefone?'Telemóvel: '+esc(i.telefone)+'<br>':'')+(i.enc_nome?'Encarregado: '+esc(i.enc_nome)+' · '+esc(i.enc_telefone):'')+'</div>'+
+      '<p class="small muted" style="margin:0">'+(con?'São criadas as prestações do curso e o instruendo recebe o SMS de boas-vindas.':'O estudante recebe o número e o encarregado o SMS com o link de acesso ao portal.')+'</p><div id="mi-err"></div>';
+    var ok=$('#mi-ok'); ok.disabled=false;
+    ok.onclick=function(){ aGravar(ok,true); var v=$('#mi-s').value;
+      api('/inscricao-online-matricular',con?{id:i.id, curso:v}:{id:i.id, turma:v}).then(function(x){ if(!x.ok){ aGravar(ok,false); $('#mi-err').innerHTML=erroCaixa(x.erro); return; }
+        fechar(); toast('Matriculado · Nº '+x.numero+(x.sms?' · SMS enviado':'')); pInscricoes(); }); };
+  });
+}
+function editarLink(l){
+  var novo=!l; l=l||{titulo:'',descricao:'',preco:0,cor:CORES_LINK[0],capa:'',nivel:'',prazo:'',vagas:0,campos:[],mensagem:'',contacto:'',whatsapp:'',activo:true};
+  var C=JSON.parse(JSON.stringify(l.campos||[])), capa=l.capa||'', niveis=(S.escola&&S.escola.niveis)||[];
+  modal('<div class="modal-h"><h3>'+(novo?'Novo link de inscrição':'Editar link')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<div class="eyebrow">Página</div>'+
+    '<label class="field">Título<input class="inp" id="lk-t" maxlength="90" value="'+esc(l.titulo)+'" placeholder="Ex.: Inscrições 2027 · 8ª Classe"></label>'+
+    '<label class="field">Texto da página<textarea class="inp" id="lk-d" rows="4" maxlength="2000" placeholder="Ex.: As inscrições para o ano lectivo 2027 estão abertas. Traga no início das aulas o BI e a declaração da escola anterior.">'+esc(l.descricao)+'</textarea></label>'+
+    '<div class="frow"><label class="field">Taxa de inscrição (MT)<input class="inp mono" id="lk-p" type="number" min="0" step="50" value="'+(l.preco||0)+'"><span class="small muted" style="font-weight:400">0 = inscrição gratuita</span></label>'+
+    '<label class="field">Nível<select class="sel" id="lk-n"><option value="">Qualquer</option>'+niveis.map(function(k){ return '<option value="'+k+'"'+(k===l.nivel?' selected':'')+'>'+(NIVEL[k]||k)+'</option>'; }).join('')+'</select><span class="small muted" style="font-weight:400">Superior e condução: sem encarregado</span></label></div>'+
+    '<div class="frow"><label class="field">Data limite (opcional)<input class="inp" id="lk-pr" type="date" value="'+esc(l.prazo)+'"></label><label class="field">Vagas (opcional)<input class="inp mono" id="lk-v" type="number" min="0" value="'+(l.vagas||'')+'" placeholder="Sem limite"></label></div>'+
+    '<div class="eyebrow" style="margin-top:6px">Aparência</div>'+
+    '<div class="field">Cor principal<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+CORES_LINK.map(function(c){ return '<button type="button" class="lk-cor" data-cor="'+c+'" style="background:'+c+'"></button>'; }).join('')+'<input type="color" id="lk-c" value="'+esc(l.cor)+'" style="width:44px;height:34px;padding:2px;border:1px solid var(--line);border-radius:8px;background:none"></div></div>'+
+    '<div class="field">Imagem de capa (opcional)<div id="lk-capa"></div><input type="file" id="lk-f" accept="image/*" style="display:none"></div>'+
+    '<div class="eyebrow" style="margin-top:6px">Perguntas extra <span class="small muted" style="text-transform:none;letter-spacing:0;font-weight:500">· nome, nascimento, telemóvel e encarregado já vêm sempre</span></div><div id="lk-q"></div>'+
+    '<button type="button" class="btn sm" id="lk-qa">'+ic('plus')+'Acrescentar pergunta</button>'+
+    '<div class="eyebrow" style="margin-top:12px">Depois de pagar</div>'+
+    '<label class="field">Mensagem final<textarea class="inp" id="lk-m" rows="3" maxlength="600" placeholder="Ex.: Obrigado! Apresente-se na secretaria com o BI até 15 de Fevereiro para confirmar a matrícula.">'+esc(l.mensagem)+'</textarea></label>'+
+    '<div class="frow"><label class="field">Telefone de contacto<input class="inp" id="lk-ct" maxlength="40" value="'+esc(l.contacto)+'" placeholder="Por defeito, o da escola"></label><label class="field">WhatsApp<input class="inp mono" id="lk-w" inputmode="tel" maxlength="16" value="'+esc(l.whatsapp)+'" placeholder="84 123 4567"></label></div>'+
+    '<div id="lk-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="lk-ok">'+ic('save')+(novo?'Criar link':'Guardar')+'</button></div>');
+  var m=$('#ov .modal'); if(m) m.style.maxWidth='680px';
+  function verCor(){ $$('.lk-cor').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-cor').toLowerCase()===$('#lk-c').value.toLowerCase()); }); }
+  $$('.lk-cor').forEach(function(b){ b.onclick=function(){ $('#lk-c').value=b.getAttribute('data-cor'); verCor(); verCapa(); }; }); $('#lk-c').oninput=function(){ verCor(); verCapa(); }; verCor();
+  function verCapa(){ $('#lk-capa').innerHTML='<div class="lk-prev" style="'+(capa?'background-image:url('+capa+')':'background:linear-gradient(135deg,'+$('#lk-c').value+',#000a)')+'"><span>'+(capa?'':'Sem imagem: usa a cor')+'</span></div>'+
+      '<div style="display:flex;gap:6px;margin-top:6px"><button type="button" class="btn sm" id="lk-up">'+(capa?'Trocar imagem':'Escolher imagem')+'</button>'+(capa?'<button type="button" class="btn sm ghost" id="lk-rm">Tirar imagem</button>':'')+'</div>';
+    $('#lk-up').onclick=function(){ $('#lk-f').click(); }; var rm=$('#lk-rm'); if(rm) rm.onclick=function(){ capa=''; verCapa(); }; }
+  verCapa();
+  $('#lk-f').onchange=function(){ var f=this.files[0]; if(!f) return; var fr=new FileReader(); fr.onload=function(){ var img=new Image(); img.onload=function(){
+      var w=Math.min(1200,img.width), h=Math.round(img.height*w/img.width), cv=document.createElement('canvas'); cv.width=w; cv.height=h; cv.getContext('2d').drawImage(img,0,0,w,h);
+      var q=.82, out=cv.toDataURL('image/jpeg',q); while(out.length>400000 && q>.35){ q-=.1; out=cv.toDataURL('image/jpeg',q); }
+      if(out.length>400000){ toast('A imagem é demasiado grande. Escolha outra.'); return; } capa=out; verCapa(); }; img.src=fr.result; }; fr.readAsDataURL(f); this.value=''; };
+  function verQ(){ $('#lk-q').innerHTML=C.map(function(c,k){ return '<div class="lk-qi"><input class="inp" data-qr="'+k+'" maxlength="60" value="'+esc(c.rotulo)+'" placeholder="Pergunta, ex.: Escola anterior">'+
+      '<select class="sel" data-qt="'+k+'"><option value="texto"'+(c.tipo==='texto'?' selected':'')+'>Texto</option><option value="opcoes"'+(c.tipo==='opcoes'?' selected':'')+'>Escolha</option><option value="simnao"'+(c.tipo==='simnao'?' selected':'')+'>Sim / Não</option></select>'+
+      '<label class="small" style="display:flex;gap:6px;align-items:center;white-space:nowrap"><input type="checkbox" data-qo="'+k+'"'+(c.obrigatorio?' checked':'')+'> Obrigatória</label><button type="button" class="icon-btn" data-qx="'+k+'" title="Tirar">'+ic('x')+'</button>'+
+      (c.tipo==='opcoes'?'<input class="inp" data-qp="'+k+'" maxlength="400" value="'+esc((c.opcoes||[]).join(', '))+'" placeholder="Opções separadas por vírgulas, ex.: Manhã, Tarde" style="grid-column:1/-1">':'')+'</div>'; }).join('');
+    $$('[data-qr]').forEach(function(i){ i.oninput=function(){ C[+i.getAttribute('data-qr')].rotulo=i.value; }; });
+    $$('[data-qt]').forEach(function(s){ s.onchange=function(){ C[+s.getAttribute('data-qt')].tipo=s.value; verQ(); }; });
+    $$('[data-qo]').forEach(function(i){ i.onchange=function(){ C[+i.getAttribute('data-qo')].obrigatorio=i.checked; }; });
+    $$('[data-qp]').forEach(function(i){ i.oninput=function(){ C[+i.getAttribute('data-qp')].opcoes=i.value.split(','); }; });
+    $$('[data-qx]').forEach(function(b){ b.onclick=function(){ C.splice(+b.getAttribute('data-qx'),1); verQ(); }; });
+    $('#lk-qa').style.display=C.length>=10?'none':''; }
+  verQ();
+  $('#lk-qa').onclick=function(){ C.push({rotulo:'',tipo:'texto',opcoes:[],obrigatorio:false}); verQ(); var u=$$('[data-qr]').pop(); if(u) u.focus(); };
+  $('#lk-ok').onclick=function(){ var btn=this; aGravar(btn,true);
+    api('/link-guardar',{ id:l.id, titulo:$('#lk-t').value, descricao:$('#lk-d').value, preco:$('#lk-p').value, nivel:$('#lk-n').value, prazo:$('#lk-pr').value, vagas:$('#lk-v').value,
+      cor:$('#lk-c').value, capa:capa, campos:C.map(function(c){ return {rotulo:c.rotulo, tipo:c.tipo, opcoes:(c.opcoes||[]).map(function(o){ return String(o).trim(); }).filter(Boolean), obrigatorio:!!c.obrigatorio}; }),
+      mensagem:$('#lk-m').value, contacto:$('#lk-ct').value, whatsapp:$('#lk-w').value, activo:l.activo!==false }).then(function(r){
+      if(!r.ok){ aGravar(btn,false); $('#lk-err').innerHTML=erroCaixa(r.erro); return; }
+      fechar(); S.LK=r.id;
+      modal('<div class="modal-h"><h3>'+(novo?'Link criado':'Link guardado')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b"><p style="margin:0">Partilhe este link no WhatsApp, no Facebook e no site da escola:</p>'+
+        '<input class="inp mono" id="lk-u" readonly value="'+esc(r.url)+'"></div><div class="modal-f"><a class="btn" href="'+esc(r.url)+'" target="_blank" rel="noopener">Abrir</a><button class="btn pri" id="lk-cp">Copiar link</button></div>');
+      $('#lk-cp').onclick=function(){ copiarTexto(r.url); };
+      pInscricoes(); }); };
 }
 
 /* ================= COMUNICADOS ================= */

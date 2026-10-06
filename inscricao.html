@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="pt-MZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Inscrição online · Gescolar</title>
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="gescolar.css">
+<style>
+body{background:var(--bg);margin:0}
+:root{--ac:#0A64DC}
+.capa{position:relative;height:210px;background:linear-gradient(135deg,var(--ac),color-mix(in srgb,var(--ac) 55%,#000));background-size:cover;background-position:center}
+.capa.img:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 40%,rgba(0,0,0,.45))}
+.wrap{max-width:620px;margin:0 auto;padding:0 16px 48px;position:relative}
+.cab{position:relative;z-index:2}
+.cab .lg{margin-top:-46px;width:92px;height:92px;border-radius:50%;background:#fff;border:4px solid var(--surface);box-shadow:0 6px 20px rgba(0,0,0,.18);display:grid;place-items:center;overflow:hidden;flex:none;font:800 30px var(--f-display);color:var(--ac)}
+.cab .lg img{width:100%;height:100%;object-fit:cover}
+.cab .esc{margin-top:8px;min-width:0}
+.cab .esc b{display:block;font:800 18px var(--f-display);color:var(--ink);line-height:1.2}
+.cab .esc small{color:var(--muted);font-size:13.5px}
+.bloco{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:16px}
+h1.tit{font:800 26px/1.15 var(--f-display);letter-spacing:-.02em;margin:18px 0 8px;color:var(--ink)}
+.idesc{white-space:pre-wrap;color:var(--ink);font-size:16px;line-height:1.55;margin:0}
+.ichips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip2{display:inline-flex;align-items:center;gap:6px;border-radius:99px;padding:6px 12px;font-weight:700;font-size:14px;background:var(--surface2);border:1px solid var(--line);color:var(--ink)}
+.chip2.pr{background:var(--ac);border-color:var(--ac);color:#fff}
+.sec{font:800 15px var(--f-display);margin:22px 0 10px;color:var(--ink)}
+.sec:first-child{margin-top:0}
+.field{margin-bottom:12px}
+.field .inp,.field .sel{height:46px;font-size:16px}
+.field textarea.inp{height:auto;min-height:80px;padding:10px 12px}
+.req{color:var(--bad)}
+.sn{display:flex;gap:8px}
+.sn label{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:44px;border:1px solid var(--line);border-radius:10px;font-weight:700;color:var(--ink);cursor:pointer}
+.sn input{accent-color:var(--ac)}
+.met{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.met button{border:2px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 6px;font:700 14px var(--f-body);color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
+.met button small{font-weight:500;color:var(--muted);font-size:12px}
+.met button.on{border-color:var(--ac);background:color-mix(in srgb,var(--ac) 8%,var(--surface))}
+.btn.go{width:100%;height:52px;justify-content:center;font-size:17px;background:var(--ac);border-color:var(--ac);color:#fff;border-radius:12px;margin-top:6px}
+.msg{border-radius:10px;padding:11px 13px;font-size:14.5px;font-weight:600;margin:10px 0}
+.msg.err{background:var(--bad-soft);color:var(--bad)}
+.msg.info{background:var(--blue-soft);color:var(--blue)}
+.fim{text-align:center;padding:30px 20px}
+.fim .ok{width:76px;height:76px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;background:var(--ok-soft);color:var(--ok)}
+.fim .ok svg{width:40px;height:40px}
+.fim h2{font:800 23px var(--f-display);margin:0 0 8px}
+.fim p{color:var(--muted);font-size:16px;line-height:1.5;margin:0 auto;max-width:440px;white-space:pre-wrap}
+.cts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.cts a{text-decoration:none}
+.spinner{border-top-color:var(--ac)}
+@media(min-width:700px){.capa{height:280px}}
+.rod{text-align:center;color:var(--muted);font-size:13px;margin-top:22px}
+.rod a{color:var(--muted)}
+.fechado{text-align:center;padding:26px 18px}
+.fechado b{display:block;font:800 19px var(--f-display);margin-bottom:6px;color:var(--ink)}
+</style>
+</head>
+<body>
+<div id="root"><div class="carregar" style="display:flex;align-items:center;justify-content:center;gap:12px;padding:80px 16px;color:var(--muted)"><div class="spinner" style="margin:0;width:28px;height:28px;border-width:3px"></div>A abrir…</div></div>
+<script>
+(function(){
+'use strict';
+var PROXY='https://gescolar-proxy.onrender.com';
+function $(s,r){ return (r||document).querySelector(s); }
+function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
+function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function mt(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' MT'; }
+function dt(x){ return x? x.slice(8,10)+'/'+x.slice(5,7)+'/'+x.slice(0,4) : ''; }
+function api(rota,corpo){
+  return fetch(PROXY+rota,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(corpo||{})})
+    .then(function(r){ return r.json().catch(function(){ return {ok:false,erro:'Resposta inválida do servidor.'}; }); })
+    .catch(function(){ return {ok:false,erro:'Sem ligação. Verifique a internet e tente de novo.'}; });
+}
+var OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+var q=new URLSearchParams(location.search), ESC=q.get('e')||'', LNK=q.get('l')||'';
+var D=null, S={metodo:'mpesa'}, CH='gs_insc_'+ESC+'_'+LNK;
+function guarda(v){ try{ if(v) sessionStorage.setItem(CH,JSON.stringify(v)); else sessionStorage.removeItem(CH); }catch(e){} }
+function lida(){ try{ return JSON.parse(sessionStorage.getItem(CH)||'null'); }catch(e){ return null; } }
+
+function casca(corpo){
+  var E=D.escola, L=D.link;
+  document.documentElement.style.setProperty('--ac', L.cor||'#0A64DC');
+  document.title=L.titulo+' · '+E.nome;
+  $('#root').innerHTML='<div class="capa'+(L.capa?' img':'')+'"'+(L.capa?' style="background-image:url('+L.capa+')"':'')+'></div>'+
+    '<div class="wrap"><div class="cab"><div class="lg">'+(E.logotipo?'<img src="'+esc(E.logotipo)+'" alt="">':esc((E.nome||'?').split(/\s+/).map(function(p){return p[0];}).slice(0,2).join('').toUpperCase()))+'</div>'+
+    '<div class="esc"><b>'+esc(E.nome)+'</b><small>'+esc([E.telefone,E.email].filter(Boolean).join(' · '))+'</small></div></div>'+
+    '<div id="corpo">'+corpo+'</div><p class="rod">Inscrições com <a href="https://www.gescolar.co.mz" target="_blank" rel="noopener">Gescolar</a></p></div>';
+}
+function info(){
+  var L=D.link, c=[];
+  c.push('<span class="chip2 pr">'+(L.preco?'Taxa de inscrição: '+mt(L.preco):'Inscrição gratuita')+'</span>');
+  if(L.prazo) c.push('<span class="chip2">Até '+dt(L.prazo)+'</span>');
+  if(D.restantes!=null) c.push('<span class="chip2">'+(D.restantes===1?'Resta 1 vaga':'Restam '+D.restantes+' vagas')+'</span>');
+  return '<h1 class="tit">'+esc(L.titulo)+'</h1>'+(L.descricao?'<p class="idesc">'+esc(L.descricao)+'</p>':'')+'<div class="ichips">'+c.join('')+'</div>';
+}
+function campo(c){
+  var r=c.obrigatorio?' <span class="req">*</span>':''; function T(x){ return '<span>'+x+'</span>'; }
+  if(c.tipo==='opcoes') return '<label class="field">'+T(esc(c.rotulo)+r)+'<select class="sel" data-c="'+c.id+'"><option value="">— escolher —</option>'+c.opcoes.map(function(o){ return '<option>'+esc(o)+'</option>'; }).join('')+'</select></label>';
+  if(c.tipo==='simnao') return '<div class="field">'+T(esc(c.rotulo)+r)+'<div class="sn"><label><input type="radio" name="'+c.id+'" value="sim" data-c="'+c.id+'"> Sim</label><label><input type="radio" name="'+c.id+'" value="nao" data-c="'+c.id+'"> Não</label></div></div>';
+  return '<label class="field">'+T(esc(c.rotulo)+r)+'<input class="inp" data-c="'+c.id+'" maxlength="300"></label>';
+}
+function formulario(erro){
+  var L=D.link;
+  if(!D.aberto){ casca(info()+'<div class="bloco fechado"><b>Inscrições fechadas</b>'+esc(D.motivo)+contactos()+'</div>'); return; }
+  casca(info()+'<form class="bloco" id="f" novalidate style="margin-top:18px">'+
+    '<div class="sec">'+(L.encarregado?'Dados do candidato':'Os seus dados')+'</div>'+
+    '<label class="field"><span>Nome completo <span class="req">*</span></span><input class="inp" id="f-nome" autocomplete="name" maxlength="100" placeholder="Nome e apelido"></label>'+
+    '<label class="field">Data de nascimento<input class="inp" id="f-nasc" type="date"></label>'+
+    '<label class="field"><span>Telemóvel'+(L.encarregado?' do candidato (opcional)':' <span class="req">*</span>')+'</span><input class="inp" id="f-tel" inputmode="tel" maxlength="16" placeholder="84 123 4567"></label>'+
+    (L.encarregado?'<div class="sec">Encarregado de educação</div><label class="field"><span>Nome completo <span class="req">*</span></span><input class="inp" id="f-enc" maxlength="100"></label>'+
+      '<label class="field"><span>Telemóvel <span class="req">*</span></span><input class="inp" id="f-etel" inputmode="tel" maxlength="16" placeholder="84 123 4567"></label>':'')+
+    '<label class="field">Email (opcional)<input class="inp" id="f-email" type="email" maxlength="120"></label>'+
+    (L.campos.length?'<div class="sec">Mais informações</div>'+L.campos.map(campo).join(''):'')+
+    (L.preco?'<div class="sec">Pagamento · '+mt(L.preco)+'</div><div class="met">'+
+      [['mpesa','M-Pesa','Vodacom 84/85'],['emola','e-Mola','Movitel 86/87'],['cartao','Cartão','Visa · Mastercard']].map(function(m){ return '<button type="button" data-m="'+m[0]+'" class="'+(S.metodo===m[0]?'on':'')+'">'+m[1]+'<small>'+m[2]+'</small></button>'; }).join('')+'</div>'+
+      '<label class="field" id="f-numw"><span>Número que vai pagar <span class="req">*</span></span><input class="inp" id="f-num" inputmode="tel" maxlength="16" placeholder="84 123 4567"></label>':'')+
+    '<div id="f-err">'+(erro?'<div class="msg err">'+esc(erro)+'</div>':'')+'</div>'+
+    '<button class="btn go" id="f-ok" type="submit">'+(L.preco?'Inscrever e pagar '+mt(L.preco):'Enviar inscrição')+'</button>'+
+    '<p class="small muted" style="margin:10px 2px 0;text-align:center">Os seus dados são usados apenas pela escola para tratar da inscrição.</p></form>');
+  function verMet(){ $$('[data-m]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-m')===S.metodo); }); var w=$('#f-numw'); if(w) w.style.display=S.metodo==='cartao'?'none':''; }
+  $$('[data-m]').forEach(function(b){ b.onclick=function(){ S.metodo=b.getAttribute('data-m'); verMet(); }; }); verMet();
+  var etel=$('#f-etel')||$('#f-tel'); if(etel && $('#f-num')) etel.addEventListener('change',function(){ if(!$('#f-num').value) $('#f-num').value=etel.value; });
+  $('#f').onsubmit=function(ev){ ev.preventDefault(); enviar(); };
+}
+function enviar(){
+  var L=D.link, b=$('#f-ok'), resp={};
+  L.campos.forEach(function(c){ if(c.tipo==='simnao'){ var x=$('input[name="'+c.id+'"]:checked'); resp[c.id]=x?x.value:''; } else { var e=$('[data-c="'+c.id+'"]'); resp[c.id]=e?e.value:''; } });
+  var corpo={ escola:ESC, link:LNK, nome:$('#f-nome').value, nascimento:$('#f-nasc').value, telefone:$('#f-tel').value, enc_nome:$('#f-enc')?$('#f-enc').value:'', enc_telefone:$('#f-etel')?$('#f-etel').value:'',
+    email:$('#f-email').value, respostas:resp, metodo:L.preco?S.metodo:'', numero:$('#f-num')?$('#f-num').value:'' };
+  b.disabled=true; b.textContent='A enviar…'; $('#f-err').innerHTML='';
+  var janela=null; if(L.preco && S.metodo==='cartao'){ try{ janela=window.open('','_blank'); }catch(e){} }
+  api('/pub/inscrever',corpo).then(function(r){
+    if(!r.ok){ if(janela) try{ janela.close(); }catch(e){} b.disabled=false; b.textContent=L.preco?'Inscrever e pagar '+mt(L.preco):'Enviar inscrição'; $('#f-err').innerHTML='<div class="msg err">'+esc(r.erro)+'</div>'; $('#f-err').scrollIntoView({behavior:'smooth',block:'center'}); return; }
+    var st={id:r.id, chave:r.chave, nome:corpo.nome, metodo:corpo.metodo, numero:corpo.numero, inicio:Date.now()};
+    if(r.estado==='paga'){ guarda(null); sucesso(corpo.nome); return; }
+    if(r.checkout){ if(janela) janela.location=r.checkout; else location.href=r.checkout; st.checkout=r.checkout; }
+    guarda(st); espera(st);
+  });
+}
+function espera(st){
+  casca('<div class="bloco fim"><div class="spinner" style="margin:0 auto 18px"></div><h2>'+(st.metodo==='cartao'?'Conclua o pagamento com o cartão':'Confirme no telemóvel')+'</h2>'+
+    '<p>'+(st.metodo==='cartao'?'Abrimos a página de pagamento noutro separador. Quando terminar, volte aqui: esta página actualiza sozinha.':'Enviámos o pedido de '+mt(D.link.preco)+' para o '+esc(st.numero)+'. Ponha o seu PIN no telemóvel para confirmar.')+'</p>'+
+    (st.checkout?'<div class="cts"><a class="btn" href="'+esc(st.checkout)+'" target="_blank" rel="noopener">Abrir a página de pagamento</a></div>':'')+
+    '<div class="cts"><button class="btn ghost" id="e-novo">Cancelar e voltar ao formulário</button></div></div>');
+  $('#e-novo').onclick=function(){ guarda(null); clearTimeout(S.t); formulario(); };
+  var limite=st.metodo==='cartao'?15*60e3:3*60e3;
+  (function ver(){
+    api('/pub/inscricao-estado',{id:st.id, chave:st.chave}).then(function(r){
+      if(r.ok && r.estado==='paga'){ guarda(null); sucesso(r.nome||st.nome); return; }
+      if(r.ok && r.estado==='falhada'){ guarda(null); formulario('O pagamento não foi concluído. Pode tentar de novo.'); return; }
+      if(Date.now()-st.inicio>limite){ guarda(null); formulario('Não recebemos a confirmação do pagamento. Se já pagou, a escola vai receber a sua inscrição; se não, tente de novo.'); return; }
+      S.t=setTimeout(ver,4000);
+    });
+  })();
+}
+function contactos(){
+  var L=D.link, E=D.escola, tel=L.contacto||E.telefone, c=[];
+  if(tel) c.push('<a class="btn" href="tel:'+esc(String(tel).replace(/[^\d+]/g,''))+'">Ligar '+esc(tel)+'</a>');
+  if(L.whatsapp) c.push('<a class="btn" href="https://wa.me/258'+esc(L.whatsapp)+'" target="_blank" rel="noopener">WhatsApp</a>');
+  if(E.email) c.push('<a class="btn" href="mailto:'+esc(E.email)+'">Email</a>');
+  return c.length?'<div class="cts">'+c.join('')+'</div>':'';
+}
+function sucesso(nome){
+  var L=D.link;
+  casca('<div class="bloco fim"><div class="ok">'+OK+'</div><h2>Inscrição recebida!</h2>'+
+    '<p>'+esc(L.mensagem||('A inscrição de '+nome+' em "'+L.titulo+'" foi recebida'+(L.preco?' e paga':'')+'. A escola vai contactá-lo com os próximos passos.'))+'</p>'+
+    (L.preco?'<p style="margin-top:10px;font-size:14px">Vai receber também um SMS de confirmação.</p>':'')+contactos()+'</div>');
+}
+
+if(!ESC || !LNK){ $('#root').innerHTML='<div class="wrap"><div class="bloco fechado" style="margin-top:40px"><b>Link incompleto</b>Peça à escola o link de inscrição correcto.</div></div>'; return; }
+api('/pub/link',{escola:ESC, link:LNK}).then(function(r){
+  if(!r.ok){ $('#root').innerHTML='<div class="wrap"><div class="bloco fechado" style="margin-top:40px"><b>Não foi possível abrir</b>'+esc(r.erro)+'</div></div>'; return; }
+  D=r; var st=lida();
+  if(st && st.id && Date.now()-st.inicio<20*60e3) espera(st); else formulario();
+});
+})();
+</script>
+</body>
+</html>
