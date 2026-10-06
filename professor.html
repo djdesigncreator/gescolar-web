@@ -166,9 +166,10 @@ var ABAS=[['inicio','Início','home'],['chamada','Chamada','list'],['notas','Not
 function soInstrutor(){ var d=S.d; return !!(d && d.conducao && !d.turmas.length && !d.aulas.length); }
 function temESC(){ var d=S.d; return !!(d && d.turmas.some(function(t){ return t.esc; })); }
 function soESC(){ var d=S.d; return !!(d && d.turmas.length && d.turmas.every(function(t){ return t.esc; })); }
-function abasP(){ var d=S.d; if(soInstrutor()) return [['inicio','Início','home'],['praticas','Aulas','car'],['avisos','Avisos','mega']];
+function temCodigo(){ var d=S.d; return !!(d && d.codigo && (d.conducao || !d.turmas.length)); }
+function abasP(){ var d=S.d; if(soInstrutor() || (temCodigo() && !d.turmas.length)) return [['inicio','Início','home'],['praticas','Aulas','car']].concat(temCodigo()?[['codigo','Código','book']]:[]).concat([['avisos','Avisos','mega']]);
   if(soESC()) return [['inicio','Início','home'],['diario','Diário','book'],['chamada','Presenças','list'],['notas','Avaliação','grade'],['avisos','Avisos','mega']];
-  var L = d && d.conducao ? ABAS.slice(0,4).concat([['praticas','Práticas','car'],ABAS[4]]) : ABAS.slice();
+  var L = d && d.conducao ? ABAS.slice(0,4).concat([['praticas','Práticas','car']]).concat(temCodigo()?[['codigo','Código','book']]:[]).concat([ABAS[4]]) : ABAS.slice();
   if(temESC()) L.splice(1,0,['diario','Diário','book']);
   return L; }
 function sujo(){ return (S.ed && S.ed.sujo()) || (S.ch && S.ch.sujo()) || !!(S.di && S.di.sujo); }
@@ -191,7 +192,7 @@ function casca(){
   $('#sair').onclick=function(){ if(sujo() && !confirm('Tem notas por guardar. Sair mesmo assim?')) return; sair(); };
   $$('[data-aba]').forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-aba')); }; });
   if(!abasP().some(function(a){ return a[0]===S.aba; })) S.aba='inicio';
-  ({inicio:soInstrutor()?pInicioInstrutor:pInicio,chamada:pChamada,notas:pNotas,horario:pHorario,avisos:pAvisos,praticas:pPraticas,diario:pDiario}[S.aba]||pInicio)();
+  ({inicio:soInstrutor()?pInicioInstrutor:pInicio,chamada:pChamada,notas:pNotas,horario:pHorario,avisos:pAvisos,praticas:pPraticas,diario:pDiario,codigo:pCodigoProf}[S.aba]||pInicio)();
 }
 function ir(a){ if(a!==S.aba && sujo() && !confirm('Tem notas por guardar. Sair desta página mesmo assim?')) return; if(a!=='notas') S.ed=null; if(a!=='chamada') S.ch=null; if(a!=='diario') S.di=null; S.aba=a; try{ history.replaceState(null,'','#'+a); }catch(e){} casca(); window.scrollTo(0,0); }
 
@@ -392,6 +393,88 @@ function pHorario(){
 }
 
 /* ================= AVISOS ================= */
+
+/* ================= CÓDIGO DA ESTRADA (instrutores de condução) ================= */
+var SINAIS={
+  stop:'<svg viewBox="0 0 100 100"><polygon points="30,3 70,3 97,30 97,70 70,97 30,97 3,70 3,30" fill="#fff" stroke="#bbb" stroke-width="1"/><polygon points="31.5,7 68.5,7 93,31.5 93,68.5 68.5,93 31.5,93 7,68.5 7,31.5" fill="#D21F26"/><text x="50" y="60" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="27" fill="#fff">STOP</text></svg>',
+  ceder:'<svg viewBox="0 0 100 100"><polygon points="4,10 96,10 50,92" fill="#D21F26"/><polygon points="19,18.5 81,18.5 50,73.5" fill="#fff"/></svg>',
+  sentido_proibido:'<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#D21F26"/><rect x="17" y="41" width="66" height="18" rx="2" fill="#fff"/></svg>',
+  perigo:'<svg viewBox="0 0 100 100"><polygon points="50,5 97,90 3,90" fill="#D21F26"/><polygon points="50,21 84,82 16,82" fill="#fff"/><rect x="46" y="40" width="8" height="25" rx="2" fill="#111"/><circle cx="50" cy="73" r="4.5" fill="#111"/></svg>',
+  proibicao:'<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#D21F26"/><circle cx="50" cy="50" r="35" fill="#fff"/></svg>',
+  semaforo_vermelho:'<svg viewBox="0 0 60 120"><rect x="8" y="3" width="44" height="114" rx="10" fill="#1f2328"/><circle cx="30" cy="25" r="13" fill="#E3262E"/><circle cx="30" cy="60" r="13" fill="#4a3d10"/><circle cx="30" cy="95" r="13" fill="#123a1f"/></svg>',
+  semaforo_amarelo:'<svg viewBox="0 0 60 120"><rect x="8" y="3" width="44" height="114" rx="10" fill="#1f2328"/><circle cx="30" cy="25" r="13" fill="#4a1414"/><circle cx="30" cy="60" r="13" fill="#F5B301"/><circle cx="30" cy="95" r="13" fill="#123a1f"/></svg>'
+};
+function imgCodigo(k,tam){ tam=tam||96; if(!k) return ''; if(SINAIS[k]) return '<div style="width:'+tam+'px;height:'+tam+'px;margin:0 auto 12px">'+SINAIS[k].replace('<svg ','<svg width="100%" height="100%" ')+'</div>';
+  if(/^https:\/\//i.test(k)) return '<img src="'+esc(k)+'" alt="" referrerpolicy="no-referrer" style="display:block;width:'+(tam*1.6)+'px;max-width:100%;height:'+tam+'px;object-fit:contain;margin:0 auto 12px">'; return ''; }
+
+/* ---------- lições do código: texto e prática com correcção imediata (v5.11) ---------- */
+function textoLicao(t){
+  var linhas=String(t||'').split('\n'), out='', lista=false;
+  function fecha(){ if(lista){ out+='</ul>'; lista=false; } }
+  linhas.forEach(function(l,i){ var s=l.trim();
+    if(!s){ fecha(); return; }
+    if(/^[-•]\s+/.test(s)){ if(!lista){ out+='<ul style="margin:6px 0 12px;padding-left:20px;line-height:1.5">'; lista=true; } out+='<li style="margin:4px 0">'+esc(s.replace(/^[-•]\s+/,''))+'</li>'; return; }
+    fecha();
+    var prox=(linhas[i+1]||'').trim();
+    if(s.length<=48 && !/[.:!?»]$/.test(s) && /^[-•]\s+/.test(prox)) out+='<div style="font:800 15px var(--f-display);margin:14px 0 2px">'+esc(s)+'</div>';
+    else out+='<p style="margin:0 0 12px;line-height:1.55">'+esc(s)+'</p>';
+  });
+  fecha(); return out;
+}
+function abrirLicao(el, L, op){
+  op=op||{}; var k=-1, certas=0, escolha=null;
+  function cab(){ return '<button type="button" data-lv style="background:none;border:0;color:var(--blue);font:600 14px var(--f-body);cursor:pointer;padding:0;margin-bottom:10px">‹ Todas as lições</button>'+
+    '<div class="small muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.06em">'+esc(L.tema)+'</div><div style="font:800 20px/1.25 var(--f-display);margin:2px 0 12px">'+esc(L.titulo)+'</div>'; }
+  function caixa(h){ return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 16px">'+h+'</div>'; }
+  function ligar(){ var v=el.querySelector('[data-lv]'); if(v) v.onclick=function(){ if(op.voltar) op.voltar(); }; }
+  function texto(){
+    var n=L.perguntas.length;
+    el.innerHTML=cab()+(L.texto?caixa(textoLicao(L.texto)):'')+
+      (n?'<button type="button" class="btn pri" data-go style="width:100%;justify-content:center;height:48px;margin-top:14px">Praticar as '+n+' pergunta'+(n>1?'s':'')+' desta lição</button>':'<p class="small muted" style="margin-top:12px">Esta lição ainda não tem perguntas.</p>'+(op.feito?'<button type="button" class="btn pri" data-ok style="width:100%;justify-content:center;height:46px;margin-top:8px">Marcar como lida</button>':''));
+    ligar(); var g=el.querySelector('[data-go]'); if(g) g.onclick=function(){ k=0; certas=0; pergunta(); window.scrollTo(0,0); };
+    var o=el.querySelector('[data-ok]'); if(o) o.onclick=function(){ op.feito(L.id); if(op.voltar) op.voltar(); };
+  }
+  function pergunta(){
+    var q=L.perguntas[k], n=L.perguntas.length; escolha=null;
+    el.innerHTML=cab()+'<div class="small muted" style="margin-bottom:8px;font-weight:700">Pergunta '+(k+1)+' de '+n+'</div>'+
+      caixa('<div style="text-align:center">'+imgCodigo(q.imagem,88)+'</div><div style="font:700 16.5px/1.35 var(--f-display);margin-bottom:12px">'+esc(q.pergunta)+'</div><div style="display:grid;gap:8px" data-ops>'+
+        q.opcoes.map(function(o,i){ return '<button type="button" data-op="'+i+'" style="text-align:left;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:600 15px/1.35 var(--f-body);cursor:pointer">'+esc(o)+'</button>'; }).join('')+
+      '</div><div data-exp></div>')+'<div data-nx></div>';
+    ligar();
+    Array.prototype.forEach.call(el.querySelectorAll('[data-op]'),function(b){ b.onclick=function(){ if(escolha!==null) return; escolha=+b.getAttribute('data-op'); var bem=escolha===q.correcta; if(bem) certas++;
+      Array.prototype.forEach.call(el.querySelectorAll('[data-op]'),function(x){ var i=+x.getAttribute('data-op'); x.style.cursor='default';
+        if(i===q.correcta){ x.style.borderColor='var(--ok)'; x.style.background='var(--ok-soft)'; x.innerHTML='✓ '+x.innerHTML; }
+        else if(i===escolha){ x.style.borderColor='var(--bad)'; x.style.background='var(--bad-soft)'; x.innerHTML='✗ '+x.innerHTML; } else x.style.opacity='.6'; });
+      el.querySelector('[data-exp]').innerHTML='<div style="margin-top:12px;padding:12px;border-radius:10px;background:'+(bem?'var(--ok-soft)':'var(--bad-soft)')+'"><b style="color:'+(bem?'var(--ok)':'var(--bad)')+'">'+(bem?'Certo!':'Não é essa.')+'</b>'+(q.explicacao?'<div class="small" style="margin-top:4px;line-height:1.5;color:var(--ink)">'+esc(q.explicacao)+'</div>':'')+'</div>';
+      el.querySelector('[data-nx]').innerHTML='<button type="button" class="btn pri" data-seg style="width:100%;justify-content:center;height:48px;margin-top:14px">'+(k<n-1?'Seguinte':'Terminar a lição')+'</button>';
+      el.querySelector('[data-seg]').onclick=function(){ if(k<n-1){ k++; pergunta(); } else fim(); window.scrollTo(0,0); }; }; });
+  }
+  function fim(){
+    var n=L.perguntas.length, bom=certas>=Math.ceil(n*0.8);
+    if(op.feito) op.feito(L.id);
+    el.innerHTML=cab()+caixa('<div style="text-align:center;padding:8px 0"><div style="font:800 34px var(--f-display);color:'+(bom?'var(--ok)':'var(--ink)')+'">'+certas+' / '+n+'</div><div style="margin-top:6px">'+(bom?'Lição concluída. Muito bem!':'Lição concluída. Volte a ler o texto e pratique outra vez.')+'</div></div>')+
+      '<div style="display:flex;gap:10px;margin-top:14px"><button type="button" class="btn" data-rl style="flex:1;justify-content:center;height:46px">Ler outra vez</button><button type="button" class="btn pri" data-lv2 style="flex:1;justify-content:center;height:46px">Outras lições</button></div>';
+    ligar(); el.querySelector('[data-rl]').onclick=function(){ k=-1; texto(); }; el.querySelector('[data-lv2]').onclick=function(){ if(op.voltar) op.voltar(); };
+  }
+  texto();
+}
+function feitasLicoes(chave){ try{ return JSON.parse(localStorage.getItem('gs_lic_'+chave)||'{}')||{}; }catch(e){ return {}; } }
+function marcarLicao(chave,id){ try{ var f=feitasLicoes(chave); f[id]=1; localStorage.setItem('gs_lic_'+chave,JSON.stringify(f)); }catch(e){} }
+function listaLicoes(L, feitas){
+  return '<div class="lista">'+L.map(function(l,i){ var ok=!!feitas[l.id];
+    return '<button type="button" data-lic="'+i+'" style="display:flex;width:100%;align-items:center;gap:12px;padding:14px 16px;border:0;border-bottom:1px solid var(--line);background:var(--surface);color:var(--ink);text-align:left;cursor:pointer;font:inherit">'+
+      '<span style="flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font:800 14px var(--f-display);background:'+(ok?'var(--ok)':'var(--blue-soft)')+';color:'+(ok?'#fff':'var(--blue)')+'">'+(ok?'✓':(i+1))+'</span>'+
+      '<span style="flex:1;min-width:0"><b style="display:block">'+esc(l.titulo)+'</b><small style="color:var(--muted)">'+l.perguntas.length+' pergunta(s)'+(ok?' · concluída':'')+'</small></span><span style="color:var(--muted)">›</span></button>'; }).join('')+'</div>';
+}
+
+function pCodigoProf(){
+  if(S.licao!=null && S.mat){ var L=S.mat[S.licao]; if(L){ abrirLicao($('#pg'), L, { voltar:function(){ S.licao=null; pCodigoProf(); window.scrollTo(0,0); }, feito:function(id){ marcarLicao('prof',id); } }); return; } }
+  $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Lições do código</div><p class="small muted" style="margin:-4px 2px 12px">O mesmo material que os instruendos estudam no portal. Use-o para preparar as aulas teóricas.</p><div id="cd-lic"><div class="carregar"><div class="spinner"></div>A abrir as lições…</div></div>';
+  function mostrar(){ var el=$('#cd-lic'); if(!el) return; el.innerHTML=S.mat.length?listaLicoes(S.mat, feitasLicoes('prof')):vazio('book','Sem lições','A Direcção ainda não activou lições.');
+    $$('[data-lic]').forEach(function(b){ b.onclick=function(){ S.licao=+b.getAttribute('data-lic'); pCodigoProf(); window.scrollTo(0,0); }; }); }
+  if(S.mat){ mostrar(); return; }
+  api('/prof/codigo-estudo').then(function(r){ if(!r.ok){ var el=$('#cd-lic'); if(el) el.innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; } S.mat=r.licoes; mostrar(); });
+}
 function pAvisos(){
   var L=S.d.comunicados;
   $('#pg').innerHTML='<div class="sec-t" style="margin-top:4px">Comunicados da escola</div>'+

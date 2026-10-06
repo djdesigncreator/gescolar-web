@@ -1236,6 +1236,7 @@ function pInstruendos(){
   Promise.all([api('/instruendos'), api('/cursos')]).then(function(r){
     var d=r[0]; if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
     if(r[1].ok){ S.cursos=r[1].cursos; S.categorias=r[1].categorias; }
+    S.CA=d.codigo_acesso||null;
     S.fIns=S.fIns||'activa';
     var L=d.instruendos.filter(function(x){ return S.fIns==='todas' || x.estado===S.fIns; });
     var EST={activa:['Em curso','info'],concluida:['Concluiu','ok'],desistiu:['Desistiu','muted']};
@@ -1250,7 +1251,8 @@ function pInstruendos(){
         L.map(function(x,i){ var pct=x.total?Math.round(x.pago*100/x.total):0, e=EST[x.estado]||[x.estado,'muted'], P=x.processo||{faltam:[]}, C=x.codigo||{};
           return '<tr><td><div class="person">'+av(x.nome)+'<div><b>'+esc(x.nome)+'</b><small class="mono">'+esc(x.numero)+' · '+esc(x.telefone)+'</small></div></div></td><td><span class="tag">'+esc(x.categoria)+'</span><div class="small muted" style="margin-top:3px">'+data(x.data)+'</div></td>'+
             '<td class="small" style="white-space:nowrap">Práticas <b class="num">'+x.praticas.feitas+'</b>/'+x.praticas.total+(x.praticas.marcadas?' <span class="muted">('+x.praticas.marcadas+' marc.)</span>':'')+'<div>Teóricas <b class="num">'+((x.teoricas&&x.teoricas.feitas)||0)+'</b>/'+((x.teoricas&&x.teoricas.total)||0)+'</div></td>'+
-            '<td class="small">'+(C.testes?'<b class="num" style="color:'+(C.media>=C.alvo?'var(--ok)':'var(--ink)')+'">'+C.media+'%</b><div class="muted">'+C.testes+' teste(s)</div>'+(C.pronto?'<span class="pill ok" style="margin-top:3px">Pronto</span>':''):'<span class="muted">Sem testes</span>')+'</td>'+
+            '<td class="small">'+(C.testes?'<b class="num" style="color:'+(C.media>=C.alvo?'var(--ok)':'var(--ink)')+'">'+C.media+'%</b><div class="muted">'+C.testes+' teste(s)</div>'+(C.pronto?'<span class="pill ok" style="margin-top:3px">Pronto</span>':''):'<span class="muted">Sem testes</span>')+
+              (function(){ var m=C.acesso||(S.CA&&S.CA.modo==='pago'&&S.CA.preco?'pago':'gratis'); return m==='pago'?'<div style="margin-top:3px;font-weight:700;color:'+(C.acesso_pago?'var(--ok)':'var(--warn)')+'">'+(C.acesso_pago?'Acesso pago':'Acesso por pagar')+'</div>':(C.acesso==='gratis'?'<div class="muted" style="margin-top:3px">Acesso oferecido</div>':''); })()+'</td>'+
             '<td class="small" style="min-width:150px"><span class="pill '+(PROC_COR[P.processo]||'muted')+'">'+esc(P.processo_nome||'')+'</span><div style="margin-top:3px'+(P.faltam.length?';color:var(--warn);font-weight:700':';color:var(--ok)')+'">'+(P.faltam.length?'Faltam '+P.faltam.length+' documento(s)':'Documentos completos')+'</div>'+licenca(x)+'</td>'+
             '<td style="min-width:140px"><div class="small"><b class="num">'+mt(x.pago)+'</b> de '+mt(x.total)+'</div><div style="height:6px;border-radius:3px;background:var(--line);margin-top:4px;overflow:hidden"><i style="display:block;height:100%;width:'+pct+'%;background:'+(x.em_atraso?'var(--bad)':'var(--ok)')+'"></i></div>'+(x.em_atraso?'<div class="small" style="color:var(--bad);font-weight:700">'+mt(x.em_atraso)+' em atraso</div>':(x.proxima?'<div class="small muted">Próx.: '+mt(x.proxima.valor)+' · '+data(x.proxima.vencimento)+'</div>':'<div class="small" style="color:var(--ok);font-weight:700">Tudo pago</div>'))+'</td>'+
             '<td><span class="pill '+e[1]+'">'+e[0]+'</span></td><td class="r" style="white-space:nowrap"><button class="btn sm" data-proc="'+i+'">Processo</button> '+(x.proxima?'<button class="btn sm pri" data-cob="'+i+'">Cobrar</button> ':'')+'<select class="sel" data-est="'+i+'" style="height:30px;font-size:13px"><option value="">Mudar…</option><option value="activa">Em curso</option><option value="concluida">Concluiu</option><option value="desistiu">Desistiu</option></select></td></tr>'; }).join('')+'</tbody></table></div></section>'
@@ -1417,11 +1419,16 @@ function formProcesso(x, docs, procs){
     '<div style="display:grid;gap:6px;margin-bottom:6px">'+docs.map(function(n,k){ return '<label style="display:flex;gap:10px;align-items:center;font-weight:600;padding:9px 11px;border:1px solid var(--line);border-radius:10px;cursor:pointer"><input type="checkbox" data-doc="'+k+'"'+(P.documentos&&P.documentos[n]?' checked':'')+' style="width:18px;height:18px;accent-color:var(--blue)"> '+esc(n)+'</label>'; }).join('')+'</div>'+
     '<label class="field">Estado do processo<select class="sel" id="pr-e">'+Object.keys(procs).map(function(k){ return '<option value="'+k+'"'+(k===P.processo?' selected':'')+'>'+esc(procs[k])+'</option>'; }).join('')+'</select></label>'+
     '<div class="frow"><label class="field">Nº da licença de aprendizagem<input class="inp mono" id="pr-n" maxlength="40" value="'+esc((P.licenca&&P.licenca.numero)||'')+'"></label><label class="field">Licença válida até<input class="inp" type="date" id="pr-v" value="'+(P.licenca&&P.licenca.validade?String(P.licenca.validade).slice(0,10):'')+'"></label></div>'+
+    '<label class="field">Treino do código (lições e testes)<select class="sel" id="pr-c"><option value=""'+(!(x.codigo&&x.codigo.acesso)?' selected':'')+'>Como a escola ('+(S.CA&&S.CA.modo==='pago'?'pago · '+mt(S.CA.preco):'gratuito')+')</option><option value="gratis"'+(x.codigo&&x.codigo.acesso==='gratis'?' selected':'')+'>Gratuito para este instruendo</option><option value="pago"'+(x.codigo&&x.codigo.acesso==='pago'?' selected':'')+'>Pago por este instruendo</option></select>'+(x.codigo&&x.codigo.acesso_pago?'<span class="small" style="font-weight:700;color:var(--ok)">Acesso já pago.</span>':'')+'</label>'+
     '<p class="small muted" style="margin:0">A validade da licença aparece em destaque na lista quando faltarem 30 dias ou menos.</p><div id="pr-err"></div></div>'+
     '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="pr-ok">'+ic('save')+'Guardar</button></div>');
   $('#pr-ok').onclick=function(){ var btn=this, D={}; $$('[data-doc]').forEach(function(c){ if(c.checked) D[docs[+c.getAttribute('data-doc')]]=true; }); aGravar(btn,true);
+    var acAntes=(x.codigo&&x.codigo.acesso)||'', acNovo=$('#pr-c').value;
     api('/inscricao-processo',{id:x.id, documentos:D, processo:$('#pr-e').value, licenca_numero:$('#pr-n').value, licenca_validade:$('#pr-v').value}).then(function(r){
-      if(!r.ok){ aGravar(btn,false); $('#pr-err').innerHTML=erroCaixa(r.erro); return; } fechar(); toast('Processo actualizado'); pInstruendos(); }); };
+      if(!r.ok){ aGravar(btn,false); $('#pr-err').innerHTML=erroCaixa(r.erro); return; }
+      var fim=function(){ fechar(); toast('Processo actualizado'); pInstruendos(); };
+      if(acNovo===acAntes) return fim();
+      api('/inscricao-codigo-acesso',{id:x.id, acesso:acNovo}).then(function(a){ if(!a.ok){ aGravar(btn,false); $('#pr-err').innerHTML=erroCaixa(a.erro); return; } fim(); }); }); };
 }
 function formDocs(docs){
   modal('<div class="modal-h"><h3>Documentos pedidos aos instruendos</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
@@ -1431,6 +1438,38 @@ function formDocs(docs){
   $('#dc-ok').onclick=function(){ var btn=this; aGravar(btn,true);
     api('/conducao-docs-guardar',{documentos:$('#dc-l').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean)}).then(function(r){
       if(!r.ok){ aGravar(btn,false); $('#dc-err').innerHTML=erroCaixa(r.erro); return; } fechar(); toast('Lista de documentos guardada'); pInstruendos(); }); };
+}
+
+
+/* ---------- lições do código e acesso (Direcção, v5.11) ---------- */
+function corpoLicoes(d){
+  var A=d.acesso||{modo:'gratis',preco:0};
+  return '<section class="card card-b" style="margin-bottom:14px;display:flex;gap:16px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:240px"><b>Acesso dos instruendos às lições e aos testes</b><div class="small muted" style="margin-top:2px">'+
+      (A.modo==='pago'?'Pago: cada instruendo paga <b>'+mt(A.preco)+'</b> uma vez, no portal, por M-Pesa, e-Mola ou cartão.':'Gratuito para todos os instruendos em curso.')+' Pode abrir ou cobrar a um instruendo em particular no botão Processo, em Instruendos.</div></div>'+
+      '<button class="btn" id="lc-ac">Mudar acesso</button></section>'+
+    '<section class="card card-b" style="margin-bottom:14px;background:var(--blue-soft);border-color:transparent"><span class="small">Cada lição junta um texto e as perguntas com o mesmo tema. As lições de base do Gescolar explicam as regras gerais sem limites nem valores, porque o Código da Estrada de Moçambique está em revisão: acrescente lições da escola com os valores em vigor que ensinam.</span></section>'+
+    '<div style="display:grid;gap:10px">'+d.licoes.map(function(l,i){ return '<section class="card card-b" style="display:flex;gap:14px;align-items:flex-start;'+(l.activa?'':'opacity:.55')+'"><span style="flex:none;width:34px;height:34px;border-radius:10px;background:var(--navy);color:#fff;display:grid;place-items:center;font:800 14px var(--f-display)">'+(i+1)+'</span>'+
+      '<div style="flex:1;min-width:0"><b>'+esc(l.titulo)+'</b>'+(l.base?' <span class="pill muted" style="vertical-align:2px">Base</span>':'')+(l.activa?'':' <span class="pill warn" style="vertical-align:2px">Escondida</span>')+'<div class="small muted">Tema: '+esc(l.tema)+' · '+esc(String(l.texto).replace(/\s+/g,' ').slice(0,140))+'…</div></div>'+
+      '<div style="display:flex;flex-direction:column;gap:6px">'+(l.base?'':'<button class="btn sm" data-led="'+i+'">Editar</button>')+'<button class="btn sm '+(l.activa?'ghost':'pri')+'" data-lat="'+i+'">'+(l.activa?'Esconder':'Mostrar')+'</button></div></section>'; }).join('')+'</div>';
+}
+function formAcessoCodigo(A){
+  modal('<div class="modal-h"><h3>Acesso ao treino do código</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer"><input type="radio" name="ac-m" value="gratis"'+(A.modo!=='pago'?' checked':'')+' style="margin-top:3px"><span><b>Gratuito</b><span class="small muted" style="display:block">Incluído no curso, para todos os instruendos.</span></span></label>'+
+    '<label style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:10px;cursor:pointer"><input type="radio" name="ac-m" value="pago"'+(A.modo==='pago'?' checked':'')+' style="margin-top:3px"><span><b>Pago</b><span class="small muted" style="display:block">O instruendo paga uma vez no portal. O acesso abre quando o pagamento for confirmado.</span></span></label>'+
+    '<label class="field">Preço do acesso (MT)<input class="inp mono" id="ac-p" inputmode="numeric" value="'+(A.preco||'')+'" placeholder="Ex.: 500"></label><div id="ac-err"></div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="ac-ok">'+ic('save')+'Guardar</button></div>');
+  $('#ac-ok').onclick=function(){ var btn=this, m=(document.querySelector('input[name=ac-m]:checked')||{}).value||'gratis'; aGravar(btn,true);
+    api('/codigo-acesso-guardar',{modo:m, preco:String($('#ac-p').value).replace(/\s/g,'')}).then(function(r){ if(!r.ok){ aGravar(btn,false); $('#ac-err').innerHTML=erroCaixa(r.erro); return; } fechar(); toast(r.modo==='pago'?'Acesso pago: '+mt(r.preco):'Acesso gratuito'); pCodigo(); }); };
+}
+function formLicao(l, temas){
+  l=l||{tema:'',titulo:'',texto:'',ordem:50};
+  modal('<div class="modal-h"><h3>'+(l.id?'Editar lição':'Nova lição')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<div class="frow"><label class="field">Título<input class="inp" id="lc-t" maxlength="120" value="'+esc(l.titulo)+'" placeholder="Ex.: Limites de velocidade"></label><label class="field">Tema<input class="inp" id="lc-m" maxlength="40" list="lc-ml" value="'+esc(l.tema)+'" placeholder="Ex.: Velocidade"><datalist id="lc-ml">'+temas.map(function(t){ return '<option value="'+esc(t)+'">'; }).join('')+'</datalist></label></div>'+
+    '<label class="field">Texto da lição<textarea class="inp" id="lc-x" rows="12" maxlength="6000" style="height:auto;padding:10px 12px;line-height:1.5" placeholder="Escreva em parágrafos. Linhas que começam por - viram lista.">'+esc(l.texto)+'</textarea><span class="small muted" style="font-weight:400">As perguntas com o mesmo tema aparecem no fim da lição, para praticar.</span></label>'+
+    '<label class="field" style="max-width:160px">Ordem<input class="inp" type="number" id="lc-o" min="1" max="999" value="'+(l.ordem||50)+'"></label><div id="lc-err"></div></div>'+
+    '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="lc-ok">'+ic('save')+'Guardar</button></div>');
+  $('#lc-ok').onclick=function(){ var btn=this; aGravar(btn,true);
+    api('/codigo-licao-guardar',{id:l.id, titulo:$('#lc-t').value, tema:$('#lc-m').value, texto:$('#lc-x').value, ordem:$('#lc-o').value}).then(function(r){ if(!r.ok){ aGravar(btn,false); $('#lc-err').innerHTML=erroCaixa(r.erro); return; } fechar(); toast(l.id?'Lição actualizada':'Lição criada'); S.cTab='lic'; pCodigo(); }); };
 }
 
 /* ---------- aulas teóricas ---------- */
@@ -1470,15 +1509,17 @@ function formTeorica(a){
 function pCodigo(){
   aCarregar();
   S.cTab=S.cTab||'res';
-  Promise.all([api('/codigo-resultados'), api('/codigo-perguntas')]).then(function(r){
-    var d=r[0], q=r[1];
+  Promise.all([api('/codigo-resultados'), api('/codigo-perguntas'), api('/codigo-licoes')]).then(function(r){
+    var d=r[0], q=r[1], lc=r[2];
     if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
     if(!q.ok){ $('#page').innerHTML=erroCaixa(q.erro); return; }
-    S.CQ=q;
+    if(!lc.ok){ $('#page').innerHTML=erroCaixa(lc.erro); return; }
+    S.CQ=q; S.CL=lc;
     var prontos=d.instruendos.filter(function(x){ return x.pronto; }).length;
-    var tabs='<div style="display:flex;gap:6px;margin-bottom:14px"><button class="btn sm '+(S.cTab==='res'?'pri':'')+'" data-ct="res">Resultados</button><button class="btn sm '+(S.cTab==='per'?'pri':'')+'" data-ct="per">Perguntas ('+q.activas+')</button></div>';
+    var tabs='<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap"><button class="btn sm '+(S.cTab==='res'?'pri':'')+'" data-ct="res">Resultados</button><button class="btn sm '+(S.cTab==='lic'?'pri':'')+'" data-ct="lic">Lições ('+lc.licoes.filter(function(l){ return l.activa; }).length+')</button><button class="btn sm '+(S.cTab==='per'?'pri':'')+'" data-ct="per">Perguntas ('+q.activas+')</button></div>';
     var corpo;
-    if(S.cTab==='res'){
+    if(S.cTab==='lic') corpo=corpoLicoes(lc);
+    else if(S.cTab==='res'){
       corpo=(d.instruendos.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Instruendo</th><th>Carta</th><th class="r">Testes</th><th class="r">Último</th><th class="r">Média dos 3 últimos</th><th>Situação</th></tr></thead><tbody>'+
         d.instruendos.map(function(x){ var sit=x.pronto?['Pronto para o exame','ok']:x.testes?['A treinar','info']:['Ainda sem testes','muted'];
           return '<tr><td><b>'+esc(x.nome)+'</b><div class="small muted mono">'+esc(x.numero)+'</div></td><td><span class="tag">'+esc(x.categoria)+'</span></td><td class="r num">'+x.testes+'</td><td class="r num">'+(x.ultimo?'<b style="color:'+(x.ultimo.pct>=d.alvo?'var(--ok)':'var(--bad)')+'">'+x.ultimo.pct+'%</b><div class="small muted">'+data(x.ultimo.data)+'</div>':'—')+'</td><td class="r num">'+(x.media==null?'—':'<b>'+x.media+'%</b>')+'</td><td><span class="pill '+sit[1]+'">'+sit[0]+'</span></td></tr>'; }).join('')+'</tbody></table></div></section>'
@@ -1492,7 +1533,13 @@ function pCodigo(){
             '<ol style="margin:8px 0 0;padding-left:20px;font-size:14px">'+p.opcoes.map(function(o,k){ return '<li style="'+(k===p.correcta?'color:var(--ok);font-weight:700':'color:var(--muted)')+'">'+esc(o)+(k===p.correcta?' ✓':'')+'</li>'; }).join('')+'</ol>'+(p.explicacao?'<div class="small muted" style="margin-top:6px">'+esc(p.explicacao)+'</div>':'')+'</div>'+
             '<div style="display:flex;flex-direction:column;gap:6px">'+(p.base?'':'<button class="btn sm" data-qed="'+i+'">Editar</button>')+'<button class="btn sm '+(p.activa?'ghost':'pri')+'" data-qat="'+i+'">'+(p.activa?'Esconder':'Mostrar')+'</button></div></section>'; }).join('')+'</div>'; }).join('');
     }
-    $('#page').innerHTML=ph('Condução','Treino do código', d.instruendos.length? prontos+' de '+d.instruendos.length+' instruendo(s) prontos para o exame · '+d.testes_mes+' teste(s) este mês.' : 'Os instruendos treinam o código no portal, com correcção e explicação de cada pergunta.', S.cTab==='per'?'<button class="btn pri" id="q-n">'+ic('plus')+'Nova pergunta</button>':'')+tabs+corpo;
+    $('#page').innerHTML=ph('Condução','Treino do código', d.instruendos.length? prontos+' de '+d.instruendos.length+' instruendo(s) prontos para o exame · '+d.testes_mes+' teste(s) este mês.' : 'Os instruendos treinam o código no portal, com correcção e explicação de cada pergunta.', S.cTab==='per'?'<button class="btn pri" id="q-n">'+ic('plus')+'Nova pergunta</button>':S.cTab==='lic'?'<button class="btn pri" id="lc-n">'+ic('plus')+'Nova lição</button>':'')+tabs+corpo;
+    var temasL=[]; lc.licoes.concat(q.perguntas).forEach(function(x){ if(temasL.indexOf(x.tema)<0) temasL.push(x.tema); });
+    var ln=$('#lc-n'); if(ln) ln.onclick=function(){ formLicao(null, temasL); };
+    var la=$('#lc-ac'); if(la) la.onclick=function(){ formAcessoCodigo(lc.acesso); };
+    $$('[data-led]').forEach(function(b){ b.onclick=function(){ formLicao(lc.licoes[+b.getAttribute('data-led')], temasL); }; });
+    $$('[data-lat]').forEach(function(b){ b.onclick=function(){ var l=lc.licoes[+b.getAttribute('data-lat')]; b.disabled=true;
+      api('/codigo-licao-estado',{id:l.id, activa:!l.activa}).then(function(x){ if(!x.ok){ toast(x.erro); b.disabled=false; return; } toast(l.activa?'Lição escondida':'Lição visível'); pCodigo(); }); }; });
     $$('[data-ct]').forEach(function(b){ b.onclick=function(){ S.cTab=b.getAttribute('data-ct'); pCodigo(); }; });
     var n=$('#q-n'); if(n) n.onclick=function(){ formPergunta(null); };
     $$('[data-qed]').forEach(function(b){ b.onclick=function(){ formPergunta(q.perguntas[+b.getAttribute('data-qed')]); }; });
