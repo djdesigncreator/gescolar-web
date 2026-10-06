@@ -42,7 +42,8 @@ function $(s,r){ return (r||document).querySelector(s); }
 function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function grp(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
-function mt(n){ return grp(n)+' MT'; }
+function dinheiro(n){ var v=Math.abs(Number(Number(n||0).toFixed(6))), s=v.toFixed(6).replace(/0+$/,'').replace(/\.$/,''), p=s.split('.'), d=p[1]||''; if(d.length===1) d+='0'; return (Number(n)<0&&v?'-':'')+p[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(d?','+d:''); }
+function mt(n){ return dinheiro(n)+' MT'; }
 function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?'—':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
 function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
 function erroCaixa(m){ return '<div class="msg-err">'+esc(m)+'</div>'; }
@@ -115,7 +116,7 @@ function transferir(e, depois){
   modal('<div class="modal-h"><h3>Registar transferência</h3><button class="icon-btn" data-fechar>✕</button></div><div class="modal-b">'+
     '<p style="margin:0"><b>'+esc(e.nome)+'</b><br><span class="small muted">Saldo a transferir: '+mt(e.saldo)+'</span></p>'+
     '<p class="small muted" style="margin:0">Registe aqui depois de enviar o dinheiro à escola (M-Pesa, e-Mola ou banco). O Gescolar não move dinheiro sozinho: só guarda o registo.</p>'+
-    '<div class="frow"><label class="field">Valor (MT)<input class="inp mono" id="t-v" inputmode="decimal" value="'+Math.max(0,Math.round(e.saldo))+'"></label><label class="field">Data<input class="inp" type="date" id="t-d" value="'+hoje+'" max="'+hoje+'"></label></div>'+
+    '<div class="frow"><label class="field">Valor (MT)<input class="inp mono" id="t-v" inputmode="decimal" value="'+Math.max(0,Math.floor(Number(e.saldo||0)*100+1e-6)/100)+'"></label><label class="field">Data<input class="inp" type="date" id="t-d" value="'+hoje+'" max="'+hoje+'"></label></div>'+
     '<div class="frow"><label class="field">Como<select class="sel" id="t-m"><option>M-Pesa</option><option>e-Mola</option><option>Transferência bancária</option><option>Numerário</option></select></label><label class="field">Referência<input class="inp" id="t-r" maxlength="80" placeholder="ID da transacção"></label></div>'+
     '<label class="field">Notas (opcional)<input class="inp" id="t-n" maxlength="300"></label>'+
     '<label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600"><input type="checkbox" id="t-s"'+(e.telefone?' checked':' disabled')+'> Avisar a escola por SMS'+(e.telefone?' ('+esc(e.telefone)+')':' (sem telefone)')+'</label>'+

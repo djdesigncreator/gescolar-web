@@ -117,7 +117,8 @@ function $(s,r){ return (r||document).querySelector(s); }
 function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function grp(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
-function mt(n){ return grp(n)+' MT'; }
+function dinheiro(n){ var v=Math.abs(Number(Number(n||0).toFixed(6))), s=v.toFixed(6).replace(/0+$/,'').replace(/\.$/,''), p=s.split('.'), d=p[1]||''; if(d.length===1) d+='0'; return (Number(n)<0&&v?'-':'')+p[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(d?','+d:''); }
+function mt(n){ return dinheiro(n)+' MT'; }
 function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?'—':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
 function iniciais(n){ var p=String(n||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+((p.length>1?p[p.length-1]:'')[0]||'')).toUpperCase(); }
 var CORES=['#0A64DC','#0E7C86','#7B4DD6','#C2410C','#168A52','#B4235A','#0B2A4A','#8A6D00'];
@@ -971,15 +972,19 @@ function pSaldo(){
     $$('[data-lev]').forEach(function(b){ b.onclick=function(){ var c=d.canais.filter(function(x){ return x.canal===b.getAttribute('data-lev'); })[0]; if(c.canal==='cartao') pedirSaque(c); else levantar(c); }; });
   });
 }
+// Valor que se pode levantar: o saldo cortado a 2 casas decimais (nunca para cima, para não passar do disponível).
+function ate2(v){ return Math.floor(Number(v||0)*100+1e-6)/100; }
+function valorDigitado(x){ var t=String(x==null?'':x).replace(/\s/g,'').replace(',','.'); return /^\d+(\.\d{1,2})?$/.test(t)?Number(t):NaN; }
 function levantar(c){
   var d=S.SALDO, pref=c.canal==='mpesa'?['84','85']:['86','87'], tel=(d.telefone&&pref.indexOf(d.telefone.slice(0,2))>=0)?d.telefone:'';
   modal('<div class="modal-h"><h3>Levantar por '+esc(c.nome)+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
     '<div class="sd-box"><span>Disponível</span><b class="num">'+mt(c.disponivel)+'</b></div>'+
-    '<label class="field">Valor a levantar (MT)<input class="inp mono" id="lv-v" type="number" min="'+d.minimo+'" max="'+c.disponivel+'" step="1" value="'+c.disponivel+'"><span class="small muted" style="font-weight:400">Mínimo '+mt(d.minimo)+'</span></label>'+
+    '<label class="field">Valor a levantar (MT)<input class="inp mono" id="lv-v" type="number" min="'+d.minimo+'" max="'+c.disponivel+'" step="0.01" value="'+ate2(c.disponivel)+'"><span class="small muted" style="font-weight:400">Mínimo '+mt(d.minimo)+'</span></label>'+
     '<label class="field">Número '+esc(c.nome)+' que vai receber<input class="inp mono" id="lv-n" inputmode="tel" maxlength="16" value="'+esc(tel)+'" placeholder="'+pref[0]+' 123 4567"><span class="small muted" style="font-weight:400">Só números '+pref.join(' ou ')+'.</span></label>'+
     '<label class="field">A sua palavra-passe<input class="inp" id="lv-s" type="password" autocomplete="current-password"><span class="small muted" style="font-weight:400">Por segurança, confirme quem está a levantar.</span></label>'+
     '<div id="lv-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="lv-ok">Levantar</button></div>');
-  $('#lv-ok').onclick=function(){ var btn=this, v=Math.round(Number($('#lv-v').value)), n=$('#lv-n').value;
+  $('#lv-ok').onclick=function(){ var btn=this, v=valorDigitado($('#lv-v').value), n=$('#lv-n').value;
+    if(isNaN(v)){ $('#lv-err').innerHTML=erroCaixa('Escreva o valor com até 2 casas decimais (ex.: 150 ou 150.50).'); return; }
     if(!(v>=d.minimo)){ $('#lv-err').innerHTML=erroCaixa('O mínimo é '+mt(d.minimo)+'.'); return; }
     if(v>c.disponivel){ $('#lv-err').innerHTML=erroCaixa('Só tem '+mt(c.disponivel)+' disponível.'); return; }
     if(!confirm('Enviar '+mt(v)+' por '+c.nome+' para o '+n+'?')) return;
@@ -992,7 +997,7 @@ function pedirSaque(c){
   var d=S.SALDO;
   modal('<div class="modal-h"><h3>Pedir saque · cartões</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
     '<div class="sd-box"><span>Disponível</span><b class="num">'+mt(c.disponivel)+'</b></div>'+
-    '<label class="field">Valor (MT)<input class="inp mono" id="sq-v" type="number" min="'+d.minimo+'" max="'+c.disponivel+'" value="'+c.disponivel+'"></label>'+
+    '<label class="field">Valor (MT)<input class="inp mono" id="sq-v" type="number" min="'+d.minimo+'" max="'+c.disponivel+'" step="0.01" value="'+ate2(c.disponivel)+'"></label>'+
     '<label class="field">Para onde enviar<textarea class="inp" id="sq-d" rows="3" maxlength="200" placeholder="Ex.: BCI · NIB 0008 0000 1234 5678 9012 3 · titular Escola X&#10;ou M-Pesa 84 123 4567"></textarea></label>'+
     '<label class="field">A sua palavra-passe<input class="inp" id="sq-s" type="password" autocomplete="current-password"></label>'+
     '<p class="small muted" style="margin:0">O pedido vai para a equipa do Gescolar, que faz a transferência e lhe envia um SMS quando estiver paga.</p><div id="sq-err"></div></div>'+
