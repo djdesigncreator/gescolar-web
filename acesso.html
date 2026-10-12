@@ -111,7 +111,7 @@ function pedir(reenviar){
 
 function passo2(erroMsg, okMsg){
   $('#card').innerHTML=
-    '<h1>Escreva o código</h1><p class="sub">Enviámos um SMS com 6 números para <b class="mono" style="color:var(--ink)">'+esc(S.destino)+'</b>'+(S.escolaNome?' · '+esc(S.escolaNome):'')+'.</p>'+
+    '<h1>Escreva o código</h1><p class="sub">Enviámos o código de 6 números para <b class="mono" style="color:var(--ink)">'+esc(S.destino)+'</b>'+(S.escolaNome?' · '+esc(S.escolaNome):'')+'.</p>'+
     (erroMsg?'<div class="ac-msg err">'+esc(erroMsg)+'</div>':'')+(okMsg?'<div class="ac-msg ok">'+esc(okMsg)+'</div>':'')+
     '<form id="f2" novalidate><label class="field" style="margin-bottom:16px">Código do SMS<input class="inp ac-cod" id="a-cod" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······"></label>'+
     '<button class="btn pri" id="b2" type="submit">Entrar</button></form>'+
