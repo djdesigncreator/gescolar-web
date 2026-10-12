@@ -134,6 +134,7 @@ label.pt-it{cursor:pointer}
 <div class="toasts" id="toasts"></div>
 <script src="pauta.js" charset="utf-8"></script>
 <script src="chamada.js" charset="utf-8"></script>
+<script src="chat.js" charset="utf-8"></script>
 <script>
 (function(){
 'use strict';
@@ -144,6 +145,7 @@ function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){retu
 function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?'—':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
 function iniciais(n){ var p=String(n||'?').trim().split(/\s+/); return ((p[0]||'?')[0]+((p.length>1?p[p.length-1]:'')[0]||'')).toUpperCase(); }
 var IC={car:'M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7.5 13h.01M16.5 13h.01',check:'M20 6 9 17l-5-5',list:'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5zM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'};
+IC.chat='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z';
 function ic(n,x){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" '+(x||'')+'><path d="'+IC[n]+'"/></svg>'; }
 function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
 function vazio(i,t,s){ return '<div class="vazio"><div class="ic">'+ic(i)+'</div><b>'+esc(t)+'</b>'+esc(s)+'</div>'; }
@@ -162,14 +164,14 @@ function api(rota,corpo){
 
 var S={ d:null, aba:'inicio', par:'', tri:triActual(), ed:null, dia:0 };
 try{ var h=(location.hash||'').slice(1); if(h) S.aba=h; }catch(e){}
-var ABAS=[['inicio','Início','home'],['chamada','Chamada','list'],['notas','Notas','grade'],['horario','Horário','cal'],['avisos','Avisos','mega']];
+var ABAS=[['inicio','Início','home'],['chamada','Chamada','list'],['notas','Notas','grade'],['horario','Horário','cal'],['chat','Chat','chat'],['avisos','Avisos','mega']];
 function soInstrutor(){ var d=S.d; return !!(d && d.conducao && !d.turmas.length && !d.aulas.length); }
 function temESC(){ var d=S.d; return !!(d && d.turmas.some(function(t){ return t.esc; })); }
 function soESC(){ var d=S.d; return !!(d && d.turmas.length && d.turmas.every(function(t){ return t.esc; })); }
 function temCodigo(){ var d=S.d; return !!(d && d.codigo && (d.conducao || !d.turmas.length)); }
 function abasP(){ var d=S.d; if(soInstrutor() || (temCodigo() && !d.turmas.length)) return [['inicio','Início','home'],['praticas','Aulas','car']].concat(temCodigo()?[['codigo','Código','book']]:[]).concat([['avisos','Avisos','mega']]);
-  if(soESC()) return [['inicio','Início','home'],['diario','Diário','book'],['chamada','Presenças','list'],['notas','Avaliação','grade'],['avisos','Avisos','mega']];
-  var L = d && d.conducao ? ABAS.slice(0,4).concat([['praticas','Práticas','car']]).concat(temCodigo()?[['codigo','Código','book']]:[]).concat([ABAS[4]]) : ABAS.slice();
+  if(soESC()) return [['inicio','Início','home'],['diario','Diário','book'],['chamada','Presenças','list'],['notas','Avaliação','grade'],['chat','Chat','chat'],['avisos','Avisos','mega']];
+  var L = d && d.conducao ? ABAS.slice(0,4).concat([['praticas','Práticas','car']]).concat(temCodigo()?[['codigo','Código','book']]:[]).concat(ABAS.slice(4)) : ABAS.slice();
   if(temESC()) L.splice(1,0,['diario','Diário','book']);
   return L; }
 function sujo(){ return (S.ed && S.ed.sujo()) || (S.ch && S.ch.sujo()) || !!(S.di && S.di.sujo); }
@@ -192,7 +194,7 @@ function casca(){
   $('#sair').onclick=function(){ if(sujo() && !confirm('Tem notas por guardar. Sair mesmo assim?')) return; sair(); };
   $$('[data-aba]').forEach(function(b){ b.onclick=function(){ ir(b.getAttribute('data-aba')); }; });
   if(!abasP().some(function(a){ return a[0]===S.aba; })) S.aba='inicio';
-  ({inicio:soInstrutor()?pInicioInstrutor:pInicio,chamada:pChamada,notas:pNotas,horario:pHorario,avisos:pAvisos,praticas:pPraticas,diario:pDiario,codigo:pCodigoProf}[S.aba]||pInicio)();
+  ({inicio:soInstrutor()?pInicioInstrutor:pInicio,chamada:pChamada,notas:pNotas,horario:pHorario,avisos:pAvisos,praticas:pPraticas,diario:pDiario,codigo:pCodigoProf,chat:pChat}[S.aba]||pInicio)();
 }
 function ir(a){ if(a!==S.aba && sujo() && !confirm('Tem notas por guardar. Sair desta página mesmo assim?')) return; if(a!=='notas') S.ed=null; if(a!=='chamada') S.ch=null; if(a!=='diario') S.di=null; S.aba=a; try{ history.replaceState(null,'','#'+a); }catch(e){} casca(); window.scrollTo(0,0); }
 
@@ -474,6 +476,13 @@ function pCodigoProf(){
     $$('[data-lic]').forEach(function(b){ b.onclick=function(){ S.licao=+b.getAttribute('data-lic'); pCodigoProf(); window.scrollTo(0,0); }; }); }
   if(S.mat){ mostrar(); return; }
   api('/prof/codigo-estudo').then(function(r){ if(!r.ok){ var el=$('#cd-lic'); if(el) el.innerHTML='<div class="msg-err">'+esc(r.erro)+'</div>'; return; } S.mat=r.licoes; mostrar(); });
+}
+/* ================= CHAT DA TURMA (v5.14) ================= */
+function pChat(){
+  if(typeof window.GSChat==='undefined'){ $('#pg').innerHTML=vazio('chat','Falta o ficheiro chat.js','Avise a Direcção para o pôr no site.'); return; }
+  $('#pg').innerHTML='<div id="gc"></div>';
+  if(S.gc) S.gc.parar();
+  S.gc=GSChat.montar($('#gc'),{api:api, papel:'professor', chave:'prof', aviso:toast});
 }
 function pAvisos(){
   var L=S.d.comunicados;
