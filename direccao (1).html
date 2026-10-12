@@ -542,7 +542,7 @@ function pPropinas(){
     var semProp=L.length && L.every(function(e){ return !e.propinas.length; });
     $('#page').innerHTML=ph('Financeiro','Propinas e multas','Vencem a '+(R.dia_limite||10)+' de cada mês · multa de '+(R.multa||0)+'% por mês de atraso, com tecto de '+(R.multa_max||0)+'%.',
       '<select class="sel" id="pf-t"><option value="">Todas as turmas</option>'+S.turmas.map(function(x){ return '<option value="'+x.id+'"'+(x.id===S.filtroTurma?' selected':'')+'>'+esc(x.nome)+'</option>'; }).join('')+'</select>'+
-      '<button class="btn pri" id="gerar">'+ic('plus')+'Gerar mensalidades</button>')+
+      '<button class="btn" id="cob-sms">'+ic('mega')+'Avisos de cobrança</button><button class="btn pri" id="gerar">'+ic('plus')+'Gerar mensalidades</button>')+
       '<div class="grid g4">'+[['Cobrado',mt(T.cobrado)],['Em dívida',mt(T.divida)],['Das quais multas',mt(T.multas)],['Estudantes em atraso',grp(T.atraso)]].map(function(k){ return '<div class="card kpi"><div class="l">'+k[0]+'</div><div class="v" style="font-size:22px">'+k[1]+'</div></div>'; }).join('')+'</div>'+
       (!S.turmas.length? vazio('layers','Crie primeiro as turmas','A propina mensal de cada turma define o valor das mensalidades.') :
        !L.length? vazio('users','Ainda não há estudantes','Matricule estudantes para gerar as mensalidades.') :
@@ -557,6 +557,7 @@ function pPropinas(){
         '<div class="legend"><span><i style="background:var(--ok)"></i>Paga</span><span><i style="background:var(--bad)"></i>Em atraso</span><span><i style="background:var(--line)"></i>Por vencer</span></div>');
     $('#pf-t').onchange=function(){ S.filtroTurma=this.value; pPropinas(); };
     $('#gerar').onclick=formGerar;
+    $('#cob-sms').onclick=formCobranca;
     $$('[data-cob]').forEach(function(b){ b.onclick=function(){ cobrar(L.filter(function(e){return e.id===b.getAttribute('data-cob');})[0]); }; });
   });
 }
@@ -1146,6 +1147,29 @@ function editarLink(l){
 }
 
 /* ================= COMUNICADOS ================= */
+/* ---------- avisos de cobrança por SMS (v5.19) ---------- */
+function formCobranca(){
+  var ov=modal('<div class="modal-h"><h3>Avisos de cobrança por SMS</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b" id="cb-b"><div class="carregar"><div class="spinner"></div>A contar os devedores…</div></div>');
+  ov.querySelector('.modal').style.maxWidth='600px';
+  api('/cobranca').then(function(r){
+    if(!r.ok){ $('#cb-b').innerHTML=erroCaixa(r.erro); return; }
+    $('#cb-b').innerHTML=
+      '<div class="card card-b"><b>Avisos automáticos</b><div class="small muted" style="margin:4px 0 10px">O Gescolar manda os SMS sozinho, todos os dias a partir das '+r.hora+'h. Um SMS por encarregado, juntando os educandos.</div>'+
+        '<label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:10px"><input type="checkbox" id="cb-auto"'+(r.auto?' checked':'')+' style="margin-top:3px"><span><b>Ligar os avisos automáticos</b><span class="small muted" style="display:block">Antes de vencer: um lembrete. Depois do atraso: no dia seguinte e de 7 em 7 dias, no máximo 3 vezes por mensalidade.</span></span></label>'+
+        '<label class="field" style="max-width:260px">Lembrete antes de vencer<select class="sel" id="cb-dias">'+[1,2,3,5,7].map(function(d){ return '<option value="'+d+'"'+(d===r.dias?' selected':'')+'>'+d+' dia'+(d>1?'s':'')+' antes</option>'; }).join('')+'</select></label>'+
+        '<div id="cb-e1"></div><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn pri" id="cb-g">'+ic('save')+'Guardar</button></div></div>'+
+      '<div class="card card-b"><b>Avisar devedores agora</b>'+
+        (r.devedores? '<div class="small" style="margin:4px 0 8px"><b>'+r.devedores+'</b> encarregado(s) com <b>'+mt(r.valor)+'</b> em atraso'+(r.sem_telefone?' · '+r.sem_telefone+' estudante(s) sem telemóvel para avisar':'')+'.</div>'+
+          '<div class="small muted" style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px">Exemplo: «'+esc(r.exemplo)+'»</div>'+
+          '<div id="cb-e2"></div><div style="display:flex;justify-content:flex-end"><button class="btn" id="cb-av">'+ic('mega')+'Enviar '+r.devedores+' SMS</button></div>'
+        : '<div class="small muted" style="margin-top:4px">Não há mensalidades em atraso. Ninguém para avisar.</div>')+
+      '</div>'+(r.sms?'':erroCaixa('O SMS ainda não está configurado no servidor.'));
+    $('#cb-g').onclick=function(){ var b=this; aGravar(b,true); api('/cobranca-guardar',{auto:$('#cb-auto').checked, dias:+$('#cb-dias').value}).then(function(x){ aGravar(b,false); if(!x.ok){ $('#cb-e1').innerHTML=erroCaixa(x.erro); return; } toast(x.auto?'Avisos automáticos ligados ('+x.dias+' dia(s) antes)':'Avisos automáticos desligados'); }); };
+    var av=$('#cb-av'); if(av) av.onclick=function(){ var b=this; if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Confirmar: enviar '+r.devedores+' SMS'; b.classList.add('pri'); return; }
+      aGravar(b,true); api('/avisar-devedores').then(function(x){ aGravar(b,false); if(!x.ok){ $('#cb-e2').innerHTML=erroCaixa(x.erro); return; } fechar(); toast(x.enviados+' de '+x.destinatarios+' SMS de cobrança enviados'); }); };
+  });
+}
+
 /* ---------- importar estudantes por Excel (v5.18) ---------- */
 var XLSX_URL='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 function comXLSX(f){ if(window.XLSX) return f(); var s=document.createElement('script'); s.src=XLSX_URL; s.onload=f; s.onerror=function(){ toast('Não foi possível abrir o leitor de Excel. Verifique a internet e tente de novo.'); }; document.head.appendChild(s); }
