@@ -83,6 +83,7 @@ function imprimir(p, op){
     '<div class="np" style="font-family:Arial,sans-serif;margin-bottom:12px"><button onclick="window.print()" style="font:700 14px Arial;padding:10px 16px;border-radius:8px;border:0;background:#0A64DC;color:#fff;cursor:pointer">Imprimir / Guardar em PDF</button></div>'+
     folhaHTML(p, op)+'<script>setTimeout(function(){ window.print(); },400);<\/script></body></html>');
   w.document.close();
+  try{ if(window.GSI18n) GSI18n.aplicar(w.document); }catch(e){}
 }
 function ver(el, p, op){ css(); el.innerHTML='<div class="gpl-folha">'+folhaHTML(p, op)+'</div>'; }
 
