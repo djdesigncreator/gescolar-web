@@ -107,6 +107,9 @@ textarea.inp{height:auto;min-height:130px;padding:10px;line-height:1.45;resize:v
 <div class="toasts" id="toasts"></div>
 <script src="pauta.js" charset="utf-8"></script>
 <script src="chamada.js" charset="utf-8"></script>
+<script src="chat.js" charset="utf-8"></script>
+<script src="planos.js" charset="utf-8"></script>
+<script src="aulas.js" charset="utf-8"></script>
 <script>
 (function(){
 'use strict';
@@ -125,6 +128,10 @@ var CORES=['#0A64DC','#0E7C86','#7B4DD6','#C2410C','#168A52','#B4235A','#0B2A4A'
 function av(n){ var h=0; for(var i=0;i<n.length;i++) h=(h*31+n.charCodeAt(i))>>>0; return '<span class="av" style="background:'+CORES[h%CORES.length]+'">'+esc(iniciais(n))+'</span>'; }
 var IC={home:'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',layers:'M12 2 2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',book:'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zM6.5 17A2.5 2.5 0 0 0 4 19.5 2.5 2.5 0 0 0 6.5 22H20v-5',board:'M2 3h20M4 3v11h16V3M12 14v4M8 21l4-3 4 3',users:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',cal:'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',grade:'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l2 2 4-4',wallet:'M20 7H5a2 2 0 0 1 0-4h13v4M3 5v14a2 2 0 0 0 2 2h15V7M16 14h.01',receipt:'M4 2v20l3-2 3 2 3-2 3 2 3-2 1 .7V2l-1 .7-3-2-3 2-3-2-3 2-3-2zM8 8h8M8 12h8M8 16h5',mega:'M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1zM16 9a3 3 0 0 1 0 6M19 6a7 7 0 0 1 0 12',cog:'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',plus:'M12 5v14M5 12h14',x:'M18 6 6 18M6 6l12 12',menu:'M3 6h18M3 12h18M3 18h18',save:'M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8',check:'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',trash:'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',out:'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',bank:'M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3',link:'M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71',sparkle:'M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z'};
 IC.car='M5 17h14M6 17v2M18 17v2M3 13l2-6h14l2 6v4H3zM7.5 13h.01M16.5 13h.01'; IC.download='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3'; IC.image='M3 5h18v14H3zM8.5 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M21 15l-5-5L5 19';
+IC.download='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3';
+IC.video='M23 7l-7 5 7 5V7zM3 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z';
+IC.plano='M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1zM8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2M8 11h8M8 15h5';
+IC.chat='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z';
 function ic(n,x){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" '+(x||'')+'><path d="'+IC[n]+'"/></svg>'; }
 function pl(n,a,b){ return n+' '+(n===1?a:b); }
 function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
@@ -152,11 +159,11 @@ try{ var h=(location.hash||'').slice(1); if(h) S.pag=h; }catch(e){}
 /* ---------- casca ---------- */
 var NAV = [['Arranque'],['painel','Painel','home'],['turmas','Turmas e salas','layers'],['disciplinas','Disciplinas','book'],['professores','Professores','board'],['estudantes','Estudantes','users'],['inscricoes','Inscrições online','link'],
   ['Financeiro'],['propinas','Propinas e multas','wallet'],['facturas','Facturas e recibos','receipt'],['saldo','Saldo e levantamentos','bank',0,1],
-  ['Escola'],['horarios','Horários','cal'],['presencas','Presenças e faltas','check'],['pautas','Pautas e notas','grade'],['comunicados','Comunicados','mega'],
+  ['Escola'],['horarios','Horários','cal'],['presencas','Presenças e faltas','check'],['pautas','Pautas e notas','grade'],['planos','Planos de aula','plano'],['online','Aulas online','video'],['comunicados','Comunicados','mega'],['chats','Chat das turmas','chat'],
   ['Conta'],['equipa','Equipa da escola','users',0,1],['assinatura','Assinatura do Gescolar','receipt',0,1]];
 function temCON(){ return ((S.escola&&S.escola.niveis)||[]).indexOf('CON')>=0; }
 function soCON(){ var n=(S.escola&&S.escola.niveis)||[]; return n.length>0 && n.every(function(x){ return x==='CON'; }); }
-var SO_ESCOLA={turmas:1,disciplinas:1,estudantes:1,horarios:1,presencas:1,pautas:1};
+var SO_ESCOLA={turmas:1,disciplinas:1,estudantes:1,horarios:1,presencas:1,pautas:1,chats:1,planos:1,online:1};
 function navLista(){
   var L=[];
   NAV.forEach(function(n){
@@ -200,7 +207,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos, teoricas:pTeoricas, codigo:pCodigo, aulas:pAulas, viaturas:pViaturas, exames:pExames, inscricoes:pInscricoes, saldo:pSaldo }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos, teoricas:pTeoricas, codigo:pCodigo, aulas:pAulas, viaturas:pViaturas, exames:pExames, inscricoes:pInscricoes, saldo:pSaldo, chats:pChats, planos:pPlanosD, online:pOnlineD }[S.pag] || pPainel;
   f();
 }
 
@@ -414,14 +421,14 @@ function pProfessores(){
     S.professores=d.professores; S.disciplinas=r[1].ok?r[1].disciplinas:[];
     var mapa={}; S.disciplinas.forEach(function(x){ mapa[x.id]=x; });
     var L=d.professores;
-    $('#page').innerHTML=ph('Arranque',soCON()?'Instrutores':'Professores', L.length? L.length+' professores registados.' : 'Registe os professores. Cada um recebe um SMS com o link para entrar no Gescolar pelo telemóvel.', (L.length?'<button class="btn" id="conv">Convidar todos por SMS</button>':'')+'<button class="btn pri" id="novo">'+ic('plus')+'Novo professor</button>')+
+    $('#page').innerHTML=ph('Arranque',soCON()?'Instrutores':'Professores', L.length? L.length+' professores registados.' : 'Registe os professores. Cada um recebe o link para entrar no Gescolar por SMS e por email.', (L.length?'<button class="btn" id="conv">Convidar todos</button>':'')+'<button class="btn pri" id="novo">'+ic('plus')+'Novo professor</button>')+
       (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Professor</th><th>Disciplinas</th><th>Contacto</th><th>Acesso</th><th></th></tr></thead><tbody>'+
         L.map(function(p){ return '<tr><td><div class="person">'+av(p.nome)+'<div><b>'+esc(p.nome)+'</b><small>'+(p.monodocencia?'Monodocência':'Desde '+(p.desde||'—'))+'</small></div></div></td><td>'+
           (p.disciplinas.map(function(id){ return mapa[id]?'<span class="tag" style="margin:2px 4px 2px 0;display:inline-block">'+esc(mapa[id].nome)+'</span>':''; }).join('')||'<span class="muted small">—</span>')+'</td><td class="small"><div class="mono">'+esc(p.telefone||'—')+'</div>'+esc(p.email||'')+'</td><td>'+(p.telefone?'<button class="btn sm" data-ac="'+p.id+'">Enviar acesso</button>':'<span class="small muted">Sem telemóvel</span>')+'</td>'+'<td class="r"><button class="btn sm" data-ed="'+p.id+'">Editar</button> <button class="btn sm danger" data-del="'+p.id+'">'+ic('trash')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
         : vazio('board','Registe o primeiro professor','Nome, telemóvel, email e as disciplinas que pode dar.'));
     $('#novo').onclick=function(){ formProf(null); };
-    var cv=$('#conv'); if(cv) cv.onclick=function(){ var btn=this; if(btn.dataset.c!=='1'){ btn.dataset.c='1'; btn.textContent='Confirmar: enviar SMS a todos'; btn.classList.add('sun'); return; } aGravar(btn,true); api('/professores-convite').then(function(x){ aGravar(btn,false); btn.dataset.c=''; btn.classList.remove('sun'); btn.textContent='Convidar todos por SMS'; toast(x.ok?'Convite enviado a '+x.enviados+' professor(es)'+(x.sem_telefone?' · '+x.sem_telefone+' sem telemóvel':''):x.erro); }); };
-    $$('[data-ac]').forEach(function(b){ b.onclick=function(){ b.disabled=true; api('/professor-convite',{id:b.getAttribute('data-ac')}).then(function(x){ b.disabled=false; toast(x.ok?'Acesso enviado por SMS':x.erro); if(x.ok) b.textContent='Reenviar'; }); }; });
+    var cv=$('#conv'); if(cv) cv.onclick=function(){ var btn=this; if(btn.dataset.c!=='1'){ btn.dataset.c='1'; btn.textContent='Confirmar: enviar a todos'; btn.classList.add('sun'); return; } aGravar(btn,true); api('/professores-convite').then(function(x){ aGravar(btn,false); btn.dataset.c=''; btn.classList.remove('sun'); btn.textContent='Convidar todos'; toast(x.ok?'Convite enviado a '+x.enviados+' professor(es) · '+(x.sms||0)+' SMS · '+(x.emails||0)+' email(s)'+(x.sem_telefone?' · '+x.sem_telefone+' sem telemóvel nem email':''):x.erro); }); };
+    $$('[data-ac]').forEach(function(b){ b.onclick=function(){ b.disabled=true; api('/professor-convite',{id:b.getAttribute('data-ac')}).then(function(x){ b.disabled=false; toast(x.ok?'Acesso enviado'+(x.sms&&x.email?' por SMS e email':x.email?' por email':' por SMS'):x.erro); if(x.ok) b.textContent='Reenviar'; }); }; });
     $$('[data-ed]').forEach(function(b){ b.onclick=function(){ formProf(L.filter(function(p){return p.id===b.getAttribute('data-ed');})[0]); }; });
     $$('[data-del]').forEach(function(b){ b.onclick=function(){ confirmar('Retirar este professor?','Deixa de aparecer nas listas. As notas que já lançou ficam guardadas.', function(btn){ api('/professor-apagar',{id:b.getAttribute('data-del')}).then(function(x){ if(x.ok){ fechar(); toast('Professor retirado'); pProfessores(); } else { aGravar(btn,false); $('#cf-err').innerHTML=erroCaixa(x.erro); } }); }); }; });
   });
@@ -431,13 +438,13 @@ function formProf(p){
   var D=S.disciplinas||[];
   modal('<div class="modal-h"><h3>'+(p.id?'Editar professor':'Novo professor')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
     '<label class="field">Nome completo<input class="inp" id="p-nome" value="'+esc(p.nome||'')+'" placeholder="Ex.: Helena Cossa"></label>'+
-    '<div class="frow"><label class="field">Telemóvel<input class="inp mono" id="p-tel" value="'+esc(p.telefone||'')+'" placeholder="84 000 0000"><span class="small muted" style="font-weight:400">É com este número que o professor entra. Ao registar, recebe o link por SMS.</span></label><label class="field">Email<input class="inp" id="p-email" type="email" value="'+esc(p.email||'')+'" placeholder="nome@escola.co.mz"></label></div>'+
+    '<div class="frow"><label class="field">Telemóvel<input class="inp mono" id="p-tel" value="'+esc(p.telefone||'')+'" placeholder="84 000 0000"><span class="small muted" style="font-weight:400">É com este número que o professor entra. Ao registar, recebe o link por SMS e, se tiver email, também por email.</span></label><label class="field">Email<input class="inp" id="p-email" type="email" value="'+esc(p.email||'')+'" placeholder="nome@escola.co.mz"></label></div>'+
     '<div class="field">Disciplinas que pode dar'+(D.length?'<div class="chk">'+D.map(function(x){ return '<label><input type="checkbox" class="p-d" value="'+x.id+'"'+(p.disciplinas.indexOf(x.id)>=0?' checked':'')+'><span class="dot" style="background:'+esc(x.cor)+'"></span>'+esc(x.nome)+' <span class="muted small">· '+esc(x.nivel)+'</span></label>'; }).join('')+'</div>':'<span class="small muted" style="font-weight:500">Crie primeiro as disciplinas. Pode voltar aqui depois.</span>')+'</div>'+
     '<div class="frow"><label class="field">A dar aulas na escola desde<input class="inp" id="p-desde" type="number" value="'+(p.desde||new Date().getFullYear())+'"></label><label class="field" style="justify-content:flex-end"><span style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:500;height:40px"><input type="checkbox" id="p-mono"'+(p.monodocencia?' checked':'')+'> Monodocência (primário ou escolinha)</span></label></div>'+
     '<div id="p-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="p-ok">'+ic('save')+'Guardar</button></div>');
   $('#p-ok').onclick=function(){ var btn=this; aGravar(btn,true);
     api('/professor-guardar',{ id:p.id, nome:$('#p-nome').value, telefone:$('#p-tel').value, email:$('#p-email').value, desde:$('#p-desde').value, monodocencia:$('#p-mono').checked, disciplinas:$$('.p-d').filter(function(c){return c.checked;}).map(function(c){return c.value;}) })
-      .then(function(r){ if(r.ok){ fechar(); toast(p.id?'Professor actualizado':(r.sms?'Professor registado · acesso enviado por SMS':'Professor registado')); pProfessores(); } else { aGravar(btn,false); $('#p-err').innerHTML=erroCaixa(r.erro); } }); };
+      .then(function(r){ if(r.ok){ fechar(); toast(p.id?'Professor actualizado':(r.sms&&r.email?'Professor registado · acesso enviado por SMS e email':r.email?'Professor registado · acesso enviado por email':r.sms?'Professor registado · acesso enviado por SMS':'Professor registado')); pProfessores(); } else { aGravar(btn,false); $('#p-err').innerHTML=erroCaixa(r.erro); } }); };
 }
 
 // ESTUDANTES
@@ -448,13 +455,14 @@ function pEstudantes(){
     S.turmas=r[1].ok?r[1].turmas:[]; var tm={}; S.turmas.forEach(function(t){ tm[t.id]=t; });
     var L=d.estudantes;
     $('#page').innerHTML=ph('Arranque','Estudantes', L.length? L.length+' estudantes'+(S.filtroTurma&&tm[S.filtroTurma]?' em '+esc(tm[S.filtroTurma].nome):' matriculados')+'.' : 'Matricule os estudantes. Cada um recebe um número e fica ligado ao encarregado.',
-      '<select class="sel" id="e-f"><option value="">Todas as turmas</option>'+S.turmas.map(function(t){ return '<option value="'+t.id+'"'+(t.id===S.filtroTurma?' selected':'')+'>'+esc(t.nome)+'</option>'; }).join('')+'</select><button class="btn" id="fam">'+ic('users')+'Acesso das famílias</button><button class="btn pri" id="mat">'+ic('plus')+'Matricular</button>')+
+      '<select class="sel" id="e-f"><option value="">Todas as turmas</option>'+S.turmas.map(function(t){ return '<option value="'+t.id+'"'+(t.id===S.filtroTurma?' selected':'')+'>'+esc(t.nome)+'</option>'; }).join('')+'</select><button class="btn" id="fam">'+ic('users')+'Acesso das famílias</button><button class="btn" id="imp">'+ic('download')+'Importar Excel</button><button class="btn pri" id="mat">'+ic('plus')+'Matricular</button>')+
       (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Estudante</th><th>Turma</th><th>Encarregado</th><th>Nascimento</th><th></th></tr></thead><tbody>'+
         L.map(function(e){ return '<tr><td><div class="person">'+av(e.nome)+'<div><b>'+esc(e.nome)+'</b><small class="mono">'+esc(e.numero||'')+'</small></div></div></td><td>'+(tm[e.turma]?'<span class="tag">'+esc(tm[e.turma].nome)+'</span>':'—')+'</td><td class="small">'+(e.encarregado?esc(e.encarregado.nome)+'<div class="mono muted">'+esc(e.encarregado.telefone)+'</div>':'<span class="muted">—</span>')+'</td><td class="small num">'+data(e.nascimento)+'</td><td class="r"><button class="btn sm" data-rec="'+e.id+'" data-nome="'+esc(e.nome)+'">Recolha</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
         : (S.turmas.length? vazio('users','Matricule o primeiro estudante','Precisa do nome, da turma e do contacto do encarregado.') : vazio('layers','Crie primeiro uma turma','Os estudantes são matriculados numa turma. Vá a "Turmas e salas".')));
     $('#e-f').onchange=function(){ S.filtroTurma=this.value; pEstudantes(); };
     $('#mat').onclick=function(){ if(!S.turmas.length){ toast('Crie primeiro uma turma'); ir('turmas'); return; } formMatricula(); };
     $('#fam').onclick=acessoFamilias;
+    $('#imp').onclick=function(){ if(!S.turmas.length){ toast('Crie primeiro as turmas'); ir('turmas'); return; } importarExcel(); };
     $$('[data-rec]').forEach(function(b){ b.onclick=function(){ autorizadosModal(b.getAttribute('data-rec')); }; });
   });
 }
@@ -536,7 +544,7 @@ function pPropinas(){
     var semProp=L.length && L.every(function(e){ return !e.propinas.length; });
     $('#page').innerHTML=ph('Financeiro','Propinas e multas','Vencem a '+(R.dia_limite||10)+' de cada mês · multa de '+(R.multa||0)+'% por mês de atraso, com tecto de '+(R.multa_max||0)+'%.',
       '<select class="sel" id="pf-t"><option value="">Todas as turmas</option>'+S.turmas.map(function(x){ return '<option value="'+x.id+'"'+(x.id===S.filtroTurma?' selected':'')+'>'+esc(x.nome)+'</option>'; }).join('')+'</select>'+
-      '<button class="btn pri" id="gerar">'+ic('plus')+'Gerar mensalidades</button>')+
+      '<button class="btn" id="cob-sms">'+ic('mega')+'Avisos de cobrança</button><button class="btn pri" id="gerar">'+ic('plus')+'Gerar mensalidades</button>')+
       '<div class="grid g4">'+[['Cobrado',mt(T.cobrado)],['Em dívida',mt(T.divida)],['Das quais multas',mt(T.multas)],['Estudantes em atraso',grp(T.atraso)]].map(function(k){ return '<div class="card kpi"><div class="l">'+k[0]+'</div><div class="v" style="font-size:22px">'+k[1]+'</div></div>'; }).join('')+'</div>'+
       (!S.turmas.length? vazio('layers','Crie primeiro as turmas','A propina mensal de cada turma define o valor das mensalidades.') :
        !L.length? vazio('users','Ainda não há estudantes','Matricule estudantes para gerar as mensalidades.') :
@@ -551,6 +559,7 @@ function pPropinas(){
         '<div class="legend"><span><i style="background:var(--ok)"></i>Paga</span><span><i style="background:var(--bad)"></i>Em atraso</span><span><i style="background:var(--line)"></i>Por vencer</span></div>');
     $('#pf-t').onchange=function(){ S.filtroTurma=this.value; pPropinas(); };
     $('#gerar').onclick=formGerar;
+    $('#cob-sms').onclick=formCobranca;
     $$('[data-cob]').forEach(function(b){ b.onclick=function(){ cobrar(L.filter(function(e){return e.id===b.getAttribute('data-cob');})[0]); }; });
   });
 }
@@ -1140,6 +1149,166 @@ function editarLink(l){
 }
 
 /* ================= COMUNICADOS ================= */
+/* ---------- avisos de cobrança por SMS (v5.19) ---------- */
+function formCobranca(){
+  var ov=modal('<div class="modal-h"><h3>Avisos de cobrança por SMS</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b" id="cb-b"><div class="carregar"><div class="spinner"></div>A contar os devedores…</div></div>');
+  ov.querySelector('.modal').style.maxWidth='600px';
+  api('/cobranca').then(function(r){
+    if(!r.ok){ $('#cb-b').innerHTML=erroCaixa(r.erro); return; }
+    $('#cb-b').innerHTML=
+      '<div class="card card-b"><b>Avisos automáticos</b><div class="small muted" style="margin:4px 0 10px">O Gescolar manda os SMS sozinho, todos os dias a partir das '+r.hora+'h. Um SMS por encarregado, juntando os educandos.</div>'+
+        '<label style="display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:10px"><input type="checkbox" id="cb-auto"'+(r.auto?' checked':'')+' style="margin-top:3px"><span><b>Ligar os avisos automáticos</b><span class="small muted" style="display:block">Antes de vencer: um lembrete. Depois do atraso: no dia seguinte e de 7 em 7 dias, no máximo 3 vezes por mensalidade.</span></span></label>'+
+        '<label class="field" style="max-width:260px">Lembrete antes de vencer<select class="sel" id="cb-dias">'+[1,2,3,5,7].map(function(d){ return '<option value="'+d+'"'+(d===r.dias?' selected':'')+'>'+d+' dia'+(d>1?'s':'')+' antes</option>'; }).join('')+'</select></label>'+
+        '<div id="cb-e1"></div><div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn pri" id="cb-g">'+ic('save')+'Guardar</button></div></div>'+
+      '<div class="card card-b"><b>Avisar devedores agora</b>'+
+        (r.devedores? '<div class="small" style="margin:4px 0 8px"><b>'+r.devedores+'</b> encarregado(s) com <b>'+mt(r.valor)+'</b> em atraso'+(r.sem_telefone?' · '+r.sem_telefone+' estudante(s) sem telemóvel para avisar':'')+'.</div>'+
+          '<div class="small muted" style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px">Exemplo: «'+esc(r.exemplo)+'»</div>'+
+          '<div id="cb-e2"></div><div style="display:flex;justify-content:flex-end"><button class="btn" id="cb-av">'+ic('mega')+'Enviar '+r.devedores+' SMS</button></div>'
+        : '<div class="small muted" style="margin-top:4px">Não há mensalidades em atraso. Ninguém para avisar.</div>')+
+      '</div>'+(r.sms?'':erroCaixa('O SMS ainda não está configurado no servidor.'));
+    $('#cb-g').onclick=function(){ var b=this; aGravar(b,true); api('/cobranca-guardar',{auto:$('#cb-auto').checked, dias:+$('#cb-dias').value}).then(function(x){ aGravar(b,false); if(!x.ok){ $('#cb-e1').innerHTML=erroCaixa(x.erro); return; } toast(x.auto?'Avisos automáticos ligados ('+x.dias+' dia(s) antes)':'Avisos automáticos desligados'); }); };
+    var av=$('#cb-av'); if(av) av.onclick=function(){ var b=this; if(b.dataset.c!=='1'){ b.dataset.c='1'; b.textContent='Confirmar: enviar '+r.devedores+' SMS'; b.classList.add('pri'); return; }
+      aGravar(b,true); api('/avisar-devedores').then(function(x){ aGravar(b,false); if(!x.ok){ $('#cb-e2').innerHTML=erroCaixa(x.erro); return; } fechar(); toast(x.enviados+' de '+x.destinatarios+' SMS de cobrança enviados'); }); };
+  });
+}
+
+/* ---------- importar estudantes por Excel (v5.18) ---------- */
+var XLSX_URL='https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+function comXLSX(f){ if(window.XLSX) return f(); var s=document.createElement('script'); s.src=XLSX_URL; s.onload=f; s.onerror=function(){ toast('Não foi possível abrir o leitor de Excel. Verifique a internet e tente de novo.'); }; document.head.appendChild(s); }
+var COLS_IMP=[['nome','Nome completo do estudante *'],['sexo','Sexo (M/F)'],['nascimento','Data de nascimento (DD/MM/AAAA)'],['turma','Turma *'],['telefone','Telemóvel do estudante'],['enc_nome','Nome do encarregado'],['enc_telefone','Telemóvel do encarregado'],['enc_email','Email do encarregado'],['enc_parentesco','Parentesco']];
+function normCab(t){ return String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(); }
+function colunaDe(cab){ var c=normCab(cab);
+  if(/encarregad/.test(c)){ if(/telem|telef|celul|contact/.test(c)) return 'enc_telefone'; if(/mail/.test(c)) return 'enc_email'; if(/parent/.test(c)) return 'enc_parentesco'; if(/nome/.test(c)) return 'enc_nome'; }
+  if(/mail/.test(c)) return 'enc_email'; if(/parentesco/.test(c)) return 'enc_parentesco';
+  if(/turma|classe/.test(c)) return 'turma'; if(/sexo|genero/.test(c)) return 'sexo'; if(/nasc/.test(c)) return 'nascimento';
+  if(/telem|telef|celul/.test(c)) return 'telefone'; if(/nome/.test(c)) return 'nome'; return ''; }
+function modeloExcel(){ comXLSX(function(){
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet([COLS_IMP.map(function(c){ return c[1]; })]); ws['!cols']=COLS_IMP.map(function(c,i){ return {wch:i===0||i===5?32:24}; });
+  XLSX.utils.book_append_sheet(wb, ws, 'Estudantes');
+  var wt=XLSX.utils.aoa_to_sheet([['Turmas desta escola (copie o nome exactamente assim para a coluna Turma)']].concat(S.turmas.map(function(t){ return [t.nome]; }))); wt['!cols']=[{wch:70}];
+  XLSX.utils.book_append_sheet(wb, wt, 'Turmas');
+  var wi=XLSX.utils.aoa_to_sheet([['Como preencher'],[''],['1. Preencha a folha «Estudantes» a partir da linha 2: um estudante por linha.'],['2. As colunas com * são obrigatórias. A turma tem de ter o nome igual ao da folha «Turmas».'],
+    ['3. O encarregado (nome e telemóvel) é obrigatório em todos os níveis, excepto no ensino superior.'],['4. No ensino superior, o telemóvel do estudante é obrigatório.'],
+    ['5. Telemóveis com 9 dígitos, começados por 82 a 87 (ex.: 841234567).'],['6. Datas no formato DD/MM/AAAA (ex.: 15/03/2012). Sexo: M ou F.'],
+    ['7. Se o encarregado já existir na escola (mesmo telemóvel), o estudante fica ligado a ele. Irmãos podem ter o mesmo encarregado.'],
+    ['8. Guarde o ficheiro e carregue-o no Gescolar: antes de gravar, mostra os erros linha a linha.']]); wi['!cols']=[{wch:110}];
+  XLSX.utils.book_append_sheet(wb, wi, 'Instruções');
+  XLSX.writeFile(wb,'gescolar-modelo-estudantes.xlsx');
+}); }
+function lerExcel(ficheiro, feito){ comXLSX(function(){
+  var rd=new FileReader();
+  rd.onerror=function(){ feito(null,'Não foi possível ler o ficheiro.'); };
+  rd.onload=function(){
+    var wb; try{ wb=XLSX.read(new Uint8Array(rd.result),{type:'array',cellDates:true}); }catch(e){ feito(null,'O ficheiro não é um Excel válido (.xlsx, .xls ou .csv).'); return; }
+    var nomeF=wb.SheetNames.filter(function(n){ return normCab(n)==='estudantes'; })[0]||wb.SheetNames[0];
+    var rows=XLSX.utils.sheet_to_json(wb.Sheets[nomeF],{header:1,raw:true,defval:''});
+    var h=-1; for(var i=0;i<Math.min(rows.length,10);i++){ if(rows[i].some(function(c){ return colunaDe(c)==='nome'; })){ h=i; break; } }
+    if(h<0){ feito(null,'Não encontrei a linha dos títulos (com «Nome completo do estudante»). Use o modelo do Gescolar.'); return; }
+    var mapa=rows[h].map(colunaDe);
+    if(mapa.indexOf('turma')<0){ feito(null,'Falta a coluna «Turma». Use o modelo do Gescolar.'); return; }
+    var out=[];
+    for(var r=h+1;r<rows.length;r++){
+      var l={linha:r+1}, algum=false;
+      rows[r].forEach(function(v,c){ var k=mapa[c]; if(!k) return;
+        if(v instanceof Date){ v=v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0'); }
+        else if(typeof v==='number'){ v=String(Math.round(v)); }
+        v=String(v==null?'':v).trim(); if(v) algum=true; if(!l[k]) l[k]=v; });
+      if(algum) out.push(l);
+    }
+    feito(out);
+  };
+  rd.readAsArrayBuffer(ficheiro);
+}); }
+function importarExcel(){
+  var ov=modal('<div class="modal-h"><h3>Importar estudantes do Excel</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b" id="im-b"></div>');
+  ov.querySelector('.modal').style.maxWidth='860px';
+  var linhas=null, teste=null;
+  function passo1(err){
+    $('#im-b').innerHTML='<div class="card card-b" style="background:var(--blue-soft);border-color:transparent"><b>1. Descarregue o modelo</b><div class="small muted" style="margin:4px 0 10px">Tem as colunas certas, a lista das turmas desta escola e as instruções.</div><button class="btn" id="im-mod">'+ic('download')+'Descarregar modelo Excel</button></div>'+
+      '<div class="card card-b"><b>2. Carregue o ficheiro preenchido</b><div class="small muted" style="margin:4px 0 10px">Antes de gravar, o Gescolar confere tudo e mostra os erros linha a linha. Até 1000 estudantes de cada vez.</div><input type="file" id="im-f" accept=".xlsx,.xls,.csv"></div>'+
+      (err?erroCaixa(err):'')+'<div id="im-st"></div>';
+    $('#im-mod').onclick=modeloExcel;
+    $('#im-f').onchange=function(){ var f=this.files&&this.files[0]; if(!f) return; $('#im-st').innerHTML='<div class="carregar"><div class="spinner"></div>A ler o ficheiro…</div>';
+      lerExcel(f,function(L,e){ if(!L) return passo1(e); if(!L.length) return passo1('O ficheiro não tem estudantes depois da linha dos títulos.'); if(L.length>1000) return passo1('O ficheiro tem '+L.length+' linhas. Divida-o em ficheiros de até 1000 estudantes.');
+        linhas=L; $('#im-st').innerHTML='<div class="carregar"><div class="spinner"></div>A conferir '+L.length+' linha(s)…</div>';
+        api('/importar-estudantes',{linhas:L, testar:true}).then(function(r){ if(!r.ok) return passo1(r.erro); teste=r; passo2(); }); }); };
+  }
+  function passo2(){
+    var R=teste.resumo, maus=teste.linhas.filter(function(x){ return !x.ok; }), bons=teste.linhas.filter(function(x){ return x.ok; });
+    $('#im-b').innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap"><span class="pill ok">'+R.validas+' prontos a importar</span>'+(R.com_erro?'<span class="pill bad">'+R.com_erro+' com erro</span>':'')+(R.novos_encarregados?'<span class="pill muted">'+R.novos_encarregados+' encarregado(s) novo(s)</span>':'')+'</div>'+
+      (maus.length?'<div class="small" style="margin-top:4px">As linhas com erro <b>não</b> são importadas. Corrija-as no Excel e carregue de novo depois (as que já entraram não se repetem).</div>':'')+
+      '<div class="tbl-wrap" style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:10px"><table><thead><tr><th>Linha</th><th>Estudante</th><th>Resultado</th></tr></thead><tbody>'+
+        maus.concat(bons).map(function(x){ return '<tr><td class="num">'+x.linha+'</td><td>'+esc(x.nome||'—')+'</td><td class="small">'+(x.ok?'<span style="color:var(--ok)">✓ '+esc(x.turma)+(x.novo_encarregado?' · encarregado novo':'')+'</span>':'<span style="color:var(--bad)">'+esc(x.erro)+'</span>')+'</td></tr>'; }).join('')+
+      '</tbody></table></div>'+
+      '<label style="display:flex;gap:10px;align-items:flex-start;font-size:14px"><input type="checkbox" id="im-sms" style="margin-top:3px"><span><b>Enviar SMS de boas-vindas</b><span class="small muted" style="display:block">Ao estudante (se tiver telemóvel) e ao encarregado, com o número de estudante. Gasta SMS da escola. Pode convidar as famílias mais tarde em «Acesso das famílias».</span></span></label>'+
+      '<div id="im-err"></div><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn" id="im-voltar">Escolher outro ficheiro</button><button class="btn pri" id="im-ok"'+(R.validas?'':' disabled')+'>Importar '+R.validas+' estudante(s)</button></div>';
+    $('#im-voltar').onclick=function(){ passo1(); };
+    $('#im-ok').onclick=function(){ var btn=this, sms=$('#im-sms').checked; btn.disabled=true; $('#im-voltar').disabled=true;
+      var ok=bons.map(function(x){ return x.linha; }), envio=linhas.filter(function(l){ return ok.indexOf(l.linha)>=0; }), feitos=0, criados=0, smsN=0, erros=[], i=0;
+      function lote(){ if(i>=envio.length) return fim();
+        var parte=envio.slice(i,i+100); i+=100; btn.textContent='A importar… '+Math.min(i,envio.length)+' de '+envio.length;
+        api('/importar-estudantes',{linhas:parte, testar:false, sms:sms}).then(function(r){
+          if(!r.ok){ $('#im-err').innerHTML=erroCaixa(r.erro+(criados?' ('+criados+' estudante(s) já foram importados.)':'')); btn.textContent='Parou'; return; }
+          criados+=r.resumo.criados||0; smsN+=r.resumo.sms||0; r.linhas.filter(function(x){ return !x.ok; }).forEach(function(x){ erros.push(x); }); feitos+=parte.length; lote(); }); }
+      function fim(){ $('#im-b').innerHTML='<div style="text-align:center;padding:10px 0"><div style="font:800 34px var(--f-display);color:var(--ok)">'+criados+'</div><div>estudante(s) matriculado(s)'+(sms?' · '+smsN+' SMS enviados':'')+'.</div></div>'+
+          (erros.length?'<div class="msg-err">'+erros.length+' linha(s) não entraram: '+erros.map(function(x){ return 'linha '+x.linha+' ('+esc(x.erro)+')'; }).join('; ')+'</div>':'')+
+          '<div style="display:flex;justify-content:flex-end"><button class="btn pri" id="im-fim">Ver estudantes</button></div>';
+        $('#im-fim').onclick=function(){ fechar(); pEstudantes(); }; toast(criados+' estudante(s) importado(s)'); }
+      lote(); };
+  }
+  passo1();
+}
+
+/* ---------- planos de aula: visto da Direcção (v5.18) ---------- */
+function pPlanosD(){
+  if(typeof window.GSPlano==='undefined'){ $('#page').innerHTML=vazio('plano','Falta o ficheiro planos.js','Ponha o planos.js no site, ao lado da direccao.html.'); return; }
+  aCarregar(); S.plF=S.plF==null?'submetido':S.plF;
+  api('/planos',{estado:S.plF}).then(function(r){
+    if(S.pag!=='planos') return;
+    if(!r.ok){ $('#page').innerHTML=erroCaixa(r.erro); return; }
+    S.plD=r; var L=r.planos, F=[['submetido','Por ver'],['aprovado','Com visto'],['devolvido','Devolvidos'],['','Todos']];
+    $('#page').innerHTML=ph('Escola','Planos de aula', r.por_ver? r.por_ver+' plano(s) à espera do visto.' : 'Os professores fazem os planos no Gescolar e submetem-nos aqui para o visto.')+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">'+F.map(function(f){ return '<button class="btn sm'+(S.plF===f[0]?' pri':'')+'" data-plf="'+f[0]+'">'+f[1]+(f[0]==='submetido'&&r.por_ver?' ('+r.por_ver+')':'')+'</button>'; }).join('')+'</div>'+
+      (L.length?'<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Professor</th><th>Turma e disciplina</th><th>Tema</th><th>Estado</th><th></th></tr></thead><tbody>'+
+        L.map(function(p,i){ return '<tr><td class="small num">'+data(p.data)+'</td><td>'+esc(p.professor_nome)+'</td><td class="small">'+esc(p.turma_nome)+' · '+esc(p.disciplina_nome)+'</td><td><b>'+esc(p.tema)+'</b></td><td>'+GSPlano.pill(p.estado)+'</td><td class="r"><button class="btn sm'+(p.estado==='submetido'?' pri':'')+'" data-plo="'+i+'">'+(p.estado==='submetido'?'Ver e dar visto':'Abrir')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
+       : vazio('plano', S.plF==='submetido'?'Nenhum plano à espera':'Sem planos', S.plF==='submetido'?'Quando um professor submeter um plano de aula, aparece aqui.':'Ainda não há planos neste estado.'));
+    $$('[data-plf]').forEach(function(b){ b.onclick=function(){ S.plF=b.getAttribute('data-plf'); pPlanosD(); }; });
+    $$('[data-plo]').forEach(function(b){ b.onclick=function(){ var x=L[+b.getAttribute('data-plo')]; b.disabled=true; api('/plano',{id:x.id}).then(function(d){ b.disabled=false; if(!d.ok){ toast(d.erro); return; } verPlanoD(d.plano); }); }; });
+  });
+}
+function verPlanoD(p){
+  var r=S.plD, op={escola:r.escola, logotipo:r.logotipo}; window.scrollTo(0,0);
+  $('#page').innerHTML='<button class="btn sm" id="pl-v" style="margin-bottom:12px">‹ Planos de aula</button>'+
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><h2 style="margin:0;flex:1;font-size:20px">'+esc(p.dados.tema||p.tema)+'</h2>'+GSPlano.pill(p.estado)+'<button class="btn" id="pl-pr">'+ic('download')+'Imprimir</button></div>'+
+    (p.estado==='submetido'?'<section class="card card-b" style="margin-bottom:14px"><b>Visto da Direcção</b><div class="small muted" style="margin:2px 0 10px">Submetido por '+esc(p.professor_nome)+(p.submetido_em?' em '+data(p.submetido_em):'')+'.</div>'+
+      '<label class="field">Comentário ao professor <span class="small muted" style="font-weight:400">(obrigatório para devolver)</span><textarea class="inp" id="pl-c" rows="3" style="height:auto;padding:10px 12px" placeholder="Ex.: Reformule os objectivos com verbos mensuráveis."></textarea></label>'+
+      '<div id="pl-e"></div><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:10px"><button class="btn" id="pl-dev" style="color:var(--bad)">Devolver para corrigir</button><button class="btn pri" id="pl-ok">'+ic('check')+'Dar o visto</button></div></section>'
+     : (p.comentario||p.visto_por)?'<section class="card card-b" style="margin-bottom:14px"><b>'+(p.estado==='aprovado'?'Visto':'Devolvido')+'</b> por '+esc(p.visto_por)+' em '+data(p.visto_em)+(p.comentario?'<div class="small" style="margin-top:4px">'+esc(p.comentario)+'</div>':'')+'</section>':'')+
+    '<div id="pl-folha"></div>';
+  GSPlano.ver($('#pl-folha'), p, op);
+  $('#pl-v').onclick=function(){ pPlanosD(); };
+  $('#pl-pr').onclick=function(){ GSPlano.imprimir(p, op); };
+  function decidir(dec, btn){ aGravar(btn,true); $('#pl-e').innerHTML='';
+    api('/plano-visto',{id:p.id, decisao:dec, comentario:$('#pl-c').value}).then(function(x){ aGravar(btn,false); if(!x.ok){ $('#pl-e').innerHTML=erroCaixa(x.erro); return; } toast(dec==='aprovado'?'Visto dado ao plano':'Plano devolvido ao professor'); pPlanosD(); }); }
+  var ok=$('#pl-ok'); if(ok) ok.onclick=function(){ decidir('aprovado', this); };
+  var dv=$('#pl-dev'); if(dv) dv.onclick=function(){ decidir('devolvido', this); };
+}
+
+/* ---------- aulas online (v5.20) ---------- */
+function pOnlineD(){
+  if(typeof window.GSAulas==='undefined'){ $('#page').innerHTML=vazio('video','Falta o ficheiro aulas.js','Ponha o aulas.js no site, ao lado da direccao.html.'); return; }
+  $('#page').innerHTML='<div id="ga" style="max-width:1100px"></div>';
+  if(S.ga) S.ga.parar();
+  S.ga=GSAulas.montar($('#ga'),{api:api, papel:'direccao', aviso:toast});
+}
+/* ---------- chat das turmas (v5.14) ---------- */
+function pChats(){
+  if(typeof window.GSChat==='undefined'){ $('#page').innerHTML=vazio('chat','Falta o ficheiro chat.js','Ponha o chat.js no site, ao lado da direccao.html.'); return; }
+  $('#page').innerHTML='<div id="gc" style="max-width:900px"></div>';
+  if(S.gc) S.gc.parar();
+  S.gc=GSChat.montar($('#gc'),{api:api, papel:'direccao', chave:'dir', aviso:toast});
+}
 function pComunicados(){
   aCarregar();
   Promise.all([api('/comunicados'), api('/turmas')]).then(function(r){
