@@ -233,7 +233,7 @@ function montar(el, op){
       if(m.apagada){ h+='<div class="gc-apag">Mensagem apagada</div><div class="gc-ft">'+hora(m.data)+'</div></div></div>'; return; }
       if(!m.eu) h+='<div class="gc-au">'+esc(m.autor)+(m.papel==='professor'?'<span class="gc-pill p">Professor</span>':m.papel==='direccao'?'<span class="gc-pill d">Direcção</span>':'')+'</div>';
       if(m.ficheiro) h+=htmlFicheiro(m.ficheiro);
-      if(m.texto) h+='<div class="gc-tx">'+ligacoes(esc(m.texto))+'</div>';
+      if(m.texto) h+='<div class="gc-tx" data-noi18n>'+ligacoes(esc(m.texto))+'</div>';
       h+='<div class="gc-ft">'+(m.pode_apagar?'<button class="gc-del" data-del="'+esc(m.id)+'">Apagar</button>':'')+'<span>'+hora(m.data)+'</span></div></div></div>';
     });
     var antes=box.scrollHeight-box.scrollTop, st=box.scrollTop;
