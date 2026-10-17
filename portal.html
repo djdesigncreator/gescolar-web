@@ -2,6 +2,7 @@
 <html lang="pt-MZ">
 <head>
 <meta charset="utf-8">
+<script src="i18n.js" charset="utf-8"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0B2A4A">
 <title>Gescolar · Família</title>
@@ -189,7 +190,7 @@ function casca(){
   $('#root').innerHTML='<div class="pt"><header class="pt-top"><div class="in">'+
     '<div class="pt-row">'+(E.logotipo?'<div class="pt-logo"><img src="'+esc(E.logotipo)+'" alt=""></div>':'<div class="pt-logo ini">'+esc(iniciais(E.nome))+'</div>')+
       '<div class="pt-esc"><b>'+esc(E.nome)+'</b><small>'+esc(enc?'Encarregado · '+d.eu.nome:'Estudante · '+d.eu.nome)+'</small></div>'+
-      '<button class="pt-sair" id="sair">'+ic('out')+'Sair</button></div>'+
+      GSI18n.seletor()+'<button class="pt-sair" id="sair">'+ic('out')+'Sair</button></div>'+
     (enc && d.educandos.length>1 ? '<div class="pt-kids">'+d.educandos.map(function(x){ return '<button class="pt-kid'+(e&&x.id===e.id?' on':'')+'" data-kid="'+esc(x.id)+'">'+av(x.nome)+esc(x.nome.split(' ')[0])+'</button>'; }).join('')+'</div>' : '')+
     '<nav class="pt-tabs">'+abas().map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav>'+
     '</div></header><main class="pt-main" id="pg"></main>'+

@@ -2,6 +2,7 @@
 <html lang="pt-MZ">
 <head>
 <meta charset="utf-8">
+<script src="i18n.js" charset="utf-8"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0B2A4A">
 <title>Gescolar · Professor</title>
@@ -192,7 +193,7 @@ function casca(){
   var d=S.d, E=d.escola;
   $('#root').innerHTML='<div class="pt"><header class="pt-top"><div class="in">'+
     '<div class="pt-row">'+(E.logotipo?'<div class="pt-logo"><img src="'+esc(E.logotipo)+'" alt=""></div>':'<div class="pt-logo ini">'+esc(iniciais(E.nome))+'</div>')+
-      '<div class="pt-esc"><b>'+esc(E.nome)+'</b><small>'+(soInstrutor()?'Instrutor':'Professor')+' · '+esc(d.eu.nome)+'</small></div><button class="pt-sair" id="sair">'+ic('out')+'Sair</button></div>'+
+      '<div class="pt-esc"><b>'+esc(E.nome)+'</b><small>'+(soInstrutor()?'Instrutor':'Professor')+' · '+esc(d.eu.nome)+'</small></div>'+GSI18n.seletor()+'<button class="pt-sair" id="sair">'+ic('out')+'Sair</button></div>'+
     '<nav class="pt-tabs">'+abasP().map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav>'+
     '</div></header><main class="pt-main'+(S.aba==='notas'?' largo':'')+'" id="pg"></main>'+
     '<nav class="pt-nav'+(abasP().length>6?' mt':'')+'" style="grid-template-columns:repeat('+abasP().length+',1fr)">'+abasP().map(function(a){ return '<button class="'+(S.aba===a[0]?'on':'')+'" data-aba="'+a[0]+'">'+ic(a[2])+a[1]+'</button>'; }).join('')+'</nav></div>';

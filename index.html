@@ -2,6 +2,7 @@
 <html lang="pt-MZ">
 <head>
 <meta charset="utf-8">
+<script src="i18n.js" charset="utf-8"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Gescolar · Gestão escolar e cobrança automática de propinas em Moçambique</title>
 <meta name="description" content="Gescolar: propinas cobradas por M-Pesa, e-Mola e cartão, inscrições online, pautas, presenças, horários, portal das famílias e IA. Para escolinhas, primário, secundário, técnico, superior e escolas de condução. 7 dias grátis.">
@@ -219,6 +220,8 @@ footer a:hover{color:#fff}
   .gaveta.aberta{display:flex}
   .gaveta a{color:#fff;font-weight:600;padding:12px 6px;border-bottom:1px solid rgba(255,255,255,.07)}
   .gaveta .btn{margin-top:10px}
+  .top-acts .gs-lng{display:none}
+  .gaveta .gs-lng{margin-top:12px;height:40px;color:#fff;align-self:flex-start}
   .hero-g,.bloco,.bloco.inv,.pag-b{grid-template-columns:1fr}
   .bloco.inv .txt{order:0}
   .mock{max-width:640px;margin:0 auto;width:100%}
@@ -254,6 +257,7 @@ footer a:hover{color:#fff}
       <a href="#escolas">Escolas</a><a href="#pagamentos">Propinas</a><a href="#funcoes">Funções</a><a href="#ia">IA</a><a href="#familias">Famílias</a><a href="#precos">Preços</a><a href="#perguntas">Perguntas</a>
     </nav>
     <div class="top-acts">
+      <script>document.write(GSI18n.seletor())</script>
       <a class="entrar" href="entrar.html">Entrar</a>
       <a class="btn btn-ghost" href="acesso.html">Encarregados</a>
       <a class="btn btn-sun" href="registo.html">Registar escola</a>
@@ -264,6 +268,7 @@ footer a:hover{color:#fff}
     <a href="#escolas">Tipos de escola</a><a href="#pagamentos">Cobrança de propinas</a><a href="#funcoes">Funções</a><a href="#ia">Inteligência artificial</a><a href="#familias">Portal das famílias</a><a href="#precos">Preços</a><a href="#perguntas">Perguntas frequentes</a>
     <a href="entrar.html">Entrar (Direcção e secretaria)</a><a href="acesso.html">Encarregados, estudantes e professores</a>
     <a class="btn btn-sun" href="registo.html">Registar a minha escola</a>
+    <script>document.write(GSI18n.seletor())</script>
   </nav>
 </header>
 

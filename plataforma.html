@@ -2,6 +2,7 @@
 <html lang="pt-MZ">
 <head>
 <meta charset="utf-8">
+<script src="i18n.js" charset="utf-8"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Plataforma · Gescolar</title>
 <link rel="icon" href="logo.png">
@@ -65,7 +66,7 @@ var S={ d:null, filtro:'', ordem:'saldo', sessao:null };
 
 function casca(){
   $('#root').innerHTML='<header class="pf-top"><div class="in"><img src="logo.png" alt=""><div><b>Plataforma Gescolar</b><small>'+esc(S.sessao.nome||'')+'</small></div><span class="sp"></span>'+
-    (S.sessao.escola?'<a href="direccao.html">A minha escola</a>':'')+'<button id="sair">Sair</button></div></header><main class="pf-main" id="pg"><div class="carregar"><div class="spinner"></div>A calcular…</div></main>';
+    (S.sessao.escola?'<a href="direccao.html">A minha escola</a>':'')+GSI18n.seletor()+'<button id="sair">Sair</button></div></header><main class="pf-main" id="pg"><div class="carregar"><div class="spinner"></div>A calcular…</div></main>';
   $('#sair').onclick=sair;
   carregar();
 }

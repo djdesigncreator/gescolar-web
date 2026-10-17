@@ -2,6 +2,7 @@
 <html lang="pt-MZ">
 <head>
 <meta charset="utf-8">
+<script src="i18n.js" charset="utf-8"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Direcção · Gescolar</title>
 <link rel="icon" href="logo.png">
@@ -9,6 +10,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
 <link rel="stylesheet" href="gescolar.css">
 <style>
+.lng-row{padding:6px 10px 2px;color:var(--on-navy-dim)}.lng-row .gs-lng{width:100%}
 .nav button.soon{opacity:.55;cursor:default}
 .nav button.soon:hover{background:none}
 .nav button.soon span:first-of-type{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
@@ -184,6 +186,7 @@ function casca(){
       if(n[3]) return '<button class="soon" type="button" tabindex="-1">'+ic(n[2])+'<span>'+n[1]+'</span><span class="em-breve">em breve</span></button>';
       return '<button type="button" class="'+(S.pag===n[0]?'on':'')+'" data-go="'+n[0]+'">'+ic(n[2])+'<span>'+n[1]+'</span></button>'; }).join('')+'</nav>'+
     '<div class="me">'+av(S.nome||'?')+'<div class="who"><strong>'+esc(S.nome)+'</strong><span>Direcção</span></div></div>'+
+    '<div class="lng-row">'+GSI18n.seletor()+'</div>'+
     '<a class="exit" href="#" id="sair">'+ic('out','width="14" height="14"')+'Sair</a></aside>'+
     '<div class="main"><header class="top"><button class="menu-btn" id="menu" aria-label="Menu">'+ic('menu','width="18" height="18"')+'</button>'+
     '<div class="top-title">'+ic('layers','width="16" height="16" style="color:var(--blue)"')+'Área da Direcção</div>'+
