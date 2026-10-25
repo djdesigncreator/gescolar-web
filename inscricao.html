@@ -141,8 +141,15 @@ function enviar(){
     if(r.checkout){ if(janela) janela.location=r.checkout; else location.href=r.checkout; st.checkout=r.checkout; }
     if(r.iframe){ st.iframe=r.iframe; st.embed=r.embed; }
     guarda(st); espera(st);
-    if(r.iframe && window.GSCheckout) GSCheckout.abrir(r.iframe,{embed:r.embed, titulo:'Pagar a inscrição', valor:mt(L.preco)});
   });
+}
+function ckEmbedInsc(url){
+  var b=document.querySelector('.bloco.fim'); if(!b||!url) return;
+  var sp=b.querySelector('.spinner'); if(sp) sp.remove();
+  var bt=document.getElementById('e-ck'); if(bt && bt.parentNode) bt.parentNode.remove();
+  var d=document.createElement('div'); d.style.cssText='display:flex;flex-direction:column;align-items:center;gap:8px;margin:14px 0';
+  d.innerHTML='<iframe src="'+esc(url)+'" allow="payment" style="width:400px;max-width:100%;height:450px;border:0;border-radius:10px;background:#fff;box-shadow:0 0 0 1px #E1E7F0"></iframe><a href="'+esc(url)+'" target="_blank" rel="noopener" style="font-size:13px">Abrir num separador novo</a>';
+  var h=b.querySelector('h2'); if(h && h.nextSibling) b.insertBefore(d, h.nextSibling.nextSibling||null); else b.appendChild(d);
 }
 function espera(st){
   casca('<div class="bloco fim"><div class="spinner" style="margin:0 auto 18px"></div><h2>'+(st.metodo==='cartao'?'Conclua o pagamento com o cartão':st.iframe?'Complete o pagamento':'Confirme no telemóvel')+'</h2>'+
@@ -152,6 +159,7 @@ function espera(st){
     '<div class="cts"><button class="btn ghost" id="e-novo">Cancelar e voltar ao formulário</button></div></div>');
   $('#e-novo').onclick=function(){ guarda(null); clearTimeout(S.t); if(window.GSCheckout) GSCheckout.fechar(); formulario(); };
   var eck=$('#e-ck'); if(eck) eck.onclick=function(){ if(window.GSCheckout) GSCheckout.abrir(st.iframe,{embed:st.embed, titulo:'Pagar a inscrição', valor:mt(D.link.preco)}); };
+  if(st.iframe) ckEmbedInsc(st.iframe);
   var limite=(st.metodo==='cartao'||st.iframe)?15*60e3:3*60e3;
   (function ver(){
     api('/pub/inscricao-estado',{id:st.id, chave:st.chave}).then(function(r){

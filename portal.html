@@ -598,11 +598,22 @@ function pagar(e, ps){
         if(!r.ok){ desenhar(r.erro); return; }
         if(r.link){ try{ window.open(r.link,'_blank','noopener'); }catch(x){} }
         esperar(r, met);
-        if(r.iframe && window.GSCheckout) GSCheckout.abrir(r.iframe,{embed:r.embed, titulo:'Pagar por '+METODO[met][0], valor:mt(r.total)});
+        if(r.iframe) ckEmbed(r.iframe, 'Pagar por '+METODO[met][0], r.total);
       });
     };
   }
   desenhar();
+}
+/* checkout M-Pesa / e-Mola dentro da própria janela de pagamento (iframe 400 × 450) — v5.22.1 */
+function ckEmbed(url, titulo, total){
+  var b=document.querySelector('#ov .modal-b'); if(!b||!url) return;
+  b.style.padding='14px 14px 10px'; b.style.textAlign='center';
+  b.innerHTML='<h3 style="margin:2px 0 10px">'+esc(titulo)+' · '+mt(total)+'</h3>'+
+    '<div style="display:flex;justify-content:center"><iframe src="'+esc(url)+'" allow="payment" style="width:400px;max-width:100%;height:450px;border:0;border-radius:10px;background:#fff;box-shadow:0 0 0 1px var(--line)"></iframe></div>'+
+    '<p class="small muted" id="w-st" style="margin:10px 0 2px">A aguardar confirmação do pagamento · '+mt(total)+'</p>'+
+    '<p class="small" style="margin:0"><a href="'+esc(url)+'" target="_blank" rel="noopener">Abrir num separador novo</a></p>';
+  var m=b.closest('.modal'); if(m){ m.style.maxWidth='456px'; m.style.maxHeight='96vh'; }
+  var sc=document.getElementById('ov'); if(sc) sc.style.paddingTop='2vh';
 }
 function esperar(r, met){
   var fim=Date.now()+(r.iframe?12:4)*60e3, parado=false;
