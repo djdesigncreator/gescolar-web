@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="i18n.js" charset="utf-8" data-flutuante></script>
+<script src="checkout.js" charset="utf-8"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Inscrição online · Gescolar</title>
 <link rel="icon" href="logo.png">
@@ -115,9 +116,9 @@ function formulario(erro){
       '<label class="field"><span>Telemóvel'+(L.encarregado?' <span class="req">*</span>':'')+'</span><input class="inp" id="f-etel" inputmode="tel" maxlength="16" placeholder="84 123 4567"></label>'+
     '<label class="field">Email (opcional)<input class="inp" id="f-email" type="email" maxlength="120"></label>'+
     (L.campos.length?'<div class="sec">Mais informações</div>'+L.campos.map(campo).join(''):'')+
-    (L.preco?'<div class="sec">Pagamento · '+mt(L.preco)+'</div><div class="met">'+
-      [['mpesa','M-Pesa','Vodacom 84/85'],['emola','e-Mola','Movitel 86/87'],['cartao','Cartão','Visa · Mastercard']].map(function(m){ return '<button type="button" data-m="'+m[0]+'" class="'+(S.metodo===m[0]?'on':'')+'">'+m[1]+'<small>'+m[2]+'</small></button>'; }).join('')+'</div>'+
-      '<label class="field" id="f-numw"><span>Número que vai pagar <span class="req">*</span></span><input class="inp" id="f-num" inputmode="tel" maxlength="16" placeholder="84 123 4567"></label>':'')+
+    (L.preco?'<div class="sec">Pagamento · '+mt(L.preco)+'</div>'+
+      '<label class="field" id="f-numw"><span>Número que vai pagar <span class="req">*</span></span><input class="inp" id="f-num" inputmode="tel" maxlength="16" placeholder="84 123 4567"></label>'+
+      '<div class="met">'+[['mpesa','M-Pesa','Vodacom 84/85'],['emola','e-Mola','Movitel 86/87'],['cartao','Cartão','Visa · Mastercard']].map(function(m){ return '<button type="button" data-m="'+m[0]+'" class="'+(S.metodo===m[0]?'on':'')+'">'+m[1]+'<small>'+m[2]+'</small></button>'; }).join('')+'</div>':'')+
     '<div id="f-err">'+(erro?'<div class="msg err">'+esc(erro)+'</div>':'')+'</div>'+
     '<button class="btn go" id="f-ok" type="submit">'+(L.preco?'Inscrever e pagar '+mt(L.preco):'Enviar inscrição')+'</button>'+
     '<p class="small muted" style="margin:10px 2px 0;text-align:center">Os seus dados são usados apenas pela escola para tratar da inscrição.</p></form>');
@@ -138,20 +139,24 @@ function enviar(){
     var st={id:r.id, chave:r.chave, nome:corpo.nome, metodo:corpo.metodo, numero:corpo.numero, inicio:Date.now()};
     if(r.estado==='paga'){ guarda(null); sucesso(corpo.nome); return; }
     if(r.checkout){ if(janela) janela.location=r.checkout; else location.href=r.checkout; st.checkout=r.checkout; }
+    if(r.iframe){ st.iframe=r.iframe; st.embed=r.embed; }
     guarda(st); espera(st);
+    if(r.iframe && window.GSCheckout) GSCheckout.abrir(r.iframe,{embed:r.embed, titulo:'Pagar a inscrição', valor:mt(L.preco)});
   });
 }
 function espera(st){
-  casca('<div class="bloco fim"><div class="spinner" style="margin:0 auto 18px"></div><h2>'+(st.metodo==='cartao'?'Conclua o pagamento com o cartão':'Confirme no telemóvel')+'</h2>'+
-    '<p>'+(st.metodo==='cartao'?'Abrimos a página de pagamento noutro separador. Quando terminar, volte aqui: esta página actualiza sozinha.':'Enviámos o pedido de '+mt(D.link.preco)+' para o '+esc(st.numero)+'. Ponha o seu PIN no telemóvel para confirmar.')+'</p>'+
+  casca('<div class="bloco fim"><div class="spinner" style="margin:0 auto 18px"></div><h2>'+(st.metodo==='cartao'?'Conclua o pagamento com o cartão':st.iframe?'Complete o pagamento':'Confirme no telemóvel')+'</h2>'+
+    (st.iframe?'<div class="cts"><button class="btn" id="e-ck">Abrir a janela de pagamento</button></div>':'')+
+    '<p>'+(st.metodo==='cartao'?'Abrimos a página de pagamento noutro separador. Quando terminar, volte aqui: esta página actualiza sozinha.':st.iframe?'Pague '+mt(D.link.preco)+' na janela de pagamento. Esta página actualiza sozinha quando o pagamento for confirmado.':'Enviámos o pedido de '+mt(D.link.preco)+' para o '+esc(st.numero)+'. Ponha o seu PIN no telemóvel para confirmar.')+'</p>'+
     (st.checkout?'<div class="cts"><a class="btn" href="'+esc(st.checkout)+'" target="_blank" rel="noopener">Abrir a página de pagamento</a></div>':'')+
     '<div class="cts"><button class="btn ghost" id="e-novo">Cancelar e voltar ao formulário</button></div></div>');
-  $('#e-novo').onclick=function(){ guarda(null); clearTimeout(S.t); formulario(); };
-  var limite=st.metodo==='cartao'?15*60e3:3*60e3;
+  $('#e-novo').onclick=function(){ guarda(null); clearTimeout(S.t); if(window.GSCheckout) GSCheckout.fechar(); formulario(); };
+  var eck=$('#e-ck'); if(eck) eck.onclick=function(){ if(window.GSCheckout) GSCheckout.abrir(st.iframe,{embed:st.embed, titulo:'Pagar a inscrição', valor:mt(D.link.preco)}); };
+  var limite=(st.metodo==='cartao'||st.iframe)?15*60e3:3*60e3;
   (function ver(){
     api('/pub/inscricao-estado',{id:st.id, chave:st.chave}).then(function(r){
-      if(r.ok && r.estado==='paga'){ guarda(null); sucesso(r.nome||st.nome); return; }
-      if(r.ok && r.estado==='falhada'){ guarda(null); formulario('O pagamento não foi concluído. Pode tentar de novo.'); return; }
+      if(r.ok && r.estado==='paga'){ guarda(null); if(window.GSCheckout) GSCheckout.fechar(); sucesso(r.nome||st.nome); return; }
+      if(r.ok && r.estado==='falhada'){ guarda(null); if(window.GSCheckout) GSCheckout.fechar(); formulario('O pagamento não foi concluído. Pode tentar de novo.'); return; }
       if(Date.now()-st.inicio>limite){ guarda(null); formulario('Não recebemos a confirmação do pagamento. Se já pagou, a escola vai receber a sua inscrição; se não, tente de novo.'); return; }
       S.t=setTimeout(ver,4000);
     });

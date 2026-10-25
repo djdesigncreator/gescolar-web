@@ -126,6 +126,7 @@ label.pt-it{cursor:pointer}
 <body>
 <div id="root"><div class="carregar"><div class="spinner"></div>A abrir…</div></div>
 <div class="toasts" id="toasts"></div>
+<script src="checkout.js" charset="utf-8"></script>
 <script src="chat.js" charset="utf-8"></script>
 <script src="aulas.js" charset="utf-8"></script>
 <script>
@@ -581,8 +582,9 @@ function pagar(e, ps){
   function desenhar(errMsg){
     modal('<div class="modal-h"><h3>Pagar '+mt(total)+'</h3><button class="icon-btn" data-fechar aria-label="Fechar">'+ic('x')+'</button></div><div class="modal-b">'+
       '<div class="small muted">'+esc(e.nome)+' · '+ps.map(function(p){ return esc(p.descricao||'Propina'); }).join(', ')+'</div>'+
+      (met!=='cartao' ? '<label class="field">O seu número de telemóvel<input class="inp mono" id="c-tel" type="tel" inputmode="numeric" maxlength="12" value="'+esc(tel)+'" placeholder="84 000 0000 ou 86 000 0000"><span class="small" id="c-tel-h" style="font-weight:500"></span></label>' : '')+
       '<div class="methods">'+['mpesa','emola','cartao'].map(function(k){ return '<button type="button" class="method '+(met===k?'on':'')+'" data-m="'+k+'"><span class="lg" style="background:'+METODO[k][1]+';font-size:12px">'+(k==='cartao'?'VISA':METODO[k][0])+'</span>'+METODO[k][0].replace(' / ','/')+'</button>'; }).join('')+'</div>'+
-      (met!=='cartao' ? '<label class="field">Número '+METODO[met][0]+'<input class="inp mono" id="c-tel" type="tel" inputmode="numeric" maxlength="12" value="'+esc(tel)+'" placeholder="'+(met==='mpesa'?'84 000 0000':'86 000 0000')+'"><span class="small" id="c-tel-h" style="font-weight:500"></span></label><p class="small muted" style="margin:0">Vai receber um pedido no telemóvel. Confirme com o seu PIN '+METODO[met][0]+'.</p>'
+      (met!=='cartao' ? '<p class="small muted" style="margin:0">Abre a janela de pagamento '+METODO[met][0]+' aqui mesmo. Fecha sozinha quando o pagamento for confirmado.</p>'
         : '<p class="small muted" style="margin:0">Vai abrir a página segura da MozPayment para pagar com cartão Visa ou Mastercard.</p>')+
       '<div id="c-err">'+(errMsg?erroCaixa(errMsg):'')+'</div></div>'+
       '<div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="c-ok">'+(met==='cartao'?'Continuar para o cartão':'Enviar pedido de pagamento')+'</button></div>');
@@ -596,24 +598,28 @@ function pagar(e, ps){
         if(!r.ok){ desenhar(r.erro); return; }
         if(r.link){ try{ window.open(r.link,'_blank','noopener'); }catch(x){} }
         esperar(r, met);
+        if(r.iframe && window.GSCheckout) GSCheckout.abrir(r.iframe,{embed:r.embed, titulo:'Pagar por '+METODO[met][0], valor:mt(r.total)});
       });
     };
   }
   desenhar();
 }
 function esperar(r, met){
-  var fim=Date.now()+4*60e3, parado=false;
-  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div class="spinner"></div><h3 style="margin-top:10px">'+(met==='cartao'?'À espera do pagamento com cartão':'Confirme no telemóvel')+'</h3>'+
+  var fim=Date.now()+(r.iframe?12:4)*60e3, parado=false;
+  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div class="spinner"></div><h3 style="margin-top:10px">'+(met==='cartao'?'À espera do pagamento com cartão':r.iframe?'Complete o pagamento':'Confirme no telemóvel')+'</h3>'+
+    (r.iframe?'<button class="btn pri" id="w-ck" style="justify-content:center;margin:6px 0 10px">Abrir a janela de pagamento</button>':'')+
     '<p class="muted">'+(met==='cartao'?'Pague na página da MozPayment. Esta janela actualiza sozinha quando o pagamento for confirmado.':esc(r.mensagem||'Pedido enviado.'))+'</p>'+
     (r.link?'<a class="btn pri" href="'+esc(r.link)+'" target="_blank" rel="noopener" style="text-decoration:none;justify-content:center;margin:6px 0 10px">Abrir a página de pagamento</a>':'')+
     '<p class="small muted" id="w-st">A aguardar confirmação · '+mt(r.total)+'</p></div><div class="modal-f"><button class="btn" id="w-x">Fechar e ver depois</button></div>');
-  $('#w-x').onclick=function(){ parado=true; fechar(); carregar(); };
+  $('#w-x').onclick=function(){ parado=true; if(window.GSCheckout) GSCheckout.fechar(); fechar(); carregar(); };
+  var wck=$('#w-ck'); if(wck) wck.onclick=function(){ if(window.GSCheckout) GSCheckout.abrir(r.iframe,{embed:r.embed, titulo:'Pagar por '+METODO[met][0], valor:mt(r.total)}); };
   (function verificar(){
     if(parado) return;
     if(Date.now()>fim){ var s=$('#w-st'); if(s) s.textContent='Ainda sem confirmação. Pode fechar: quando o pagamento for confirmado, a mensalidade fica paga sozinha e recebe o recibo por SMS.'; return; }
     api('/p/pagamento-estado',{id:r.pagamento}).then(function(x){
       if(parado) return;
-      if(x.ok && x.estado==='pago'){ parado=true; sucesso(x, met, r.pagamento); return; }
+      if(x.ok && x.estado==='pago'){ parado=true; if(window.GSCheckout) GSCheckout.fechar(); sucesso(x, met, r.pagamento); return; }
+      if(x.ok && (x.estado==='falhado'||x.estado==='expirado') && window.GSCheckout) GSCheckout.fechar();
       if(x.ok && (x.estado==='falhado'||x.estado==='expirado')){ var s=$('#w-st'); if(s) s.innerHTML='<b style="color:var(--bad)">'+(x.estado==='falhado'?'O pagamento falhou ou foi cancelado.':'O pedido expirou sem confirmação.')+'</b> Pode tentar outra vez.'; return; }
       setTimeout(verificar, 4000);
     });

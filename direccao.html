@@ -107,6 +107,7 @@ textarea.inp{height:auto;min-height:130px;padding:10px;line-height:1.45;resize:v
 <body>
 <div id="root"><div class="carregar"><div class="spinner"></div>A abrir o painel…</div></div>
 <div class="toasts" id="toasts"></div>
+<script src="checkout.js" charset="utf-8"></script>
 <script src="pauta.js" charset="utf-8"></script>
 <script src="chamada.js" charset="utf-8"></script>
 <script src="chat.js" charset="utf-8"></script>
@@ -587,8 +588,8 @@ function cobrar(e){
     modal('<div class="modal-h"><h3>Cobrar · '+esc(e.nome)+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
       '<div class="stack" style="gap:6px">'+abertas.map(function(p){ return '<label class="split" style="border:1px solid '+(sel[p.id]?'var(--blue)':'var(--line)')+';background:'+(sel[p.id]?'var(--blue-soft)':'var(--surface)')+';border-radius:9px;padding:9px 12px;cursor:pointer;color:var(--ink)"><span><input type="checkbox" data-p="'+p.id+'"'+(sel[p.id]?' checked':'')+' style="margin-right:8px">'+esc(p.descricao||MESES_L[p.mes])+(p.estado==='atrasada'?' <span class="pill bad">Atraso</span>':'')+'</span><b class="num">'+mt(p.total)+(p.multa?'<small class="muted" style="font-weight:500"> (multa '+mt(p.multa)+')</small>':'')+'</b></label>'; }).join('')+'</div>'+
       '<div class="split" style="font-size:18px"><b>Total</b><b class="num">'+mt(total())+'</b></div>'+
+      (met==='mpesa'||met==='emola'? '<label class="field">Número de telemóvel do encarregado<input class="inp mono" id="c-tel" inputmode="numeric" maxlength="12" value="'+esc(tel)+'" placeholder="84 000 0000 ou 86 000 0000"><span class="small" id="c-tel-h" style="font-weight:500"></span></label>' : '')+
       '<div class="methods" style="grid-template-columns:repeat(4,minmax(0,1fr))">'+['mpesa','emola','cartao','balcao'].map(function(k){ return '<button type="button" class="method '+(met===k?'on':'')+'" data-m="'+k+'"><span class="lg" style="background:'+METODO[k][1]+';font-size:12px">'+(k==='cartao'?'VISA':k==='balcao'?'MT':METODO[k][0])+'</span>'+METODO[k][0].replace(' / ','/')+'</button>'; }).join('')+'</div>'+
-      (met==='mpesa'||met==='emola'? '<label class="field">Número '+METODO[met][0]+' do encarregado<input class="inp mono" id="c-tel" inputmode="numeric" maxlength="12" value="'+esc(tel)+'"><span class="small" id="c-tel-h" style="font-weight:500"></span></label>' : '')+
       (met==='cartao'? '<p class="small muted" style="margin:0">Abre o checkout seguro da MozPayment. Pode enviar o link ao encarregado ou pagar aqui com o cartão dele.</p>' : '')+
       (met==='balcao'? '<p class="small muted" style="margin:0">Use quando o encarregado paga em dinheiro na secretaria. A factura-recibo é emitida logo.</p>' : '')+
       '<div id="c-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="c-ok"'+(total()?'':' disabled')+'>'+(met==='balcao'?'Registar e emitir recibo':met==='cartao'?'Criar link de pagamento':'Enviar pedido ao telemóvel')+'</button></div>');
@@ -602,25 +603,29 @@ function cobrar(e){
       if(met==='balcao'){ api('/pagar-balcao',{propinas:ids}).then(function(r){ if(!r.ok){ aGravar(btn,false); $('#c-err').innerHTML=erroCaixa(r.erro); return; } sucessoPag(r.documento,r.total,'balcao',r.pagamento); }); return; }
       api('/pagar',{propinas:ids, metodo:met, numero:tel, nome:e.encarregado?e.encarregado.nome:e.nome}).then(function(r){
         if(!r.ok){ aGravar(btn,false); $('#c-err').innerHTML=erroCaixa(r.erro); return; }
-        esperar(r, met); });
+        esperar(r, met);
+        if(r.iframe && window.GSCheckout) GSCheckout.abrir(r.iframe,{embed:r.embed, titulo:'Pagar por '+METODO[met][0], valor:mt(r.total)}); });
     };
   }
   desenhar();
 }
 function esperar(r, met){
-  var fim=Date.now()+3*60e3, parado=false;
-  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div class="spinner"></div><h3 style="margin-top:10px">'+(met==='cartao'?'À espera do pagamento por cartão':'Confirme no telemóvel')+'</h3>'+
+  var fim=Date.now()+(r.iframe?12:3)*60e3, parado=false;
+  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div class="spinner"></div><h3 style="margin-top:10px">'+(met==='cartao'?'À espera do pagamento por cartão':r.iframe?'Complete o pagamento':'Confirme no telemóvel')+'</h3>'+
+    (r.iframe?'<button class="btn pri" id="w-ck" style="justify-content:center;margin:6px 0 10px">Abrir a janela de pagamento</button>':'')+
     '<p class="muted">'+(met==='cartao'?'Abra o checkout e pague com o cartão. Esta janela actualiza sozinha quando a MozPayment confirmar.':esc(r.mensagem||'Pedido enviado.'))+'</p>'+
     (r.link?'<div class="stack" style="gap:8px;margin:10px 0"><a class="btn pri" href="'+esc(r.link)+'" target="_blank" rel="noopener" style="justify-content:center;text-decoration:none">Abrir o checkout</a><button class="btn" id="cp">Copiar o link para enviar ao encarregado</button></div>':'')+
     '<p class="small muted" id="w-st">A aguardar confirmação · '+mt(r.total)+'</p></div><div class="modal-f"><button class="btn" id="w-x">Fechar e verificar depois</button></div>');
   var cp=$('#cp'); if(cp) cp.onclick=function(){ try{ navigator.clipboard.writeText(r.link).then(function(){ toast('Link copiado'); },function(){ toast(r.link); }); }catch(e){ toast(r.link); } };
-  $('#w-x').onclick=function(){ parado=true; fechar(); voltarCobranca(); };
+  $('#w-x').onclick=function(){ parado=true; if(window.GSCheckout) GSCheckout.fechar(); fechar(); voltarCobranca(); };
+  var wck=$('#w-ck'); if(wck) wck.onclick=function(){ if(window.GSCheckout) GSCheckout.abrir(r.iframe,{embed:r.embed, titulo:'Pagar por '+METODO[met][0], valor:mt(r.total)}); };
   (function verificar(){
     if(parado) return;
     if(Date.now()>fim){ var s=$('#w-st'); if(s) s.textContent='Ainda sem confirmação. Pode fechar: quando a MozPayment confirmar, a mensalidade fica paga sozinha.'; return; }
     api('/pagamento-estado',{id:r.pagamento}).then(function(x){
       if(parado) return;
-      if(x.ok && x.estado==='pago'){ sucessoPag(x.documento, x.valor, met, r.pagamento); return; }
+      if(x.ok && x.estado==='pago'){ if(window.GSCheckout) GSCheckout.fechar(); sucessoPag(x.documento, x.valor, met, r.pagamento); return; }
+      if(x.ok && (x.estado==='falhado'||x.estado==='expirado') && window.GSCheckout) GSCheckout.fechar();
       if(x.ok && (x.estado==='falhado'||x.estado==='expirado')){ var s=$('#w-st'); if(s){ s.innerHTML='<b style="color:var(--bad)">'+(x.estado==='falhado'?'O pagamento falhou ou foi cancelado.':'O pedido expirou sem ser confirmado.')+'</b> Pode tentar outra vez.'; } return; }
       setTimeout(verificar, 4000);
     });
@@ -994,6 +999,7 @@ function levantar(c){
     '<div class="sd-box"><span>Disponível</span><b class="num">'+mt(c.disponivel)+'</b></div>'+
     '<label class="field">Valor a levantar (MT)<input class="inp mono" id="lv-v" type="number" min="'+d.minimo+'" max="'+c.disponivel+'" step="0.01" value="'+ate2(c.disponivel)+'"><span class="small muted" style="font-weight:400">Mínimo '+mt(d.minimo)+'</span></label>'+
     '<label class="field">Número '+esc(c.nome)+' que vai receber<input class="inp mono" id="lv-n" inputmode="tel" maxlength="16" value="'+esc(tel)+'" placeholder="'+pref[0]+' 123 4567"><span class="small muted" style="font-weight:400">Só números '+pref.join(' ou ')+'.</span></label>'+
+    '<label class="field">Nome do titular do número<input class="inp" id="lv-t" maxlength="80" value="'+esc((S.escola&&S.escola.nome)||'')+'"><span class="small muted" style="font-weight:400">Quem recebe o dinheiro.</span></label>'+
     '<label class="field">A sua palavra-passe<input class="inp" id="lv-s" type="password" autocomplete="current-password"><span class="small muted" style="font-weight:400">Por segurança, confirme quem está a levantar.</span></label>'+
     '<div id="lv-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="lv-ok">Levantar</button></div>');
   $('#lv-ok').onclick=function(){ var btn=this, v=valorDigitado($('#lv-v').value), n=$('#lv-n').value;
@@ -1002,7 +1008,7 @@ function levantar(c){
     if(v>c.disponivel){ $('#lv-err').innerHTML=erroCaixa('Só tem '+mt(c.disponivel)+' disponível.'); return; }
     if(!confirm('Enviar '+mt(v)+' por '+c.nome+' para o '+n+'?')) return;
     aGravar(btn,true); $('#lv-err').innerHTML='';
-    api('/levantar',{canal:c.canal, valor:v, numero:n, senha:$('#lv-s').value}).then(function(r){
+    api('/levantar',{canal:c.canal, valor:v, numero:n, titular:$('#lv-t').value, senha:$('#lv-s').value}).then(function(r){
       if(!r.ok){ aGravar(btn,false); $('#lv-err').innerHTML=erroCaixa(r.erro); return; }
       fechar(); toast(r.estado==='concluida'?'Levantamento feito: '+mt(v)+' enviado':(r.mensagem||'Levantamento pendente')); pSaldo(); }); };
 }
@@ -1812,8 +1818,8 @@ function pAssinatura(){
             return '<button type="button" data-m="'+m+'" style="text-align:left;padding:12px 14px;border-radius:12px;cursor:pointer;border:2px solid '+(on?'var(--blue)':'var(--line)')+';background:'+(on?'var(--blue-soft)':'var(--surface)')+';color:var(--ink);font:inherit;position:relative">'+
               (x.desconto?'<span style="position:absolute;top:-9px;right:10px;background:var(--sun);color:#3a2a00;font:800 11px var(--f-display);padding:2px 8px;border-radius:99px">−'+x.desconto+'%</span>':'')+
               '<b style="display:block">'+(m===12?'1 ano':m+(m===1?' mês':' meses'))+'</b><span class="num" style="font-weight:800;font-size:16px">'+mt(t)+'</span>'+(x.desconto?'<div class="small muted"><s>'+mt(c)+'</s> · poupa '+mt(c-t)+'</div>':'<div class="small muted">'+mt(p.preco)+' por mês</div>')+'</button>'; }).join('')+'</div>'+
+          (S.A.met!=='cartao'?'<label class="field" style="max-width:320px;margin-bottom:12px">Número de telemóvel que vai pagar<input class="inp mono" id="as-tel" inputmode="numeric" maxlength="12" placeholder="84 000 0000 ou 86 000 0000" value="'+esc(S.A.tel||'')+'"></label>':'')+
           '<div class="methods" style="max-width:520px;margin-bottom:12px">'+['mpesa','emola','cartao'].map(function(k){ return '<button type="button" class="method '+(S.A.met===k?'on':'')+'" data-mt="'+k+'"><span class="lg" style="background:'+METODO[k][1]+';font-size:12px">'+(k==='cartao'?'VISA':METODO[k][0])+'</span>'+METODO[k][0].replace(' / ','/')+'</button>'; }).join('')+'</div>'+
-          (S.A.met!=='cartao'?'<label class="field" style="max-width:320px;margin-bottom:12px">Número '+METODO[S.A.met][0]+'<input class="inp mono" id="as-tel" inputmode="numeric" maxlength="12" placeholder="'+(S.A.met==='mpesa'?'84 000 0000':'86 000 0000')+'" value="'+esc(S.A.tel||'')+'"></label>':'')+
           '<div id="as-err"></div><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="as-ok" style="height:44px">Pagar '+mt(total)+'</button><span class="small muted">'+esc(S.A.plano)+' · '+(S.A.meses===12?'1 ano':S.A.meses+(S.A.meses===1?' mês':' meses'))+(desc(S.A.meses)?' · desconto de '+desc(S.A.meses)+'% ('+mt(cheio-total)+')':'')+' · a validade é somada à actual'+(s.ate&&s.dias>0?' (até '+data(s.ate)+')':'')+'.</span></div></section>'+
         '<section class="card"><div class="card-h"><b>Histórico</b></div>'+(d.historico.length?'<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Plano</th><th>Meses</th><th>Método</th><th>Estado</th><th class="r">Valor</th><th>Válida até</th></tr></thead><tbody>'+
           d.historico.map(function(h){ return '<tr><td class="small num">'+data(h.data)+'</td><td>'+esc(h.plano)+'</td><td class="num">'+h.meses+'</td><td class="small">'+esc((METODO[h.metodo]||[h.metodo])[0])+'</td><td>'+(h.estado==='pago'?'<span class="pill ok">Pago</span>':h.estado==='pendente'?'<span class="pill info">Pendente</span>':'<span class="pill bad">'+esc(h.estado)+'</span>')+'</td><td class="r num">'+mt(h.valor)+'</td><td class="small num">'+data(h.valida_ate)+'</td></tr>'; }).join('')+'</tbody></table></div>':'<div class="card-b small muted">Ainda sem pagamentos de assinatura.</div>')+'</section>';
@@ -1828,6 +1834,7 @@ function pAssinatura(){
           aGravar(btn,false);
           if(!r.ok){ $('#as-err').innerHTML=erroCaixa(r.erro); return; }
           esperarAssinatura(r);
+          if(r.iframe && window.GSCheckout) GSCheckout.abrir(r.iframe,{embed:r.embed, titulo:'Assinatura Gescolar', valor:mt(r.total)});
         });
       };
     }
@@ -1836,19 +1843,20 @@ function pAssinatura(){
   });
 }
 function esperarAssinatura(r){
-  var fim=Date.now()+4*60e3, parado=false;
-  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div class="spinner"></div><h3 style="margin-top:10px">'+(r.link?'À espera do pagamento com cartão':'Confirme no telemóvel')+'</h3><p class="muted">'+(r.link?'Pague na página segura da MozPayment. Esta janela actualiza sozinha.':esc(r.mensagem||''))+'</p>'+
+  var fim=Date.now()+(r.iframe?12:4)*60e3, parado=false;
+  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div class="spinner"></div><h3 style="margin-top:10px">'+(r.link?'À espera do pagamento com cartão':r.iframe?'Complete o pagamento':'Confirme no telemóvel')+'</h3><p class="muted">'+(r.link?'Pague na página segura da MozPayment. Esta janela actualiza sozinha.':esc(r.mensagem||''))+'</p>'+
     (r.link?'<a class="btn pri" href="'+esc(r.link)+'" target="_blank" rel="noopener" style="text-decoration:none;justify-content:center;margin-bottom:10px">Abrir a página de pagamento</a>':'')+
     '<p class="small muted" id="w-st">A aguardar confirmação · '+mt(r.total)+'</p></div><div class="modal-f"><button class="btn" id="w-x">Fechar e ver depois</button></div>');
-  $('#w-x').onclick=function(){ parado=true; fechar(); pAssinatura(); };
+  $('#w-x').onclick=function(){ parado=true; if(window.GSCheckout) GSCheckout.fechar(); fechar(); pAssinatura(); };
   (function verificar(){
     if(parado) return;
     if(Date.now()>fim){ var s=$('#w-st'); if(s) s.textContent='Ainda sem confirmação. Quando o pagamento for confirmado, a assinatura é renovada sozinha.'; return; }
     api('/assinatura-estado',{id:r.id}).then(function(x){
       if(parado) return;
-      if(x.ok && x.estado==='pago'){ parado=true;
+      if(x.ok && x.estado==='pago'){ parado=true; if(window.GSCheckout) GSCheckout.fechar();
         modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div style="width:64px;height:64px;border-radius:50%;background:var(--ok);display:grid;place-items:center;margin:0 auto;color:#fff">'+ic('check','width="30" height="30"')+'</div><h3 style="margin-top:14px">Assinatura renovada</h3><p class="muted">Válida até <b style="color:var(--ink)">'+data(x.valida_ate)+'</b>. Obrigado!</p></div><div class="modal-f"><button class="btn pri" id="w-ok">Concluir</button></div>');
         $('#w-ok').onclick=function(){ fechar(); fetch(PROXY+'/sessao',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SES.token}}).then(function(r){ return r.json(); }).then(function(d){ if(d.ok){ S.escola=d.escola; } casca(); }); }; return; }
+      if(x.ok && (x.estado==='falhado'||x.estado==='expirado') && window.GSCheckout) GSCheckout.fechar();
       if(x.ok && (x.estado==='falhado'||x.estado==='expirado')){ var s=$('#w-st'); if(s) s.innerHTML='<b style="color:var(--bad)">O pagamento '+(x.estado==='falhado'?'falhou ou foi cancelado':'expirou')+'.</b> Pode tentar outra vez.'; return; }
       setTimeout(verificar,4000);
     });
