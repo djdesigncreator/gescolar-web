@@ -4,20 +4,25 @@
 <meta charset="utf-8">
 <script src="i18n.js" charset="utf-8"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Plataforma · Gescolar</title>
+<title>Administração · Gescolar</title>
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap">
 <link rel="stylesheet" href="gescolar.css">
 <style>
+/* Gescolar · painel de administração da plataforma — v5.24 */
 body{background:var(--bg);margin:0}
-.pf-top{background:var(--navy);color:#fff;padding:14px 16px}
+.pf-top{background:var(--navy);color:#fff;padding:14px 16px;position:sticky;top:0;z-index:30}
 .pf-top .in{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:12px}
 .pf-top img{width:38px;height:38px;border-radius:50%;background:#fff}
 .pf-top b{font:800 18px var(--f-display)}
 .pf-top small{display:block;color:rgba(255,255,255,.7);font-size:12.5px}
 .pf-top .sp{flex:1}
 .pf-top a,.pf-top button{color:#fff;border:1px solid rgba(255,255,255,.25);background:none;border-radius:9px;height:34px;padding:0 12px;font:600 13px var(--f-body);display:inline-flex;align-items:center;text-decoration:none;cursor:pointer}
+.pf-tabs{max-width:1240px;margin:0 auto;display:flex;gap:4px;padding:0 16px;overflow-x:auto;border-bottom:1px solid var(--line);background:var(--bg);position:sticky;top:66px;z-index:20}
+.pf-tabs button{border:0;background:none;padding:14px 14px 12px;font:700 14.5px var(--f-body);color:var(--muted);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;display:inline-flex;gap:7px;align-items:center}
+.pf-tabs button.on{color:var(--ink);border-bottom-color:var(--blue)}
+.pf-tabs .n{background:var(--bad);color:#fff;border-radius:99px;font-size:11.5px;padding:1px 7px;line-height:1.5}
 .pf-main{max-width:1240px;margin:0 auto;padding:20px 16px 48px}
 .pf-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
 .kpi .v.bad{color:var(--bad)} .kpi .v.ok{color:var(--ok)}
@@ -29,7 +34,25 @@ body{background:var(--bg);margin:0}
 .mov .tx{flex:1;min-width:0}
 .mov .tx small{display:block;color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mov .vl{font:700 14px var(--f-mono);white-space:nowrap}
-.filtro{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filtro{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chips button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;height:32px;padding:0 13px;font:600 13px var(--f-body);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chips button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.chips button b{font-family:var(--f-mono);font-size:12px;opacity:.75}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);opacity:.45;flex:none}
+.dot.on{background:var(--ok);opacity:1;box-shadow:0 0 0 4px var(--ok-soft);animation:pfP 1.6s infinite}
+@keyframes pfP{50%{box-shadow:0 0 0 7px transparent}}
+.acesso{display:flex;align-items:center;gap:8px;font-size:13px;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+.lista-al .it{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.lista-al .it:last-child{border-bottom:0}
+.lista-al .it .tx{flex:1;min-width:0}
+.lista-al .it small{display:block;color:var(--muted);font-size:12.5px}
+.vazio{color:var(--muted);font-size:14px;padding:12px 0}
+.tag{display:inline-block;font-size:11px;font-weight:800;letter-spacing:.04em;padding:1px 7px;border-radius:6px;background:var(--surface2);color:var(--muted);border:1px solid var(--line);margin-left:6px;vertical-align:middle}
+.preview{background:var(--ok-soft);color:var(--ok);border-radius:9px;padding:10px 12px;font-size:14px;font-weight:700}
+.row-acts{white-space:nowrap;text-align:right}
+@media (max-width:640px){.pf-tabs{top:66px}.frow{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -43,16 +66,21 @@ function $(s,r){ return (r||document).querySelector(s); }
 function $$(s,r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); }
 function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function grp(n){ return String(Math.round(n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,' '); }
-function dinheiro(n){ var v=Math.abs(Number(Number(n||0).toFixed(6))), s=v.toFixed(6).replace(/0+$/,'').replace(/\.$/,''), p=s.split('.'), d=p[1]||''; if(d.length===1) d+='0'; return (Number(n)<0&&v?'-':'')+p[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(d?','+d:''); }
+function dinheiro(n){ var v=Math.abs(Number(Number(n||0).toFixed(6))), s=v.toFixed(6).replace(/0+$/,'').replace(/\.$/,''), p=s.split('.'), d=p[1]||''; if(d.length===1) d+='0'; return (Number(n)<0&&v?'-':'')+p[0].replace(/\B(?=(\d{3})+(?!\d))/g,' ')+(d?','+d:''); }
 function mt(n){ return dinheiro(n)+' MT'; }
 function data(iso){ if(!iso) return '—'; var d=new Date(iso); return isNaN(d)?'—':String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear(); }
+function desde(iso){ if(!iso) return 'nunca'; var t=new Date(iso).getTime(); if(isNaN(t)) return '—'; var m=Math.round((Date.now()-t)/60000);
+  if(m<1) return 'agora'; if(m<60) return 'há '+m+' min'; var h=Math.round(m/60); if(h<24) return 'há '+h+' h'; var d=Math.round(h/24); if(d<31) return 'há '+d+(d===1?' dia':' dias'); return data(iso); }
+function hojeISO(){ return new Date().toISOString().slice(0,10); }
 function toast(m){ var t=document.createElement('div'); t.className='toast'; t.innerHTML='<i></i><span>'+esc(m)+'</span>'; $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); },3600); }
 function erroCaixa(m){ return '<div class="msg-err">'+esc(m)+'</div>'; }
 function modal(html, largo){ fechar(); var s=document.createElement('div'); s.className='scrim'; s.id='ov'; s.innerHTML='<div class="modal" role="dialog" aria-modal="true"'+(largo?' style="max-width:860px"':'')+'>'+html+'</div>'; s.addEventListener('mousedown',function(e){ if(e.target===s) fechar(); }); document.body.appendChild(s); $$('[data-fechar]',s).forEach(function(b){ b.onclick=fechar; }); }
 function fechar(){ var o=$('#ov'); if(o) o.remove(); }
 document.addEventListener('keydown',function(e){ if(e.key==='Escape') fechar(); });
 var SIT={teste:['Teste','info'],activa:['Activa','ok'],tolerancia:['Tolerância','warn'],expirada:['Expirada','bad'],suspensa:['Suspensa','bad'],desconhecida:['—','muted']};
-var MET={mpesa:'M-Pesa',emola:'e-Mola',cartao:'Cartão',balcao:'Numerário'};
+var MET={mpesa:'M-Pesa',emola:'e-Mola',cartao:'Cartão',balcao:'Numerário',numerario:'Numerário',transferencia:'Transferência bancária',oferta:'Oferta / cortesia'};
+var EST_SUB={pago:['Paga','ok'],pendente:['Pendente','warn'],revisao:['Em revisão','warn'],falhado:['Falhada','bad'],expirado:['Expirada','bad'],anulada:['Anulada','muted']};
+var PAPEL={Direccao:'Direcção',Secretaria:'Secretaria',Professor:'Professores',Estudante:'Estudantes',Encarregado:'Encarregados',Plataforma:'Plataforma'};
 
 var SES=null; try{ SES=JSON.parse(localStorage.getItem('gs_sessao')||'null'); }catch(e){}
 if(!SES || !SES.token){ location.replace('entrar.html'); return; }
@@ -62,51 +90,246 @@ function api(rota,corpo){
     .then(function(r){ return r.json().catch(function(){ return {ok:false,erro:'Resposta inválida do servidor.'}; }).then(function(d){ if(r.status===401) sair(); return d; }); })
     .catch(function(){ return {ok:false,erro:'Sem ligação ao servidor.'}; });
 }
-var S={ d:null, filtro:'', ordem:'saldo', sessao:null };
+var aba0='geral'; try{ aba0=localStorage.getItem('gs_pl_aba')||'geral'; }catch(e){}
+var S={ d:null, saques:[], subs:null, aba:aba0, filtro:'', ordem:'nome', sit:'todas', sfiltro:'', sest:'todas', cfiltro:'', sessao:null };
 
+// ---------- casca ----------
 function casca(){
-  $('#root').innerHTML='<header class="pf-top"><div class="in"><img src="logo.png" alt=""><div><b>Plataforma Gescolar</b><small>'+esc(S.sessao.nome||'')+'</small></div><span class="sp"></span>'+
-    (S.sessao.escola?'<a href="direccao.html">A minha escola</a>':'')+GSI18n.seletor()+'<button id="sair">Sair</button></div></header><main class="pf-main" id="pg"><div class="carregar"><div class="spinner"></div>A calcular…</div></main>';
+  $('#root').innerHTML='<header class="pf-top"><div class="in"><img src="logo.png" alt=""><div><b>Administração Gescolar</b><small>'+esc(S.sessao.nome||'')+'</small></div><span class="sp"></span>'+
+    (S.sessao.escola?'<a href="direccao.html">A minha escola</a>':'')+GSI18n.seletor()+'<button id="sair">Sair</button></div></header>'+
+    '<nav class="pf-tabs" id="tabs"></nav><main class="pf-main" id="pg"><div class="carregar"><div class="spinner"></div>A calcular…</div></main>';
   $('#sair').onclick=sair;
   carregar();
+  setInterval(online, 30000);
+}
+function tabs(){
+  var t=S.d?S.d.totais:{}, A=[['geral','Visão geral',0],['escolas','Escolas',0],['assinaturas','Assinaturas',t.revisao||0],['carteira','Carteira',S.saques.length]];
+  $('#tabs').innerHTML=A.map(function(a){ return '<button data-aba="'+a[0]+'" class="'+(S.aba===a[0]?'on':'')+'">'+a[1]+(a[2]?'<span class="n">'+a[2]+'</span>':'')+'</button>'; }).join('');
+  $$('[data-aba]').forEach(function(b){ b.onclick=function(){ S.aba=b.getAttribute('data-aba'); try{ localStorage.setItem('gs_pl_aba',S.aba); }catch(e){} desenhar(); window.scrollTo(0,0); }; });
 }
 function carregar(){
   Promise.all([api('/pl/resumo'), api('/pl/saques')]).then(function(r){ var d=r[0];
     if(!d.ok){ $('#pg').innerHTML=erroCaixa(d.erro); return; }
-    S.d=d; S.saques=r[1].ok?r[1].saques:[]; desenhar();
+    S.d=d; S.saques=r[1].ok?r[1].saques:[]; S.subs=null; desenhar();
+  });
+}
+// actualiza só quem está online (pedido leve, de 30 em 30 segundos)
+function online(){
+  if(!S.d || document.hidden) return;
+  api('/pl/online').then(function(r){
+    if(!r.ok) return;
+    var tot=0, ne=0;
+    S.d.escolas.forEach(function(e){ var p=r.escolas[e.id]; if(p){ var ult=e.presenca&&e.presenca.ultimo; e.presenca=p; if(ult && (!p.ultimo || ult>p.ultimo)) e.presenca.ultimo=ult; } else if(e.presenca){ e.presenca.online=0; e.presenca.papeis={}; } if(e.presenca&&e.presenca.online){ tot+=e.presenca.online; ne++; } });
+    S.d.totais.online_pessoas=tot; S.d.totais.online_escolas=ne;
+    if(!$('#ov') && (S.aba==='geral'||S.aba==='escolas')){ var f=$('#f'), foco=f&&document.activeElement===f, pos=f?f.selectionStart:0; desenhar(); if(foco){ f=$('#f'); f.focus(); f.setSelectionRange(pos,pos); } }
   });
 }
 function desenhar(){
-  var d=S.d, t=d.totais;
-  var L=d.escolas.filter(function(e){ var f=S.filtro.toLowerCase(); return !f || (e.nome+' '+e.subdominio+' '+e.cidade+' '+e.provincia).toLowerCase().indexOf(f)>=0; });
-  L.sort(function(a,b){ return S.ordem==='nome'?a.nome.localeCompare(b.nome,'pt'):S.ordem==='estudantes'?b.estudantes-a.estudantes:S.ordem==='validade'?String(a.situacao.ate||'').localeCompare(String(b.situacao.ate||'')):b.saldo-a.saldo; });
+  tabs();
+  if(S.aba==='escolas') return escolas();
+  if(S.aba==='assinaturas') return assinaturas();
+  if(S.aba==='carteira') return carteira();
+  geral();
+}
+function kpi(l,v,d,cls){ return '<div class="card kpi"><div class="l">'+l+'</div><div class="v num '+(cls||'')+'" style="font-size:24px">'+v+'</div><div class="d">'+esc(d)+'</div></div>'; }
+function acessoHtml(e){ var p=e.presenca||{};
+  if(p.online) return '<span class="acesso"><i class="dot on"></i><b style="color:var(--ok)">'+p.online+' online</b></span>';
+  return '<span class="acesso muted"><i class="dot"></i>'+esc(desde(p.ultimo))+'</span>'; }
+function situ(e){ var s=SIT[e.situacao.estado]||SIT.desconhecida; return '<span class="pill '+s[1]+'">'+s[0]+'</span><div class="small muted">'+(e.situacao.ate?'até '+data(e.situacao.ate)+(e.situacao.dias!=null&&e.situacao.dias>=0&&e.situacao.dias<=7?' · '+e.situacao.dias+' d':''):'')+'</div>'; }
+function porId(id){ return (S.d.escolas||[]).filter(function(e){ return e.id===id; })[0]; }
+
+// ---------- visão geral ----------
+function geral(){
+  var d=S.d, t=d.totais, E=d.escolas;
+  var on=E.filter(function(e){ return e.presenca&&e.presenca.online; }).sort(function(a,b){ return b.presenca.online-a.presenca.online; });
+  var exp=E.filter(function(e){ return ['activa','teste'].indexOf(e.situacao.estado)>=0 && e.situacao.dias!=null && e.situacao.dias<=7; }).sort(function(a,b){ return a.situacao.dias-b.situacao.dias; });
+  var venc=E.filter(function(e){ return ['expirada','tolerancia'].indexOf(e.situacao.estado)>=0; });
+  var novas=E.slice().sort(function(a,b){ return String(b.criada||'').localeCompare(String(a.criada||'')); }).slice(0,6);
+  function linha(e,dir){ return '<div class="it"><div class="tx"><b>'+esc(e.nome)+'</b><small>'+dir+'</small></div><button class="btn sm pri" data-atr="'+esc(e.id)+'">Atribuir</button> <button class="btn sm" data-ver="'+esc(e.id)+'">Gerir</button></div>'; }
   $('#pg').innerHTML=
-    '<div class="pf-kpis">'+[
-      ['Escolas',grp(t.escolas),t.activas+' activas · '+t.teste+' em teste',''],
-      ['Estudantes',grp(t.estudantes),'em todas as escolas',''],
-      ['Propinas pagas online',mt(t.propinas_online),'desde o início'+(d.taxa_pct?' · taxa '+d.taxa_pct+'%':''),''],
-      ['A transferir às escolas',mt(t.a_transferir),'saldo na carteira única',t.a_transferir?'bad':'ok'],
-      ['Assinaturas este mês',mt(t.assinaturas_mes),mt(t.assinaturas)+' desde o início','']
-    ].map(function(k){ return '<div class="card kpi"><div class="l">'+k[0]+'</div><div class="v num '+k[3]+'" style="font-size:24px">'+k[1]+'</div><div class="d">'+esc(k[2])+'</div></div>'; }).join('')+'</div>'+
-    (S.saques&&S.saques.length? '<section class="card" style="margin-bottom:16px;border-left:4px solid var(--warn)"><div class="card-b"><b style="font-size:16px">Saques e levantamentos por resolver ('+S.saques.length+')</b>'+
+    '<div class="pf-kpis">'+
+      kpi('Escolas',grp(t.escolas),t.activas+' activas · '+t.teste+' em teste')+
+      kpi('Online agora',grp(t.online_pessoas||0),(t.online_escolas||0)+' escola'+((t.online_escolas||0)===1?'':'s')+' · últimos '+(t.online_min||5)+' min',(t.online_pessoas?'ok':''))+
+      kpi('Estudantes',grp(t.estudantes),'em todas as escolas')+
+      kpi('Receita mensal prevista',mt(t.mensal||0),'escolas activas × preço do plano')+
+      kpi('Assinaturas este mês',mt(t.assinaturas_mes),mt(t.assinaturas)+' desde o início')+
+      kpi('A expirar / expiradas',(t.a_expirar||0)+' / '+(t.expiradas||0),(t.suspensas||0)+' suspensa'+((t.suspensas||0)===1?'':'s'),(t.expiradas?'bad':''))+
+    '</div>'+
+    ((t.revisao||S.saques.length)?'<section class="card" style="margin-bottom:14px;border-left:4px solid var(--warn)"><div class="card-b" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="flex:1">Precisa de atenção</b>'+
+      (t.revisao?'<button class="btn sm" data-ir="assinaturas">'+t.revisao+' assinatura'+(t.revisao===1?'':'s')+' em revisão</button>':'')+
+      (S.saques.length?'<button class="btn sm" data-ir="carteira">'+S.saques.length+' saque'+(S.saques.length===1?'':'s')+' por resolver</button>':'')+'</div></section>':'')+
+    '<div class="grid2">'+
+      '<section class="card"><div class="card-b"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><i class="dot '+(on.length?'on':'')+'"></i><b style="font-size:16px">Online agora</b></div><div class="lista-al">'+
+        (on.length?on.map(function(e){ var p=e.presenca.papeis||{}; return '<div class="it"><div class="tx"><b>'+esc(e.nome)+'</b><small>'+Object.keys(p).map(function(k){ return p[k]+' '+(PAPEL[k]||k); }).join(' · ')+'</small></div><b class="num" style="color:var(--ok)">'+e.presenca.online+'</b></div>'; }).join(''):'<div class="vazio">Ninguém a usar o Gescolar nos últimos '+(t.online_min||5)+' minutos.</div>')+
+      '</div></div></section>'+
+      '<section class="card"><div class="card-b"><b style="font-size:16px">A expirar nos próximos 7 dias</b><div class="lista-al">'+
+        (exp.length?exp.map(function(e){ return linha(e,(SIT[e.situacao.estado]||SIT.desconhecida)[0]+' · '+(e.situacao.dias===0?'termina hoje':'faltam '+e.situacao.dias+' dias')+' · '+esc(e.plano)); }).join(''):'<div class="vazio">Nenhuma escola a expirar esta semana.</div>')+
+      '</div></div></section>'+
+      '<section class="card"><div class="card-b"><b style="font-size:16px">Expiradas ou em tolerância</b><div class="lista-al">'+
+        (venc.length?venc.map(function(e){ return linha(e,(SIT[e.situacao.estado]||SIT.desconhecida)[0]+' · terminou '+data(e.situacao.ate)+' · '+esc(e.plano)); }).join(''):'<div class="vazio">Nenhuma escola com a assinatura vencida.</div>')+
+      '</div></div></section>'+
+      '<section class="card"><div class="card-b"><b style="font-size:16px">Escolas mais recentes</b><div class="lista-al">'+
+        (novas.length?novas.map(function(e){ return '<div class="it"><div class="tx"><b>'+esc(e.nome)+'</b><small>criada '+data(e.criada)+' · '+esc([e.cidade,e.provincia].filter(Boolean).join(', ')||e.subdominio)+'</small></div>'+situ(e).split('<div')[0]+' <button class="btn sm" data-ver="'+esc(e.id)+'">Gerir</button></div>'; }).join(''):'<div class="vazio">Ainda sem escolas.</div>')+
+      '</div></div></section>'+
+    '</div>';
+  ligar();
+}
+function ligar(){
+  $$('[data-ver]').forEach(function(b){ b.onclick=function(){ verEscola(porId(b.getAttribute('data-ver'))); }; });
+  $$('[data-atr]').forEach(function(b){ b.onclick=function(){ atribuir(porId(b.getAttribute('data-atr'))); }; });
+  $$('[data-tr]').forEach(function(b){ b.onclick=function(){ transferir(porId(b.getAttribute('data-tr'))); }; });
+  $$('[data-ir]').forEach(function(b){ b.onclick=function(){ S.aba=b.getAttribute('data-ir'); desenhar(); }; });
+}
+
+// ---------- escolas ----------
+function filtroSit(e,k){
+  if(k==='online') return !!(e.presenca&&e.presenca.online);
+  if(k==='expirar') return ['activa','teste'].indexOf(e.situacao.estado)>=0 && e.situacao.dias!=null && e.situacao.dias<=7;
+  if(k==='expiradas') return ['expirada','tolerancia'].indexOf(e.situacao.estado)>=0;
+  if(k==='todas') return true;
+  return e.situacao.estado===k;
+}
+function escolas(){
+  var E=S.d.escolas, C=[['todas','Todas'],['online','Online agora'],['activa','Activas'],['teste','Em teste'],['expirar','A expirar'],['expiradas','Expiradas'],['suspensa','Suspensas']];
+  var L=E.filter(function(e){ var f=S.filtro.toLowerCase(); return filtroSit(e,S.sit) && (!f || (e.nome+' '+e.subdominio+' '+e.cidade+' '+e.provincia+' '+e.email+' '+e.telefone).toLowerCase().indexOf(f)>=0); });
+  L.sort(function(a,b){ return S.ordem==='validade'?String(a.situacao.ate||'9').localeCompare(String(b.situacao.ate||'9')):S.ordem==='estudantes'?b.estudantes-a.estudantes:S.ordem==='acesso'?((b.presenca.online-a.presenca.online)||String(b.presenca.ultimo||'').localeCompare(String(a.presenca.ultimo||''))):S.ordem==='recentes'?String(b.criada||'').localeCompare(String(a.criada||'')):a.nome.localeCompare(b.nome,'pt'); });
+  $('#pg').innerHTML=
+    '<div class="chips">'+C.map(function(c){ return '<button data-sit="'+c[0]+'" class="'+(S.sit===c[0]?'on':'')+'">'+c[1]+' <b>'+E.filter(function(e){ return filtroSit(e,c[0]); }).length+'</b></button>'; }).join('')+'</div>'+
+    '<div class="filtro"><input class="inp" id="f" placeholder="Procurar escola, cidade, email, telefone…" value="'+esc(S.filtro)+'" style="flex:1;min-width:220px">'+
+      '<select class="sel" id="o">'+[['nome','Nome'],['acesso','Online / último acesso'],['validade','Validade mais próxima'],['estudantes','Mais estudantes'],['recentes','Mais recentes']].map(function(o){ return '<option value="'+o[0]+'"'+(S.ordem===o[0]?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select>'+
+      '<button class="btn" id="r">Actualizar</button></div>'+
+    '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Escola</th><th>Plano</th><th>Assinatura</th><th>Acesso</th><th class="r">Estud.</th><th></th></tr></thead><tbody>'+
+      (L.length? L.map(function(e){
+        return '<tr><td><b>'+esc(e.nome)+'</b>'+(e.subs_pendentes?'<span class="tag" style="color:var(--warn)">'+e.subs_pendentes+' pend.</span>':'')+'<div class="small muted">'+esc([e.subdominio,e.cidade,e.provincia].filter(Boolean).join(' · '))+'</div></td><td>'+esc(e.plano)+'</td><td>'+situ(e)+'</td><td>'+acessoHtml(e)+'</td><td class="r num">'+grp(e.estudantes)+'</td>'+
+          '<td class="row-acts"><button class="btn sm pri" data-atr="'+esc(e.id)+'">Atribuir</button> <button class="btn sm" data-ver="'+esc(e.id)+'">Gerir</button></td></tr>'; }).join('')
+        : '<tr><td colspan="6" class="muted" style="text-align:center;padding:30px">Nenhuma escola encontrada.</td></tr>')+
+    '</tbody></table></div></section>';
+  $('#f').oninput=function(){ S.filtro=this.value; var p=this.selectionStart; escolas(); var f=$('#f'); f.focus(); f.setSelectionRange(p,p); };
+  $('#o').onchange=function(){ S.ordem=this.value; escolas(); };
+  $('#r').onclick=function(){ $('#pg').innerHTML='<div class="carregar"><div class="spinner"></div>A calcular…</div>'; carregar(); };
+  $$('[data-sit]').forEach(function(b){ b.onclick=function(){ S.sit=b.getAttribute('data-sit'); escolas(); }; });
+  ligar();
+}
+
+// ---------- assinaturas ----------
+function assinaturas(){
+  if(!S.subs){ $('#pg').innerHTML='<div class="carregar"><div class="spinner"></div>A carregar assinaturas…</div>';
+    api('/pl/assinaturas').then(function(r){ if(!r.ok){ $('#pg').innerHTML=erroCaixa(r.erro); return; } S.subs=r.assinaturas; if(S.aba==='assinaturas') assinaturas(); }); return; }
+  var A=S.subs, mes=hojeISO().slice(0,7), ano=hojeISO().slice(0,4);
+  var pagas=A.filter(function(a){ return a.estado==='pago'; });
+  var soma=function(l){ return l.reduce(function(x,a){ return x+a.valor; },0); };
+  var C=[['todas','Todas'],['pago','Pagas'],['pendente','Pendentes'],['revisao','Em revisão'],['falhado','Falhadas'],['manual','Atribuídas à mão'],['anulada','Anuladas']];
+  function passa(a,k){ return k==='todas'||(k==='manual'?a.manual:a.estado===k); }
+  var L=A.filter(function(a){ var f=S.sfiltro.toLowerCase(); return passa(a,S.sest) && (!f || (a.escola_nome+' '+a.plano+' '+a.referencia+' '+a.transacao+' '+a.notas).toLowerCase().indexOf(f)>=0); });
+  $('#pg').innerHTML=
+    '<div class="pf-kpis">'+
+      kpi('Recebido este mês',mt(soma(pagas.filter(function(a){ return String(a.data||'').slice(0,7)===mes; }))),pagas.filter(function(a){ return String(a.data||'').slice(0,7)===mes; }).length+' pagamentos')+
+      kpi('Recebido em '+ano,mt(soma(pagas.filter(function(a){ return String(a.data||'').slice(0,4)===ano; }))),'online e à mão')+
+      kpi('Online vs à mão',mt(soma(pagas.filter(function(a){ return !a.manual; })))+'',mt(soma(pagas.filter(function(a){ return a.manual; })))+' atribuído à mão')+
+      kpi('Por rever',grp(A.filter(function(a){ return a.estado==='revisao'; }).length),A.filter(function(a){ return a.estado==='pendente'; }).length+' pendentes',(A.some(function(a){ return a.estado==='revisao'; })?'bad':''))+
+    '</div>'+
+    '<div class="chips">'+C.map(function(c){ return '<button data-sest="'+c[0]+'" class="'+(S.sest===c[0]?'on':'')+'">'+c[1]+' <b>'+A.filter(function(a){ return passa(a,c[0]); }).length+'</b></button>'; }).join('')+'</div>'+
+    '<div class="filtro"><input class="inp" id="sf" placeholder="Procurar escola, referência, notas…" value="'+esc(S.sfiltro)+'" style="flex:1;min-width:220px"><button class="btn pri" id="nova">+ Atribuir assinatura</button><button class="btn" id="sr">Actualizar</button></div>'+
+    '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Escola</th><th>Plano</th><th>Como</th><th class="r">Valor</th><th>Estado</th><th>Válida até</th><th></th></tr></thead><tbody>'+
+      (L.length? L.map(function(a,i){ var s=EST_SUB[a.estado]||[a.estado,'muted'];
+        return '<tr><td class="small">'+data(a.data)+'</td><td><b>'+esc(a.escola_nome||'—')+'</b>'+(a.notas?'<div class="small muted">'+esc(a.notas)+'</div>':'')+'</td><td>'+esc(a.plano)+' · '+a.meses+(a.meses===1?' mês':' meses')+'</td>'+
+          '<td>'+esc(MET[a.metodo]||a.metodo||'—')+(a.manual?'<span class="tag">À MÃO</span>':'')+((a.transacao||a.referencia)?'<div class="small muted mono">'+esc(a.transacao||a.referencia)+'</div>':'')+(a.por?'<div class="small muted">por '+esc(a.por)+'</div>':'')+'</td>'+
+          '<td class="r num"><b>'+mt(a.valor)+'</b></td><td><span class="pill '+s[1]+'">'+s[0]+'</span></td><td class="small">'+data(a.valida_ate)+'</td>'+
+          '<td class="row-acts">'+(['pendente','revisao'].indexOf(a.estado)>=0?'<button class="btn sm pri" data-apr="'+i+'">Aprovar</button> ':'')+(a.estado!=='anulada'?'<button class="btn sm danger" data-anu="'+i+'">Anular</button>':'')+'</td></tr>'; }).join('')
+        : '<tr><td colspan="8" class="muted" style="text-align:center;padding:30px">Nenhuma assinatura.</td></tr>')+
+    '</tbody></table></div></section>'+
+    '<p class="small muted" style="margin-top:10px">Em revisão = o valor pago não bate certo com o pedido (veja na MozPayment antes de aprovar). Aprovar soma os meses à validade da escola.</p>';
+  $('#sf').oninput=function(){ S.sfiltro=this.value; var p=this.selectionStart; assinaturas(); var f=$('#sf'); f.focus(); f.setSelectionRange(p,p); };
+  $('#sr').onclick=function(){ S.subs=null; assinaturas(); };
+  $('#nova').onclick=function(){ atribuir(null); };
+  $$('[data-sest]').forEach(function(b){ b.onclick=function(){ S.sest=b.getAttribute('data-sest'); assinaturas(); }; });
+  $$('[data-apr]').forEach(function(b){ b.onclick=function(){ aprovar(L[+b.getAttribute('data-apr')]); }; });
+  $$('[data-anu]').forEach(function(b){ b.onclick=function(){ anular(L[+b.getAttribute('data-anu')]); }; });
+}
+function aprovar(a, depois){
+  if(!confirm('Aprovar a assinatura '+a.plano+' de '+a.meses+(a.meses===1?' mês':' meses')+' ('+mt(a.valor)+')'+(a.escola_nome?' de '+a.escola_nome:'')+'?\nOs meses são somados à validade da escola.')) return;
+  api('/pl/assinatura-aprovar',{id:a.id}).then(function(r){ if(!r.ok){ toast(r.erro); return; } toast('Aprovada · válida até '+data(r.valida_ate)); fechar(); if(depois) depois(); recarregarTudo(); });
+}
+function anular(a, depois){
+  var tirar=false;
+  if(a.estado==='pago'){ if(!confirm('Anular este registo de '+mt(a.valor)+'?')) return; tirar=confirm('Tirar também os '+a.meses+(a.meses===1?' mês':' meses')+' à validade da escola?\n\nOK = tirar · Cancelar = manter a validade como está'); }
+  else if(!confirm('Anular este registo?')) return;
+  api('/pl/assinatura-anular',{id:a.id, tirar_meses:tirar}).then(function(r){ if(!r.ok){ toast(r.erro); return; } toast(r.valida_ate?'Anulada · nova validade '+data(r.valida_ate):'Anulada'); fechar(); if(depois) depois(); recarregarTudo(); });
+}
+function recarregarTudo(){ var aba=S.aba; Promise.all([api('/pl/resumo'), api('/pl/saques')]).then(function(r){ if(r[0].ok){ S.d=r[0]; } S.saques=r[1].ok?r[1].saques:S.saques; S.subs=null; S.aba=aba; desenhar(); }); }
+
+// ---------- atribuir assinatura à mão ----------
+function atribuir(e){
+  var P=S.d.precos||{}, E=S.d.escolas.slice().sort(function(a,b){ return a.nome.localeCompare(b.nome,'pt'); });
+  modal('<div class="modal-h"><h3>Atribuir assinatura</h3><button class="icon-btn" data-fechar>✕</button></div><div class="modal-b">'+
+    (e?'<p style="margin:0"><b>'+esc(e.nome)+'</b><br><span class="small muted">'+(SIT[e.situacao.estado]||SIT.desconhecida)[0]+(e.situacao.ate?' até '+data(e.situacao.ate):'')+' · plano '+esc(e.plano||'—')+'</span></p>'
+      :'<label class="field">Escola<select class="sel" id="a-e"><option value="">Escolha a escola…</option>'+E.map(function(x){ return '<option value="'+esc(x.id)+'">'+esc(x.nome)+'</option>'; }).join('')+'</select></label>')+
+    '<div class="frow"><label class="field">Plano<select class="sel" id="a-p">'+['Essencial','Pro','Rede'].map(function(p){ return '<option'+(e&&p===e.plano?' selected':'')+'>'+p+'</option>'; }).join('')+'</select></label>'+
+      '<label class="field">Duração<select class="sel" id="a-m"><option value="1">1 mês</option><option value="3">3 meses</option><option value="6">6 meses</option><option value="12" selected>12 meses</option><option value="x">Outro…</option></select></label></div>'+
+    '<label class="field" id="a-mx-w" style="display:none">Número de meses (1 a 36)<input class="inp mono" id="a-mx" inputmode="numeric" maxlength="2" value="2"></label>'+
+    '<div class="frow"><label class="field">Como foi pago<select class="sel" id="a-w"><option value="numerario">Numerário</option><option value="transferencia">Transferência bancária</option><option value="mpesa">M-Pesa (fora do sistema)</option><option value="emola">e-Mola (fora do sistema)</option><option value="oferta">Oferta / cortesia (0 MT)</option></select></label>'+
+      '<label class="field">Valor (MT)<input class="inp mono" id="a-v" inputmode="decimal"></label></div>'+
+    '<div class="frow"><label class="field">Referência (opcional)<input class="inp" id="a-r" maxlength="120" placeholder="Recibo, ID da transacção…"></label>'+
+      '<label class="field">Começa em (opcional)<input class="inp" type="date" id="a-i"></label></div>'+
+    '<label class="field">Notas (opcional)<input class="inp" id="a-n" maxlength="300" placeholder="Ex.: pago na reunião de 12/11"></label>'+
+    '<div class="preview" id="a-pv"></div>'+
+    '<label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600"><input type="checkbox" id="a-s" checked> Avisar a escola por SMS</label>'+
+    '<div id="a-er"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="a-ok">Atribuir</button></div>');
+  var mexeuValor=false;
+  function esc0(){ return e || porId(($('#a-e')||{}).value||''); }
+  function meses(){ var m=$('#a-m').value; return m==='x'?Math.round(Number($('#a-mx').value)||0):Number(m); }
+  function calc(){
+    var x=esc0(), m=meses(), pl=$('#a-p').value, of=$('#a-w').value==='oferta';
+    $('#a-mx-w').style.display=$('#a-m').value==='x'?'':'none';
+    if(of){ $('#a-v').value='0'; $('#a-v').disabled=true; } else { $('#a-v').disabled=false; if(!mexeuValor) $('#a-v').value=String((P[pl]||0)*(m||0)); }
+    var ini=$('#a-i').value, base;
+    if(ini) base=new Date(ini+'T00:00:00Z'); else { var fim=x&&x.situacao&&x.situacao.ate?new Date(x.situacao.ate):null; base=fim&&fim.getTime()>Date.now()?fim:new Date(); }
+    var ate=new Date(base.getTime()); ate.setUTCMonth(ate.getUTCMonth()+(m||0));
+    $('#a-pv').textContent=!x?'Escolha a escola.':!(m>=1&&m<=36)?'Escolha entre 1 e 36 meses.':'Fica activa no plano '+pl+' até '+data(ate.toISOString())+(ini?'':' (soma à validade actual)')+'.';
+    $('#a-s').disabled=!(x&&x.telefone);
+  }
+  ['#a-p','#a-m','#a-mx','#a-w','#a-i','#a-e'].forEach(function(s){ var el=$(s); if(el){ el.onchange=calc; el.oninput=calc; } });
+  $('#a-v').oninput=function(){ mexeuValor=true; };
+  calc();
+  $('#a-ok').onclick=function(){
+    var x=esc0(), m=meses(), b=this;
+    if(!x){ $('#a-er').innerHTML=erroCaixa('Escolha a escola.'); return; }
+    if(!(m>=1&&m<=36)){ $('#a-er').innerHTML=erroCaixa('Escolha entre 1 e 36 meses.'); return; }
+    if(!confirm('Atribuir '+$('#a-p').value+' por '+m+(m===1?' mês':' meses')+' a '+x.nome+'?')) return;
+    b.disabled=true; b.textContent='A atribuir…';
+    api('/pl/assinatura-manual',{escola:x.id, plano:$('#a-p').value, meses:m, metodo:$('#a-w').value, valor:$('#a-v').value, referencia:$('#a-r').value, inicio:$('#a-i').value, notas:$('#a-n').value, sms:$('#a-s').checked&&!$('#a-s').disabled}).then(function(r){
+      if(!r.ok){ b.disabled=false; b.textContent='Atribuir'; $('#a-er').innerHTML=erroCaixa(r.erro); return; }
+      fechar(); toast('Assinatura atribuída · válida até '+data(r.valida_ate)); recarregarTudo();
+    });
+  };
+}
+
+// ---------- carteira (propinas online, transferências e saques) ----------
+function carteira(){
+  var d=S.d, t=d.totais;
+  var L=d.escolas.filter(function(e){ var f=S.cfiltro.toLowerCase(); return !f || (e.nome+' '+e.subdominio+' '+e.cidade).toLowerCase().indexOf(f)>=0; }).sort(function(a,b){ return b.saldo-a.saldo || a.nome.localeCompare(b.nome,'pt'); });
+  $('#pg').innerHTML=
+    '<div class="pf-kpis">'+
+      kpi('Propinas pagas online',mt(t.propinas_online),'desde o início'+(d.taxa_pct?' · taxa '+d.taxa_pct+'%':''))+
+      kpi('A transferir às escolas',mt(t.a_transferir),'saldo na carteira única',t.a_transferir?'bad':'ok')+
+      kpi('Saques por resolver',grp(S.saques.length),mt(S.saques.reduce(function(x,q){ return x+q.valor; },0)),S.saques.length?'bad':'')+
+    '</div>'+
+    (S.saques.length? '<section class="card" style="margin-bottom:16px;border-left:4px solid var(--warn)"><div class="card-b"><b style="font-size:16px">Saques e levantamentos por resolver ('+S.saques.length+')</b>'+
       '<div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Data</th><th>Escola</th><th>Canal</th><th class="r">Valor</th><th>Para</th><th>Estado</th><th></th></tr></thead><tbody>'+
       S.saques.map(function(q,i){ return '<tr><td class="small">'+data(q.data)+'</td><td><b>'+esc(q.escola_nome)+'</b><div class="small muted">'+esc(q.por)+'</div></td><td>'+esc(q.canal_nome||q.canal)+'</td><td class="r num"><b>'+mt(q.valor)+'</b></td>'+
-        '<td class="small" style="max-width:260px;white-space:normal">'+esc(q.numero||q.notas.replace(/^Enviar para: /,''))+'</td><td><span class="pill warn">'+(q.estado==='pedido'?'Saque pedido':'Levantamento sem confirmação')+'</span>'+(q.resposta?'<div class="small muted mono" style="max-width:220px;white-space:normal;word-break:break-all;margin-top:4px">'+esc(q.resposta)+'</div>':'')+'</td>'+
-        '<td class="r" style="white-space:nowrap">'+((q.canal==='mpesa'||q.canal==='emola')&&q.numero?'<button class="btn sm pri" data-env="'+i+'">Enviar agora</button> ':'')+'<button class="btn sm" data-sq="'+i+'" data-e="concluida">Pago</button> <button class="btn sm" data-sq="'+i+'" data-e="falhada">Falhou</button></td></tr>'; }).join('')+
+        '<td class="small" style="max-width:260px;white-space:normal">'+esc(q.numero||String(q.notas||'').replace(/^Enviar para: /,''))+'</td><td><span class="pill warn">'+(q.estado==='pedido'?'Saque pedido':'Levantamento sem confirmação')+'</span>'+(q.resposta?'<div class="small muted mono" style="max-width:220px;white-space:normal;word-break:break-all;margin-top:4px">'+esc(q.resposta)+'</div>':'')+'</td>'+
+        '<td class="row-acts">'+((q.canal==='mpesa'||q.canal==='emola')&&q.numero?'<button class="btn sm pri" data-env="'+i+'">Enviar agora</button> ':'')+'<button class="btn sm" data-sq="'+i+'" data-e="concluida">Pago</button> <button class="btn sm" data-sq="'+i+'" data-e="falhada">Falhou</button></td></tr>'; }).join('')+
       '</tbody></table></div><p class="small muted" style="margin:8px 0 0">Saque de cartão: pague à escola pelo destino indicado e carregue em Pago com a referência. Levantamento sem confirmação: veja na MozPayment se o dinheiro saiu.</p></div></section>' : '')+
-    '<div class="filtro"><input class="inp" id="f" placeholder="Procurar escola, cidade, província…" value="'+esc(S.filtro)+'" style="flex:1;min-width:220px">'+
-      '<select class="sel" id="o"><option value="saldo"'+(S.ordem==='saldo'?' selected':'')+'>Maior saldo a transferir</option><option value="validade"'+(S.ordem==='validade'?' selected':'')+'>Validade mais próxima</option><option value="estudantes"'+(S.ordem==='estudantes'?' selected':'')+'>Mais estudantes</option><option value="nome"'+(S.ordem==='nome'?' selected':'')+'>Nome</option></select>'+
-      '<button class="btn" id="r">Actualizar</button></div>'+
-    '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Escola</th><th>Plano</th><th>Situação</th><th class="r">Estud.</th><th class="r hide-sm">Propinas online</th><th class="r hide-sm">Transferido</th><th class="r">A transferir</th><th></th></tr></thead><tbody>'+
-      (L.length? L.map(function(e,i){ var s=SIT[e.situacao.estado]||SIT.desconhecida;
-        return '<tr><td><b>'+esc(e.nome)+'</b><div class="small muted">'+esc([e.subdominio,e.cidade,e.provincia].filter(Boolean).join(' · '))+'</div></td><td>'+esc(e.plano)+'</td><td><span class="pill '+s[1]+'">'+s[0]+'</span><div class="small muted">'+(e.situacao.ate?'até '+data(e.situacao.ate):'')+'</div></td><td class="r num">'+grp(e.estudantes)+'</td><td class="r num hide-sm">'+mt(e.propinas_online)+'</td><td class="r num hide-sm">'+mt(e.transferido)+'</td><td class="r num" style="font-weight:700;color:'+(e.saldo>0?'var(--bad)':'var(--ink)')+'">'+mt(e.saldo)+'</td><td class="r" style="white-space:nowrap">'+(e.saldo>0?'<button class="btn sm pri" data-tr="'+i+'">Transferir</button> ':'')+'<button class="btn sm" data-ver="'+i+'">Ver</button></td></tr>'; }).join('')
-        : '<tr><td colspan="8" class="muted" style="text-align:center;padding:30px">Nenhuma escola encontrada.</td></tr>')+
+    '<div class="filtro"><input class="inp" id="cf" placeholder="Procurar escola…" value="'+esc(S.cfiltro)+'" style="flex:1;min-width:220px"><button class="btn" id="cr">Actualizar</button></div>'+
+    '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Escola</th><th class="r">Pagamentos</th><th class="r">Propinas online</th><th class="r hide-sm">Taxa</th><th class="r hide-sm">Transferido</th><th class="r">A transferir</th><th></th></tr></thead><tbody>'+
+      (L.length? L.map(function(e){
+        return '<tr><td><b>'+esc(e.nome)+'</b><div class="small muted">'+esc(e.subdominio)+'</div></td><td class="r num">'+grp(e.pagamentos)+'</td><td class="r num">'+mt(e.propinas_online)+'</td><td class="r num hide-sm">'+mt(e.taxa)+'</td><td class="r num hide-sm">'+mt(e.transferido)+'</td>'+
+          '<td class="r num" style="font-weight:700;color:'+(e.saldo>0?'var(--bad)':'var(--ink)')+'">'+mt(e.saldo)+'</td><td class="row-acts">'+(e.saldo>0?'<button class="btn sm pri" data-tr="'+esc(e.id)+'">Transferir</button> ':'')+'<button class="btn sm" data-ver="'+esc(e.id)+'">Extracto</button></td></tr>'; }).join('')
+        : '<tr><td colspan="7" class="muted" style="text-align:center;padding:30px">Nenhuma escola encontrada.</td></tr>')+
     '</tbody></table></div></section>'+
     '<p class="small muted" style="margin-top:10px">Propinas online = M-Pesa, e-Mola e cartão (o numerário fica na escola). A transferir = propinas online'+(d.taxa_pct?' − taxa de '+d.taxa_pct+'%':'')+' − transferências registadas.</p>';
-  $('#f').oninput=function(){ S.filtro=this.value; var p=this.selectionStart; desenhar(); var f=$('#f'); f.focus(); f.setSelectionRange(p,p); };
-  $('#o').onchange=function(){ S.ordem=this.value; desenhar(); };
-  $('#r').onclick=function(){ $('#pg').innerHTML='<div class="carregar"><div class="spinner"></div>A calcular…</div>'; carregar(); };
-  $$('[data-tr]').forEach(function(b){ b.onclick=function(){ transferir(L[+b.getAttribute('data-tr')]); }; });
+  $('#cf').oninput=function(){ S.cfiltro=this.value; var p=this.selectionStart; carteira(); var f=$('#cf'); f.focus(); f.setSelectionRange(p,p); };
+  $('#cr').onclick=function(){ $('#pg').innerHTML='<div class="carregar"><div class="spinner"></div>A calcular…</div>'; carregar(); };
   $$('[data-sq]').forEach(function(b){ b.onclick=function(){ var q=S.saques[+b.getAttribute('data-sq')], e=b.getAttribute('data-e'), ref='';
     if(e==='concluida'){ ref=window.prompt('Referência do pagamento à escola (opcional):',''); if(ref===null) return; } else if(!confirm('Marcar como falhado? O valor volta ao saldo da escola.')) return;
     b.disabled=true; api('/pl/saque-estado',{id:q.id, estado:e, referencia:ref}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast(e==='concluida'?'Marcado como pago · SMS à escola':'Marcado como falhado'); carregar(); }); }; });
@@ -114,10 +337,10 @@ function desenhar(){
     if(!confirm('Enviar '+mt(q.valor)+' por '+(q.canal_nome||q.canal)+' para o '+q.numero+' pela MozPayment?\nConfirme antes na MozPayment que este valor ainda não saiu, para não pagar duas vezes.')) return;
     b.disabled=true; b.textContent='A enviar…';
     api('/pl/saque-enviar',{id:q.id}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; b.textContent='Enviar agora'; return; } toast(r.estado==='concluida'?'Enviado · ref. '+(r.referencia||''):'Aceite: fica pendente até a MozPayment confirmar'); carregar(); }); }; });
-  $$('[data-ver]').forEach(function(b){ b.onclick=function(){ verEscola(L[+b.getAttribute('data-ver')]); }; });
+  ligar();
 }
 function transferir(e, depois){
-  var hoje=new Date().toISOString().slice(0,10);
+  var hoje=hojeISO();
   modal('<div class="modal-h"><h3>Registar transferência</h3><button class="icon-btn" data-fechar>✕</button></div><div class="modal-b">'+
     '<p style="margin:0"><b>'+esc(e.nome)+'</b><br><span class="small muted">Saldo a transferir: '+mt(e.saldo)+'</span></p>'+
     '<p class="small muted" style="margin:0" id="t-info"></p>'+
@@ -144,30 +367,41 @@ function transferir(e, depois){
     });
   };
 }
+
+// ---------- gerir uma escola ----------
 function verEscola(e){
+  if(!e) return;
   modal('<div class="modal-h"><h3>'+esc(e.nome)+'</h3><button class="icon-btn" data-fechar>✕</button></div><div class="modal-b" id="ve"><div class="carregar"><div class="spinner"></div>A abrir…</div></div>', true);
   api('/pl/escola',{id:e.id}).then(function(d){
     var el=$('#ve'); if(!el) return;
     if(!d.ok){ el.innerHTML=erroCaixa(d.erro); return; }
-    var x=d.escola, s=SIT[x.situacao.estado]||SIT.desconhecida;
+    var x=d.escola, s=SIT[x.situacao.estado]||SIT.desconhecida, pr=e.presenca||{};
     el.innerHTML=
-      '<div class="small muted">'+esc([e.subdominio+'.gescolar.co.mz', 'NUIT '+(e.nuit||'—'), e.telefone, e.email].filter(Boolean).join(' · '))+'</div>'+
-      '<div class="card card-b" style="background:var(--bg)"><div class="eyebrow" style="margin-bottom:8px">Assinatura</div>'+
-        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><span class="pill '+s[1]+'">'+s[0]+'</span><span class="small">'+(x.situacao.ate?'até '+data(x.situacao.ate)+(x.situacao.dias!=null?' ('+(x.situacao.dias>=0?'faltam '+x.situacao.dias:'há '+(-x.situacao.dias))+' dias)':''):'sem data')+'</span></div>'+
+      '<div class="small muted">'+esc(['Código '+e.subdominio, 'NUIT '+(e.nuit||'—'), e.telefone, e.email, [e.cidade,e.provincia].filter(Boolean).join(', '), 'criada '+data(e.criada)].filter(Boolean).join(' · '))+'</div>'+
+      '<div class="acesso">'+acessoHtml(e)+(pr.online?'<span class="small muted">'+Object.keys(pr.papeis||{}).map(function(k){ return pr.papeis[k]+' '+(PAPEL[k]||k); }).join(' · ')+'</span>':'<span class="small muted">último acesso</span>')+' · <span class="small muted">'+grp(e.estudantes)+' estudantes activos</span></div>'+
+      '<div class="card card-b" style="background:var(--bg)"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px"><div class="eyebrow">Assinatura</div><button class="btn sm pri" id="e-atr">+ Atribuir assinatura</button></div>'+
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px"><span class="pill '+s[1]+'">'+s[0]+'</span><span class="small">'+(x.situacao.ate?'até '+data(x.situacao.ate)+(x.situacao.dias!=null?' ('+(x.situacao.dias>=0?'faltam '+x.situacao.dias:'há '+(-x.situacao.dias))+' dias)':''):'sem data')+'</span>'+(x.teste_ate?'<span class="small muted">· teste até '+data(x.teste_ate)+'</span>':'')+'</div>'+
         '<div class="frow"><label class="field">Plano<select class="sel" id="e-p">'+['Essencial','Pro','Rede'].map(function(p){ return '<option'+(p===x.plano?' selected':'')+'>'+p+'</option>'; }).join('')+'</select></label>'+
         '<label class="field">Estado<select class="sel" id="e-s">'+[['teste','Teste'],['activa','Activa'],['suspensa','Suspensa (bloqueia o acesso)']].map(function(o){ return '<option value="'+o[0]+'"'+(o[0]===x.estado?' selected':'')+'>'+o[1]+'</option>'; }).join('')+'</select></label></div>'+
-        '<div class="frow"><label class="field">Válida até<input class="inp" type="date" id="e-v" value="'+(x.valida_ate?String(x.valida_ate).slice(0,10):'')+'"></label><label class="field">Ou somar meses<select class="sel" id="e-m"><option value="">—</option><option value="1">+1 mês</option><option value="3">+3 meses</option><option value="12">+12 meses</option></select></label></div>'+
-        '<div id="e-e"></div><button class="btn pri" id="e-ok" style="margin-top:10px">Guardar assinatura</button></div>'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div class="eyebrow">Extracto da carteira · saldo '+mt(e.saldo)+'</div><button class="btn sm pri" id="e-tr">Registar transferência</button></div>'+
-      '<div>'+(d.movimentos.length? d.movimentos.map(function(m){ return '<div class="mov"><div class="tx"><b>'+(m.tipo==='entrada'?'Propina · '+esc(MET[m.metodo]||m.metodo):'Transferência para a escola')+'</b><small>'+data(m.data)+' · '+esc(m.texto||'')+(m.feita_por?' · '+esc(m.feita_por):'')+'</small></div><div class="vl" style="color:'+(m.tipo==='entrada'?'var(--ok)':'var(--bad)')+'">'+(m.tipo==='entrada'?'+':'−')+mt(m.valor)+'</div>'+(m.tipo==='transferencia'?'<button class="btn sm danger" data-del="'+esc(m.id)+'" title="Apagar registo">✕</button>':'')+'</div>'; }).join('') : '<p class="small muted">Sem movimentos.</p>')+'</div>'+
-      '<div class="eyebrow">Pagamentos da assinatura</div><div>'+(d.assinaturas.length? d.assinaturas.map(function(a){ return '<div class="mov"><div class="tx"><b>'+esc(a.plano)+' · '+a.meses+(a.meses===1?' mês':' meses')+'</b><small>'+data(a.data)+' · '+esc(MET[a.metodo]||a.metodo)+' · '+esc(a.estado)+(a.valida_ate?' · até '+data(a.valida_ate):'')+'</small></div><div class="vl">'+mt(a.valor)+'</div></div>'; }).join('') : '<p class="small muted">Ainda sem pagamentos.</p>')+'</div>';
+        '<div class="frow"><label class="field">Válida até<input class="inp" type="date" id="e-v" value="'+(x.valida_ate?String(x.valida_ate).slice(0,10):'')+'"></label><label class="field">Prolongar o teste<select class="sel" id="e-t"><option value="">—</option><option value="7">+7 dias de teste</option><option value="14">+14 dias de teste</option><option value="30">+30 dias de teste</option></select></label></div>'+
+        '<label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600;margin-top:8px"><input type="checkbox" id="e-sms"'+(e.telefone?'':' disabled')+'> Avisar a escola por SMS se suspender ou reactivar</label>'+
+        '<div id="e-e"></div><button class="btn" id="e-ok" style="margin-top:10px">Guardar alterações</button></div>'+
+      '<div class="eyebrow">Pagamentos da assinatura</div><div>'+(d.assinaturas.length? d.assinaturas.map(function(a,i){ var st=EST_SUB[a.estado]||[a.estado,'muted']; return '<div class="mov"><div class="tx"><b>'+esc(a.plano)+' · '+a.meses+(a.meses===1?' mês':' meses')+'</b><small>'+data(a.data)+' · '+esc(MET[a.metodo]||a.metodo)+(a.valida_ate?' · até '+data(a.valida_ate):'')+'</small></div><span class="pill '+st[1]+'">'+st[0]+'</span><div class="vl">'+mt(a.valor)+'</div>'+
+          (['pendente','revisao'].indexOf(a.estado)>=0?'<button class="btn sm pri" data-eapr="'+i+'">Aprovar</button>':'')+(a.estado!=='anulada'?'<button class="btn sm danger" data-eanu="'+i+'" title="Anular">✕</button>':'')+'</div>'; }).join('') : '<p class="small muted">Ainda sem pagamentos.</p>')+'</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div class="eyebrow">Extracto da carteira · saldo '+mt(e.saldo)+'</div><button class="btn sm" id="e-tr">Registar transferência</button></div>'+
+      '<div>'+(d.movimentos.length? d.movimentos.map(function(m){ return '<div class="mov"><div class="tx"><b>'+(m.tipo==='entrada'?'Propina · '+esc(MET[m.metodo]||m.metodo):'Transferência para a escola')+'</b><small>'+data(m.data)+' · '+esc(m.texto||'')+(m.feita_por?' · '+esc(m.feita_por):'')+'</small></div><div class="vl" style="color:'+(m.tipo==='entrada'?'var(--ok)':'var(--bad)')+'">'+(m.tipo==='entrada'?'+':'−')+mt(m.valor)+'</div>'+(m.tipo==='transferencia'?'<button class="btn sm danger" data-del="'+esc(m.id)+'" title="Apagar registo">✕</button>':'')+'</div>'; }).join('') : '<p class="small muted">Sem movimentos.</p>')+'</div>';
     $('#e-ok').onclick=function(){
       var b=this; b.disabled=true;
-      var corpo={id:x.id, plano:$('#e-p').value, estado:$('#e-s').value}; var mm=$('#e-m').value, v=$('#e-v').value;
-      if(mm) corpo.mais_meses=+mm; else if(v) corpo.valida_ate=v;
-      api('/pl/escola-guardar',corpo).then(function(r){ b.disabled=false; if(!r.ok){ $('#e-e').innerHTML=erroCaixa(r.erro); return; } toast('Assinatura actualizada'); fechar(); carregar(); });
+      var corpo={id:x.id, plano:$('#e-p').value, estado:$('#e-s').value, sms:$('#e-sms').checked}; var v=$('#e-v').value, t=$('#e-t').value;
+      if(v && v!==(x.valida_ate?String(x.valida_ate).slice(0,10):'')) corpo.valida_ate=v;
+      if(t) corpo.mais_dias_teste=+t;
+      if(corpo.estado==='suspensa' && x.estado!=='suspensa' && !confirm('Suspender '+e.nome+'? Ninguém da escola consegue entrar até reactivar.')){ b.disabled=false; return; }
+      api('/pl/escola-guardar',corpo).then(function(r){ b.disabled=false; if(!r.ok){ $('#e-e').innerHTML=erroCaixa(r.erro); return; } toast('Escola actualizada'); fechar(); recarregarTudo(); });
     };
+    $('#e-atr').onclick=function(){ atribuir(e); };
     $('#e-tr').onclick=function(){ transferir(e, function(){ carregar(); }); };
+    $$('[data-eapr]').forEach(function(b){ b.onclick=function(){ var a=d.assinaturas[+b.getAttribute('data-eapr')]; a.escola_nome=e.nome; aprovar(a); }; });
+    $$('[data-eanu]').forEach(function(b){ b.onclick=function(){ anular(d.assinaturas[+b.getAttribute('data-eanu')]); }; });
     $$('[data-del]').forEach(function(b){ b.onclick=function(){ if(!confirm('Apagar este registo de transferência? O saldo volta a subir.')) return; b.disabled=true; api('/pl/transferencia-apagar',{id:b.getAttribute('data-del')}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast('Registo apagado'); fechar(); carregar(); }); }; });
   });
 }
