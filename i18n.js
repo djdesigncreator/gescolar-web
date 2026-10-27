@@ -4,6 +4,16 @@
    A língua fica guardada neste dispositivo (localStorage gs_lingua).
    Em português não carrega nada. Nas outras línguas carrega i18n-xx.js
    e traduz o ecrã à medida que é desenhado. */
+/* Endereços limpos: tira o «.html» da barra de endereço (o GitHub Pages abre /entrar como entrar.html). */
+(function(){
+  try{
+    var l = location;
+    if((l.protocol === 'https:' || l.protocol === 'http:') && /\.html$/i.test(l.pathname) && history.replaceState){
+      var p = l.pathname.replace(/index\.html$/i, '').replace(/\.html$/i, '');
+      history.replaceState(history.state, '', p + l.search + l.hash);
+    }
+  }catch(e){}
+})();
 (function(){
   var LINGUAS = { pt:'Português', en:'English', es:'Español', fr:'Français' };
   var LOCAIS  = { pt:'pt-PT', en:'en-GB', es:'es-ES', fr:'fr-FR' };
