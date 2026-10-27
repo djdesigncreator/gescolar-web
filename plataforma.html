@@ -91,8 +91,8 @@ function desenhar(){
     (S.saques&&S.saques.length? '<section class="card" style="margin-bottom:16px;border-left:4px solid var(--warn)"><div class="card-b"><b style="font-size:16px">Saques e levantamentos por resolver ('+S.saques.length+')</b>'+
       '<div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Data</th><th>Escola</th><th>Canal</th><th class="r">Valor</th><th>Para</th><th>Estado</th><th></th></tr></thead><tbody>'+
       S.saques.map(function(q,i){ return '<tr><td class="small">'+data(q.data)+'</td><td><b>'+esc(q.escola_nome)+'</b><div class="small muted">'+esc(q.por)+'</div></td><td>'+esc(q.canal_nome||q.canal)+'</td><td class="r num"><b>'+mt(q.valor)+'</b></td>'+
-        '<td class="small" style="max-width:260px;white-space:normal">'+esc(q.numero||q.notas.replace(/^Enviar para: /,''))+'</td><td><span class="pill warn">'+(q.estado==='pedido'?'Saque pedido':'Levantamento sem confirmação')+'</span></td>'+
-        '<td class="r" style="white-space:nowrap"><button class="btn sm pri" data-sq="'+i+'" data-e="concluida">Pago</button> <button class="btn sm" data-sq="'+i+'" data-e="falhada">Falhou</button></td></tr>'; }).join('')+
+        '<td class="small" style="max-width:260px;white-space:normal">'+esc(q.numero||q.notas.replace(/^Enviar para: /,''))+'</td><td><span class="pill warn">'+(q.estado==='pedido'?'Saque pedido':'Levantamento sem confirmação')+'</span>'+(q.resposta?'<div class="small muted mono" style="max-width:220px;white-space:normal;word-break:break-all;margin-top:4px">'+esc(q.resposta)+'</div>':'')+'</td>'+
+        '<td class="r" style="white-space:nowrap">'+((q.canal==='mpesa'||q.canal==='emola')&&q.numero?'<button class="btn sm pri" data-env="'+i+'">Enviar agora</button> ':'')+'<button class="btn sm" data-sq="'+i+'" data-e="concluida">Pago</button> <button class="btn sm" data-sq="'+i+'" data-e="falhada">Falhou</button></td></tr>'; }).join('')+
       '</tbody></table></div><p class="small muted" style="margin:8px 0 0">Saque de cartão: pague à escola pelo destino indicado e carregue em Pago com a referência. Levantamento sem confirmação: veja na MozPayment se o dinheiro saiu.</p></div></section>' : '')+
     '<div class="filtro"><input class="inp" id="f" placeholder="Procurar escola, cidade, província…" value="'+esc(S.filtro)+'" style="flex:1;min-width:220px">'+
       '<select class="sel" id="o"><option value="saldo"'+(S.ordem==='saldo'?' selected':'')+'>Maior saldo a transferir</option><option value="validade"'+(S.ordem==='validade'?' selected':'')+'>Validade mais próxima</option><option value="estudantes"'+(S.ordem==='estudantes'?' selected':'')+'>Mais estudantes</option><option value="nome"'+(S.ordem==='nome'?' selected':'')+'>Nome</option></select>'+
@@ -110,23 +110,37 @@ function desenhar(){
   $$('[data-sq]').forEach(function(b){ b.onclick=function(){ var q=S.saques[+b.getAttribute('data-sq')], e=b.getAttribute('data-e'), ref='';
     if(e==='concluida'){ ref=window.prompt('Referência do pagamento à escola (opcional):',''); if(ref===null) return; } else if(!confirm('Marcar como falhado? O valor volta ao saldo da escola.')) return;
     b.disabled=true; api('/pl/saque-estado',{id:q.id, estado:e, referencia:ref}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; return; } toast(e==='concluida'?'Marcado como pago · SMS à escola':'Marcado como falhado'); carregar(); }); }; });
+  $$('[data-env]').forEach(function(b){ b.onclick=function(){ var q=S.saques[+b.getAttribute('data-env')];
+    if(!confirm('Enviar '+mt(q.valor)+' por '+(q.canal_nome||q.canal)+' para o '+q.numero+' pela MozPayment?\nConfirme antes na MozPayment que este valor ainda não saiu, para não pagar duas vezes.')) return;
+    b.disabled=true; b.textContent='A enviar…';
+    api('/pl/saque-enviar',{id:q.id}).then(function(r){ if(!r.ok){ toast(r.erro); b.disabled=false; b.textContent='Enviar agora'; return; } toast(r.estado==='concluida'?'Enviado · ref. '+(r.referencia||''):'Aceite: fica pendente até a MozPayment confirmar'); carregar(); }); }; });
   $$('[data-ver]').forEach(function(b){ b.onclick=function(){ verEscola(L[+b.getAttribute('data-ver')]); }; });
 }
 function transferir(e, depois){
   var hoje=new Date().toISOString().slice(0,10);
   modal('<div class="modal-h"><h3>Registar transferência</h3><button class="icon-btn" data-fechar>✕</button></div><div class="modal-b">'+
     '<p style="margin:0"><b>'+esc(e.nome)+'</b><br><span class="small muted">Saldo a transferir: '+mt(e.saldo)+'</span></p>'+
-    '<p class="small muted" style="margin:0">Registe aqui depois de enviar o dinheiro à escola (M-Pesa, e-Mola ou banco). O Gescolar não move dinheiro sozinho: só guarda o registo.</p>'+
+    '<p class="small muted" style="margin:0" id="t-info"></p>'+
     '<div class="frow"><label class="field">Valor (MT)<input class="inp mono" id="t-v" inputmode="decimal" value="'+Math.max(0,Math.floor(Number(e.saldo||0)*100+1e-6)/100)+'"></label><label class="field">Data<input class="inp" type="date" id="t-d" value="'+hoje+'" max="'+hoje+'"></label></div>'+
     '<div class="frow"><label class="field">Como<select class="sel" id="t-m"><option>M-Pesa</option><option>e-Mola</option><option>Transferência bancária</option><option>Numerário</option></select></label><label class="field">Referência<input class="inp" id="t-r" maxlength="80" placeholder="ID da transacção"></label></div>'+
+    '<div id="t-env" class="stack" style="gap:10px"><label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:700"><input type="checkbox" id="t-x" checked> Enviar agora pela MozPayment (payout)</label>'+
+      '<div class="frow" id="t-dest"><label class="field">Número que vai receber<input class="inp mono" id="t-num" inputmode="tel" maxlength="16" value="'+esc(e.telefone||'')+'" placeholder="84 123 4567"></label><label class="field">Nome do titular<input class="inp" id="t-tit" maxlength="80" value="'+esc(e.nome||'')+'"></label></div></div>'+
     '<label class="field">Notas (opcional)<input class="inp" id="t-n" maxlength="300"></label>'+
     '<label class="small" style="display:flex;gap:8px;align-items:center;color:var(--ink);font-weight:600"><input type="checkbox" id="t-s"'+(e.telefone?' checked':' disabled')+'> Avisar a escola por SMS'+(e.telefone?' ('+esc(e.telefone)+')':' (sem telefone)')+'</label>'+
     '<div id="t-e"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="t-ok">Registar</button></div>');
+  function modo(){ var m=$('#t-m').value, mov=/M-Pesa|e-Mola/.test(m), env=mov && $('#t-x').checked;
+    $('#t-env').style.display=mov?'':'none'; $('#t-dest').style.display=env?'':'none';
+    $('#t-r').closest('.field').style.display=env?'none':'';
+    $('#t-info').textContent=env?'O dinheiro sai agora da carteira MozPayment para o número indicado. Só fica concluído quando a MozPayment confirmar.':'Registe aqui depois de enviar o dinheiro à escola. Este registo não move dinheiro.';
+    $('#t-ok').textContent=env?'Enviar agora':'Registar'; }
+  $('#t-m').onchange=modo; $('#t-x').onchange=modo; modo();
   $('#t-ok').onclick=function(){
-    var b=this; b.disabled=true; b.textContent='A registar…';
-    api('/pl/transferencia',{escola:e.id, valor:$('#t-v').value, data:$('#t-d').value, metodo:$('#t-m').value, referencia:$('#t-r').value, notas:$('#t-n').value, sms:$('#t-s').checked}).then(function(r){
-      if(!r.ok){ b.disabled=false; b.textContent='Registar'; $('#t-e').innerHTML=erroCaixa(r.erro); return; }
-      fechar(); toast('Transferência registada'); if(depois) depois(); else carregar();
+    var b=this, env=/M-Pesa|e-Mola/.test($('#t-m').value) && $('#t-x').checked, rot=b.textContent;
+    if(env && !confirm('Enviar '+$('#t-v').value+' MT por '+$('#t-m').value+' para o '+$('#t-num').value+'?')) return;
+    b.disabled=true; b.textContent=env?'A enviar…':'A registar…';
+    api('/pl/transferencia',{escola:e.id, valor:$('#t-v').value, data:$('#t-d').value, metodo:$('#t-m').value, referencia:$('#t-r').value, notas:$('#t-n').value, sms:$('#t-s').checked, enviar:env, numero:env?$('#t-num').value:'', titular:env?$('#t-tit').value:''}).then(function(r){
+      if(!r.ok){ b.disabled=false; b.textContent=rot; $('#t-e').innerHTML=erroCaixa(r.erro); return; }
+      fechar(); toast(env?(r.mensagem||'Enviado'):'Transferência registada'); if(depois) depois(); else carregar();
     });
   };
 }
