@@ -163,7 +163,7 @@ try{ var h=(location.hash||'').slice(1); if(h) S.pag=h; }catch(e){}
 var NAV = [['Arranque'],['painel','Painel','home'],['turmas','Turmas e salas','layers'],['disciplinas','Disciplinas','book'],['professores','Professores','board'],['estudantes','Estudantes','users'],['inscricoes','Inscrições online','link'],
   ['Financeiro'],['propinas','Propinas e multas','wallet'],['facturas','Facturas e recibos','receipt'],['saldo','Saldo e levantamentos','bank',0,1],
   ['Escola'],['horarios','Horários','cal'],['presencas','Presenças e faltas','check'],['pautas','Pautas e notas','grade'],['planos','Planos de aula','plano'],['online','Aulas online','video'],['comunicados','Comunicados','mega'],['chats','Chat das turmas','chat'],
-  ['Conta'],['equipa','Equipa da escola','users',0,1],['assinatura','Assinatura do Gescolar','receipt',0,1]];
+  ['Conta'],['equipa','Equipa da escola','users',0,1],['assinatura','Assinatura do Gescolar','receipt',0,1],['sms','SMS e emails','mega',0,1]];
 function temCON(){ return ((S.escola&&S.escola.niveis)||[]).indexOf('CON')>=0; }
 function soCON(){ var n=(S.escola&&S.escola.niveis)||[]; return n.length>0 && n.every(function(x){ return x==='CON'; }); }
 var SO_ESCOLA={turmas:1,disciplinas:1,estudantes:1,horarios:1,presencas:1,pautas:1,chats:1,planos:1,online:1};
@@ -172,6 +172,9 @@ function navLista(){
   NAV.forEach(function(n){
     if(n.length>1 && soCON() && SO_ESCOLA[n[0]]) return;
     if(n[0]==='professores' && soCON()) n=['professores','Instrutores','board'];
+    var nvs=(S.escola&&S.escola.niveis)||[];
+    if(n[0]==='turmas') n=['turmas', nvs.some(function(k){ return k==='TEC'||k==='SUP'; })?'Cursos e turmas':'Classes e turmas','layers'];
+    if(n[0]==='disciplinas' && nvs.length===1 && (nvs[0]==='TEC'||nvs[0]==='SUP')) n=['disciplinas', nvs[0]==='TEC'?'Módulos':'Cadeiras','book'];
     L.push(n);
     if(n[0]==='estudantes' || (soCON() && n[0]==='professores')){}
   });
@@ -191,7 +194,7 @@ function casca(){
     '<a class="exit" href="#" id="sair">'+ic('out','width="14" height="14"')+'Sair</a></aside>'+
     '<div class="main"><header class="top"><button class="menu-btn" id="menu" aria-label="Menu">'+ic('menu','width="18" height="18"')+'</button>'+
     '<div class="top-title">'+ic('layers','width="16" height="16" style="color:var(--blue)"')+'Área da Direcção</div>'+
-    seloSituacao(e)+(S.plataforma?'<a class="btn sm" href="plataforma.html" style="margin-left:8px;text-decoration:none">Plataforma</a>':'')+
+    seloSituacao(e)+(e.sms!=null && S.papel==='Direccao'?'<button type="button" class="pill '+(e.sms<=0?'bad':e.sms<=5?'warn':'info')+'" data-go3="sms" title="SMS da escola" style="margin-left:8px;border:0;cursor:pointer;font:inherit;font-weight:700">'+(e.sms<=0?'Sem SMS':grp(e.sms)+' SMS')+'</button>':'')+(S.plataforma?'<a class="btn sm" href="plataforma.html" style="margin-left:8px;text-decoration:none">Plataforma</a>':'')+
     '</header><main class="page" id="page"></main></div></div>';
   $('#sair').onclick=function(ev){ ev.preventDefault(); sair(); };
   $('#menu').onclick=function(ev){ ev.stopPropagation(); $('#side').classList.toggle('open'); };
@@ -211,7 +214,7 @@ document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ if(window
 
 /* ---------- páginas ---------- */
 function pagina(){
-  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos, teoricas:pTeoricas, codigo:pCodigo, aulas:pAulas, viaturas:pViaturas, exames:pExames, inscricoes:pInscricoes, saldo:pSaldo, chats:pChats, planos:pPlanosD, online:pOnlineD }[S.pag] || pPainel;
+  var f = { painel:pPainel, turmas:pTurmas, disciplinas:pDisciplinas, professores:pProfessores, estudantes:pEstudantes, propinas:pPropinas, facturas:pFacturas, horarios:pHorarios, presencas:pPresencas, pautas:pPautas, comunicados:pComunicados, assinatura:pAssinatura, sms:pSMS, equipa:pEquipa, cursos:pCursos, instruendos:pInstruendos, teoricas:pTeoricas, codigo:pCodigo, aulas:pAulas, viaturas:pViaturas, exames:pExames, inscricoes:pInscricoes, saldo:pSaldo, chats:pChats, planos:pPlanosD, online:pOnlineD }[S.pag] || pPainel;
   f();
 }
 
@@ -329,76 +332,195 @@ function indicadores(fresco){
   });
 }
 
-// TURMAS
-function pTurmas(){
-  aCarregar();
-  Promise.all([api('/turmas'), api('/professores'), api('/disciplinas')]).then(function(r){
-    var d=r[0]; if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
-    S.turmas=d.turmas; S.professores=r[1].ok?r[1].professores:[]; S.disciplinas=r[2].ok?r[2].disciplinas:(S.disciplinas||[]);
-    var L=d.turmas, PN={}; S.professores.forEach(function(p){ PN[p.id]=p.nome; });
-    $('#page').innerHTML = ph('Arranque','Turmas e salas', L.length? L.length+' turmas activas.' : 'Ainda não há turmas. Crie a primeira.', '<button class="btn pri" id="nova">'+ic('plus')+'Nova turma</button>')+
-      (L.length? '<section class="card"><div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Nível</th><th>Turno</th><th>Sala</th><th class="r">Estudantes</th><th class="r">Propina</th><th></th></tr></thead><tbody>'+
-        L.map(function(t){ return '<tr><td><b>'+esc(t.nome)+'</b><div class="small muted mono">'+esc(t.codigo)+'</div>'+'<div class="small muted">'+(t.disciplinas||[]).length+' disciplina(s)'+(t.titular&&PN[t.titular]?' · Titular: '+esc(PN[t.titular]):'')+'</div></td><td><span class="tag">'+esc(NIVEL[t.nivel]||t.nivel)+'</span></td><td>'+esc(t.turno)+'</td><td>'+esc(t.sala||'—')+'</td><td class="r num">'+(t.estudantes||0)+' / '+(t.capacidade||0)+'</td><td class="r num">'+(t.propina?mt(t.propina):'—')+'</td>'+
-          '<td class="r"><button class="btn sm" data-ed="'+t.id+'">Editar</button> <button class="btn sm danger" data-del="'+t.id+'">'+ic('trash')+'</button></td></tr>'; }).join('')+'</tbody></table></div></section>'
-        : vazio('layers','Crie as turmas da escola','Por exemplo "10ª Classe A" ou "Sala dos 4 anos". Pode criar quantas precisar.'));
-    $('#nova').onclick=function(){ formTurma(null); };
-    $$('[data-ed]').forEach(function(b){ b.onclick=function(){ formTurma(L.filter(function(t){return t.id===b.getAttribute('data-ed');})[0]); }; });
-    $$('[data-del]').forEach(function(b){ b.onclick=function(){ confirmar('Apagar esta turma?','Só é possível apagar turmas sem estudantes.', function(btn){ api('/turma-apagar',{id:b.getAttribute('data-del')}).then(function(x){ if(x.ok){ fechar(); toast('Turma apagada'); pTurmas(); } else { aGravar(btn,false); $('#cf-err').innerHTML=erroCaixa(x.erro); } }); }); }; });
-  });
-}
 function vazio(i,t,s){ return '<section class="card card-b" style="text-align:center;padding:40px 20px"><div style="width:56px;height:56px;border-radius:14px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;margin:0 auto 12px">'+ic(i,'width="26" height="26"')+'</div><h3 style="font-size:18px">'+t+'</h3><p class="muted" style="margin:6px auto 0;max-width:46ch">'+s+'</p></section>'; }
 function confirmar(tit,sub,fn){
   modal('<div class="modal-h"><h3>'+tit+'</h3></div><div class="modal-b"><p style="margin:0" class="muted">'+sub+'</p><div id="cf-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri danger" id="cf-ok" style="background:var(--bad);border-color:var(--bad);color:#fff">Apagar</button></div>');
   $('#cf-ok').onclick=function(){ aGravar(this,true); fn(this); };
 }
+// TURMAS (v5.26): ensino geral → classes → turmas · técnico e superior → cursos → ano → turmas
+var EST=null;   // estrutura vinda do servidor (classes, áreas, graus)
+var GERAL={ESC:1,PRI:1,SEC:1}, CURSO_NIV={TEC:1,SUP:1};
+function cicloDe(nv,cl){ var n=parseInt(cl,10); if(nv==='PRI') return n<=3?'1º ciclo · 1ª a 3ª classe':'2º ciclo · 4ª a 6ª classe'; if(nv==='SEC') return n<=9?'ESG1 · 1º ciclo · 7ª a 9ª classe':'ESG2 · 2º ciclo · 10ª a 12ª classe'; return ''; }
+function nomeClasse(nv,cl){ return nv==='ESC'?(cl==='Berçário'?'Berçário':'Sala dos '+cl):cl+' Classe'; }
+function letraLivre(nomes,base){ var L='ABCDEFGHIJKLMNOPQRSTUVWXYZ'; for(var i=0;i<L.length;i++){ if(nomes.indexOf((base+' '+L[i]).toLowerCase())<0) return L[i]; } return ''; }
+function linhaTurma(t,PN){ return '<tr><td><b>'+esc(t.nome)+'</b>'+(t.area?'<div class="small muted">'+esc(t.area)+'</div>':'')+'<div class="small muted">'+(t.disciplinas||[]).length+' '+(t.nivel==='TEC'?'módulo(s)':t.nivel==='SUP'?'cadeira(s)':'disciplina(s)')+(t.titular&&PN[t.titular]?' · Titular: '+esc(PN[t.titular]):'')+'</div></td><td>'+esc(t.turno)+'</td><td>'+esc(t.sala||'—')+'</td><td class="r num">'+(t.estudantes||0)+' / '+(t.capacidade||0)+'</td><td class="r num">'+(t.propina?mt(t.propina):'—')+'</td>'+
+  '<td class="r" style="white-space:nowrap"><button class="btn sm" data-ed="'+t.id+'">Editar</button> <button class="btn sm danger" data-del="'+t.id+'">'+ic('trash')+'</button></td></tr>'; }
+function tabelaTurmas(L,PN){ return '<div class="tbl-wrap"><table><thead><tr><th>Turma</th><th>Turno</th><th>Sala</th><th class="r">Estudantes</th><th class="r">Propina</th><th></th></tr></thead><tbody>'+L.map(function(t){ return linhaTurma(t,PN); }).join('')+'</tbody></table></div>'; }
+function pTurmas(){
+  aCarregar();
+  var niveis=(S.escola&&S.escola.niveis)||[], comCurso=niveis.some(function(k){ return CURSO_NIV[k]; });
+  Promise.all([api('/turmas'), api('/professores'), api('/disciplinas'), comCurso?api('/ensino-cursos'):Promise.resolve({ok:true,cursos:[]})]).then(function(r){
+    var d=r[0]; if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    EST=d.estrutura||EST; S.turmas=d.turmas; S.professores=r[1].ok?r[1].professores:[]; S.disciplinas=r[2].ok?r[2].disciplinas:(S.disciplinas||[]); S.cursos=r[3].ok?r[3].cursos:[];
+    if(!r[3].ok) toast(r[3].erro);
+    var PN={}; S.professores.forEach(function(p){ PN[p.id]=p.nome; });
+    var html=ph('Arranque',comCurso?'Cursos e turmas':'Classes e turmas', comCurso?'Crie os cursos da instituição. Dentro de cada curso, as turmas de cada ano.':'Cada classe tem as suas turmas. Crie as turmas dentro da classe certa.',
+      (comCurso?'<button class="btn" id="novo-curso">'+ic('plus')+'Novo curso</button>':'')+'<button class="btn pri" id="nova">'+ic('plus')+'Nova turma</button>');
+    niveis.forEach(function(nv){
+      var T=S.turmas.filter(function(t){ return t.nivel===nv; });
+      if(GERAL[nv] && EST){
+        var ciclo='';
+        html+='<section class="card" style="margin-bottom:16px"><div class="card-h"><div><h3>'+esc(NIVEL[nv])+'</h3><div class="sub">'+T.length+' turma(s)</div></div></div><div class="card-b" style="display:flex;flex-direction:column;gap:14px">';
+        EST.classes[nv].forEach(function(cl){
+          var c2=cicloDe(nv,cl); if(c2 && c2!==ciclo){ ciclo=c2; html+='<div class="eyebrow" style="margin-top:4px">'+esc(c2)+'</div>'; }
+          var L=T.filter(function(t){ return t.classe===cl; });
+          html+='<div style="border:1px solid var(--line);border-radius:12px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:var(--bg)"><b>'+esc(nomeClasse(nv,cl))+'</b><span style="display:flex;gap:8px;align-items:center"><span class="small muted">'+L.length+' turma(s)</span><button class="btn sm" data-nt="'+nv+'|'+esc(cl)+'">'+ic('plus')+'Turma</button></span></div>'+
+            (L.length?tabelaTurmas(L,PN):'')+'</div>';
+        });
+        var soltas=T.filter(function(t){ return EST.classes[nv].indexOf(t.classe)<0; });
+        if(soltas.length) html+='<div style="border:1px solid var(--warn);border-radius:12px;overflow:hidden"><div style="padding:10px 14px;background:var(--bg)"><b style="color:var(--warn)">Sem classe definida</b><div class="small muted">Edite cada turma e escolha a classe.</div></div>'+tabelaTurmas(soltas,PN)+'</div>';
+        html+='</div></section>';
+      } else if(CURSO_NIV[nv]){
+        var C=S.cursos.filter(function(c){ return c.nivel===nv; });
+        if(!C.length) html+=vazio('layers','Crie o primeiro curso', nv==='TEC'?'Por exemplo «Contabilidade e Gestão» (nível Médio) ou «Electricidade Industrial» (CV3). Depois crie as turmas de cada ano.':'Por exemplo «Licenciatura em Direito» (4 anos). Depois crie as turmas de cada ano.');
+        C.forEach(function(c){
+          var TC=T.filter(function(t){ return t.curso===c.id; });
+          html+='<section class="card" style="margin-bottom:16px"><div class="card-h"><div><h3>'+esc(c.nome)+' <span class="tag mono">'+esc(c.sigla)+'</span></h3><div class="sub">'+esc(c.grau)+' · '+c.duracao+' ano(s)'+(c.area?' · '+esc(c.area):'')+(c.propina?' · '+mt(c.propina)+'/mês':'')+'</div></div>'+
+            '<span style="display:flex;gap:6px"><button class="btn sm" data-edc="'+c.id+'">Editar curso</button><button class="btn sm danger" data-delc="'+c.id+'">'+ic('trash')+'</button></span></div><div class="card-b" style="display:flex;flex-direction:column;gap:12px">';
+          for(var a=1;a<=c.duracao;a++){
+            var L=TC.filter(function(t){ return t.ano_curso===a; });
+            html+='<div style="border:1px solid var(--line);border-radius:12px;overflow:hidden"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;background:var(--bg)"><b>'+a+'º ano</b><span style="display:flex;gap:8px;align-items:center"><span class="small muted">'+L.length+' turma(s)</span><button class="btn sm" data-ntc="'+c.id+'|'+a+'">'+ic('plus')+'Turma</button></span></div>'+(L.length?tabelaTurmas(L,PN):'')+'</div>';
+          }
+          html+='</div></section>';
+        });
+        var semCurso=T.filter(function(t){ return !t.curso || !C.some(function(c){ return c.id===t.curso; }); });
+        if(semCurso.length) html+='<section class="card" style="margin-bottom:16px;border-color:var(--warn)"><div class="card-h"><div><h3 style="color:var(--warn)">Turmas sem curso</h3><div class="sub">Edite cada turma e escolha o curso e o ano.</div></div></div>'+tabelaTurmas(semCurso,PN)+'</section>';
+      } else if(nv!=='CON'){
+        if(T.length) html+='<section class="card" style="margin-bottom:16px"><div class="card-h"><h3>'+esc(NIVEL[nv])+'</h3></div>'+tabelaTurmas(T,PN)+'</section>';
+      }
+    });
+    $('#page').innerHTML=html;
+    $('#nova').onclick=function(){ formTurma(null); };
+    var nc=$('#novo-curso'); if(nc) nc.onclick=function(){ formCursoEnsino(null); };
+    $$('[data-nt]').forEach(function(b){ b.onclick=function(){ var x=b.getAttribute('data-nt').split('|'); formTurma(null,{nivel:x[0],classe:x[1]}); }; });
+    $$('[data-ntc]').forEach(function(b){ b.onclick=function(){ var x=b.getAttribute('data-ntc').split('|'), c=S.cursos.filter(function(k){ return k.id===x[0]; })[0]; formTurma(null,{nivel:c.nivel,curso:x[0],ano:+x[1]}); }; });
+    $$('[data-edc]').forEach(function(b){ b.onclick=function(){ formCursoEnsino(S.cursos.filter(function(c){ return c.id===b.getAttribute('data-edc'); })[0]); }; });
+    $$('[data-delc]').forEach(function(b){ b.onclick=function(){ confirmar('Apagar este curso?','Só é possível apagar cursos sem turmas.', function(btn){ api('/ensino-curso-apagar',{id:b.getAttribute('data-delc')}).then(function(x){ if(x.ok){ fechar(); toast('Curso apagado'); pTurmas(); } else { aGravar(btn,false); $('#cf-err').innerHTML=erroCaixa(x.erro); } }); }); }; });
+    $$('[data-ed]').forEach(function(b){ b.onclick=function(){ formTurma(S.turmas.filter(function(t){return t.id===b.getAttribute('data-ed');})[0]); }; });
+    $$('[data-del]').forEach(function(b){ b.onclick=function(){ confirmar('Apagar esta turma?','Só é possível apagar turmas sem estudantes.', function(btn){ api('/turma-apagar',{id:b.getAttribute('data-del')}).then(function(x){ if(x.ok){ fechar(); toast('Turma apagada'); pTurmas(); } else { aGravar(btn,false); $('#cf-err').innerHTML=erroCaixa(x.erro); } }); }); }; });
+  });
+}
+function formCursoEnsino(c){
+  c=c||{}; var niveis=((S.escola&&S.escola.niveis)||[]).filter(function(k){ return CURSO_NIV[k]; }), nv=c.nivel||niveis[0];
+  modal('<div class="modal-h"><h3>'+(c.id?'Editar curso':'Novo curso')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<div class="frow"><label class="field">Nome do curso<input class="inp" id="c-nome" value="'+esc(c.nome||'')+'" placeholder="'+(nv==='TEC'?'Ex.: Contabilidade e Gestão':'Ex.: Licenciatura em Direito')+'"></label><label class="field">Sigla<input class="inp mono" id="c-sigla" maxlength="10" value="'+esc(c.sigla||'')+'" placeholder="Ex.: CG"></label></div>'+
+    '<div class="frow"><label class="field">Nível do curso<select class="sel" id="c-grau">'+EST.graus[nv].map(function(g){ return '<option value="'+esc(g.g)+'" data-anos="'+g.anos+'"'+(g.g===c.grau?' selected':'')+'>'+esc(g.g)+' · '+esc(g.d)+'</option>'; }).join('')+'</select></label><label class="field">Duração (anos)<input class="inp" id="c-dur" type="number" min="1" max="7" value="'+(c.duracao||EST.graus[nv][nv==='TEC'?1:0].anos)+'"></label></div>'+
+    '<div class="frow"><label class="field">'+(nv==='TEC'?'Sector (ex.: Industrial, Comercial, Agrário)':'Faculdade ou departamento')+'<input class="inp" id="c-area" value="'+esc(c.area||'')+'"></label><label class="field">Propina mensal (MT)<input class="inp mono" id="c-prop" type="number" min="0" step="50" value="'+(c.propina||'')+'"></label></div>'+
+    '<div id="c-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="c-ok">'+ic('save')+'Guardar</button></div>');
+  if(!c.id) $('#c-grau').value=EST.graus[nv][nv==='TEC'?1:0].g;
+  $('#c-grau').onchange=function(){ var o=this.options[this.selectedIndex]; $('#c-dur').value=o.getAttribute('data-anos'); };
+  $('#c-ok').onclick=function(){ var btn=this; aGravar(btn,true);
+    api('/ensino-curso-guardar',{id:c.id, nivel:nv, nome:$('#c-nome').value, sigla:$('#c-sigla').value, grau:$('#c-grau').value, duracao:$('#c-dur').value, area:$('#c-area').value, propina:$('#c-prop').value})
+      .then(function(x){ if(x.ok){ fechar(); toast(c.id?'Curso actualizado':'Curso criado'); pTurmas(); } else { aGravar(btn,false); $('#c-err').innerHTML=erroCaixa(x.erro); } }); };
+}
 function opcoesNivel(sel){ var n=(S.escola&&S.escola.niveis&&S.escola.niveis.length)?S.escola.niveis:Object.keys(NIVEL); return n.map(function(k){ return '<option value="'+k+'"'+(k===sel?' selected':'')+'>'+NIVEL[k]+'</option>'; }).join(''); }
 var MONO={PRI:1,ESC:1};
-function formTurma(t){
-  t=t||{};
-  var profs=S.professores||[];
+function discServe(x,nv,cl,curso,ano){ if(x.nivel!==nv) return false; if(CURSO_NIV[nv]) return x.curso===curso && (!x.ano_curso || x.ano_curso===ano); return !(x.classes||[]).length || (x.classes||[]).indexOf(cl)>=0; }
+function formTurma(t,pre){
+  t=t||{}; pre=pre||{};
+  if(!EST){ api('/turmas').then(function(d){ if(d.ok){ EST=d.estrutura; formTurma(t.id?t:null,pre); } }); return; }
+  var profs=S.professores||[], cursos=S.cursos||[], niv=(S.escola&&S.escola.niveis)||[];
+  var nv0=t.nivel||pre.nivel||niv.filter(function(k){ return k!=='CON'; })[0]||niv[0];
   modal('<div class="modal-h"><h3>'+(t.id?'Editar turma':'Nova turma')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
-    '<div class="frow"><label class="field">Nome da turma<input class="inp" id="t-nome" value="'+esc(t.nome||'')+'" placeholder="Ex.: 10ª Classe A"></label><label class="field">Nível<select class="sel" id="t-nivel">'+opcoesNivel(t.nivel)+'</select></label></div>'+
-    '<div class="frow"><label class="field">Classe ou ano<input class="inp" id="t-classe" value="'+esc(t.classe||'')+'" placeholder="Ex.: 10ª · Sala dos 4 anos · 2º Ano"></label><label class="field">Turno<select class="sel" id="t-turno">'+['Manhã','Tarde','Noite','Pós-laboral'].map(function(x){ return '<option'+(x===(t.turno||'Manhã')?' selected':'')+'>'+x+'</option>'; }).join('')+'</select></label></div>'+
+    '<div class="frow"><label class="field">Nível<select class="sel" id="t-nivel">'+opcoesNivel(nv0)+'</select></label><label class="field" id="t-clw">Classe<select class="sel" id="t-classe"></select></label><label class="field" id="t-cuw">Curso<select class="sel" id="t-curso"></select></label></div>'+
+    '<div class="frow"><label class="field" id="t-anw">Ano do curso<select class="sel" id="t-ano"></select></label><label class="field" id="t-arw">Área (ESG2)<select class="sel" id="t-area"><option value="">Geral · sem área</option>'+(EST.areas||[]).map(function(a){ return '<option'+(a===t.area?' selected':'')+'>'+esc(a)+'</option>'; }).join('')+'</select></label></div>'+
+    '<div class="frow"><label class="field">Nome da turma<input class="inp" id="t-nome" value="'+esc(t.nome||'')+'"></label><label class="field">Turno<select class="sel" id="t-turno">'+['Manhã','Tarde','Noite','Pós-laboral'].map(function(x){ return '<option'+(x===(t.turno||'Manhã')?' selected':'')+'>'+x+'</option>'; }).join('')+'</select></label></div>'+
     '<div class="frow"><label class="field">Sala<input class="inp" id="t-sala" value="'+esc(t.sala||'')+'" placeholder="Ex.: Bloco B · 21"></label><label class="field">Capacidade<input class="inp" id="t-cap" type="number" min="1" value="'+(t.capacidade||40)+'"></label></div>'+
     '<div class="frow"><label class="field">Propina mensal (MT)<input class="inp mono" id="t-prop" type="number" min="0" step="50" value="'+(t.propina||'')+'" placeholder="Ex.: 2500"></label>'+
     '<label class="field">Director(a) de turma<select class="sel" id="t-dir"><option value="">— escolher depois —</option>'+profs.map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.director?' selected':'')+'>'+esc(p.nome)+'</option>'; }).join('')+'</select></label></div>'+
-    '<div class="field"><span style="display:flex;justify-content:space-between;align-items:center;gap:8px">Disciplinas desta turma<span><button type="button" class="btn sm ghost" id="t-dall">Todas</button> <button type="button" class="btn sm ghost" id="t-dnone">Nenhuma</button></span></span><div id="t-discs"></div><span class="small muted" style="font-weight:400">Marque só as disciplinas que esta turma tem. Só estas aparecem no horário, nas pautas e no portal.</span></div>'+
+    '<div class="field"><span style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span id="t-dlab">Disciplinas desta turma</span><span><button type="button" class="btn sm ghost" id="t-dall">Todas</button> <button type="button" class="btn sm ghost" id="t-dnone">Nenhuma</button></span></span><div id="t-discs"></div><span class="small muted" style="font-weight:400">Aparecem já marcadas as que pertencem a esta classe ou a este ano do curso. Só estas aparecem no horário, nas pautas e no portal.</span></div>'+
     '<div id="t-titw"><label class="field">Professor(a) titular<select class="sel" id="t-tit"><option value="">— sem titular (cada disciplina tem o seu professor) —</option>'+profs.map(function(p){ return '<option value="'+p.id+'"'+(p.id===t.titular?' selected':'')+'>'+esc(p.nome)+'</option>'; }).join('')+'</select></label>'+
       '<p class="small muted" style="margin:6px 0 0">No primário e na escolinha, um só professor dá todas as disciplinas e faz uma chamada por dia. Uma disciplina marcada no horário com outro professor (ex.: Educação Física) fica com esse professor.</p></div>'+
-
     '<div id="t-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="t-ok">'+ic('save')+'Guardar</button></div>');
-  function verTit(){ $('#t-titw').style.display=MONO[$('#t-nivel').value]?'':'none'; }
-  // disciplinas do nível escolhido; nova turma: todas marcadas; editar: as que a turma já tem
-  var marcadas={}; (t.id? (t.disciplinas||[]) : []).forEach(function(id){ marcadas[id]=1; });
-  function verDiscs(primeira){ var nv=$('#t-nivel').value, L=(S.disciplinas||[]).filter(function(x){ return x.nivel===nv; });
-    if(!primeira) $$('.t-d').forEach(function(c){ marcadas[c.value]=c.checked?1:0; });
-    $('#t-discs').innerHTML = L.length? '<div class="chk">'+L.map(function(x){ var on=t.id? !!marcadas[x.id] : (marcadas[x.id]!==0); return '<label><input type="checkbox" class="t-d" value="'+x.id+'"'+(on?' checked':'')+'><span class="dot" style="background:'+esc(x.cor)+'"></span>'+esc(x.nome)+'</label>'; }).join('')+'</div>'
-      : '<div class="small muted" style="font-weight:500;padding:8px 0">Ainda não há disciplinas de '+esc(NIVEL[nv]||nv)+'. Crie-as em "Disciplinas" (pode carregar o currículo modelo) e depois volte aqui.</div>'; }
-  $('#t-nivel').onchange=function(){ verTit(); verDiscs(); }; verTit(); verDiscs(true);
-  $('#t-dall').onclick=function(){ $$('.t-d').forEach(function(c){ c.checked=true; }); };
-  $('#t-dnone').onclick=function(){ $$('.t-d').forEach(function(c){ c.checked=false; }); };
-  $('#t-ok').onclick=function(){ var btn=this; aGravar(btn,true);
-    api('/turma-guardar',{ id:t.id, nome:$('#t-nome').value, nivel:$('#t-nivel').value, classe:$('#t-classe').value, turno:$('#t-turno').value, sala:$('#t-sala').value, capacidade:$('#t-cap').value, propina:$('#t-prop').value, director:$('#t-dir').value||null, titular: MONO[$('#t-nivel').value]?$('#t-tit').value:'', disciplinas: $$('.t-d').length? $$('.t-d').filter(function(c){ return c.checked; }).map(function(c){ return c.value; }) : (t.id? t.disciplinas : undefined) })
+  var nomeEd=!!t.id, marcadas={}, tocadas=false; (t.id?(t.disciplinas||[]):[]).forEach(function(id){ marcadas[id]=1; });
+  $('#t-nome').addEventListener('input',function(){ nomeEd=true; });
+  $('#t-prop').addEventListener('input',function(){ this.dataset.ed='1'; });
+  function nv(){ return $('#t-nivel').value; }
+  function curso(){ return cursos.filter(function(c){ return c.id===$('#t-curso').value; })[0]; }
+  function montar(primeira){
+    var n=nv(), g=!!GERAL[n], k=!!CURSO_NIV[n];
+    $('#t-clw').style.display=g?'':'none'; $('#t-cuw').style.display=k?'':'none'; $('#t-anw').style.display=k?'':'none';
+    $('#t-titw').style.display=MONO[n]?'':'none';
+    $('#t-dlab').textContent=n==='TEC'?'Módulos desta turma':n==='SUP'?'Cadeiras desta turma':'Disciplinas desta turma';
+    if(g){ var cs=EST.classes[n], cl=primeira?(t.classe||pre.classe||cs[0]):$('#t-classe').value; if(cs.indexOf(cl)<0) cl=cs[0];
+      $('#t-clw').firstChild.textContent=n==='ESC'?'Sala (idade)':'Classe';
+      $('#t-classe').innerHTML=cs.map(function(c){ return '<option value="'+esc(c)+'"'+(c===cl?' selected':'')+'>'+esc(nomeClasse(n,c))+'</option>'; }).join(''); }
+    if(k){ var L=cursos.filter(function(c){ return c.nivel===n; }), cu=primeira?(t.curso||pre.curso||(L[0]&&L[0].id)):$('#t-curso').value;
+      $('#t-curso').innerHTML=L.length?L.map(function(c){ return '<option value="'+c.id+'"'+(c.id===cu?' selected':'')+'>'+esc(c.nome)+' · '+esc(c.grau)+'</option>'; }).join(''):'<option value="">— crie primeiro o curso —</option>'; }
+    montarAno(primeira);
+  }
+  function montarAno(primeira){
+    var c=curso(); if(!CURSO_NIV[nv()]||!c){ $('#t-ano').innerHTML=''; verArea(); return; }
+    var a=primeira?(t.ano_curso||pre.ano||1):+$('#t-ano').value||1; if(a>c.duracao) a=1;
+    var h=''; for(var i=1;i<=c.duracao;i++) h+='<option value="'+i+'"'+(i===a?' selected':'')+'>'+i+'º ano</option>'; $('#t-ano').innerHTML=h; verArea();
+  }
+  function propCurso(){ if(t.id) return; var c=curso(); if(CURSO_NIV[nv()] && c && c.propina && !$('#t-prop').dataset.ed) $('#t-prop').value=c.propina; }
+  function verArea(){ propCurso(); var n=nv(); $('#t-arw').style.display=(n==='SEC' && parseInt($('#t-classe').value,10)>=10)?'':'none'; sugerirNome(); verDiscs(); }
+  function sugerirNome(){ if(nomeEd) return; var n=nv(), base='', outros=(S.turmas||[]).map(function(x){ return String(x.nome).toLowerCase(); });
+    if(GERAL[n]){ var cl=$('#t-classe').value; base=n==='ESC'?nomeClasse(n,cl):cl; }
+    else if(CURSO_NIV[n] && curso()){ base=curso().sigla+' '+$('#t-ano').value+'º'; }
+    if(base){ var l=letraLivre(outros,base); $('#t-nome').value=base+(l?' '+l:''); } }
+  function verDiscs(){
+    if(tocadas) $$('.t-d').forEach(function(c){ marcadas[c.value]=c.checked?1:0; });
+    var n=nv(), cl=$('#t-classe').value, c=curso(), a=+$('#t-ano').value||0;
+    var L=(S.disciplinas||[]).filter(function(x){ return x.nivel===n && (!CURSO_NIV[n] || (c && x.curso===c.id)); });
+    $('#t-discs').innerHTML = L.length? '<div class="chk">'+L.map(function(x){ var serve=discServe(x,n,cl,c&&c.id,a), on=(t.id&&!tocadas&&marcadas[x.id]!==undefined)?!!marcadas[x.id]:(marcadas[x.id]!==undefined&&tocadas?!!marcadas[x.id]:serve);
+        return '<label'+(serve?'':' style="opacity:.6"')+'><input type="checkbox" class="t-d" value="'+x.id+'"'+(on?' checked':'')+'><span class="dot" style="background:'+esc(x.cor)+'"></span>'+esc(x.nome)+'</label>'; }).join('')+'</div>'
+      : '<div class="small muted" style="font-weight:500;padding:8px 0">'+(CURSO_NIV[n]?'Ainda não há '+(n==='TEC'?'módulos':'cadeiras')+' neste curso. Crie-os em «Disciplinas» e depois volte aqui.':'Ainda não há disciplinas de '+esc(NIVEL[n]||n)+'. Crie-as em «Disciplinas» (pode carregar o currículo modelo) e depois volte aqui.')+'</div>';
+    $$('.t-d').forEach(function(ch){ ch.onchange=function(){ tocadas=true; }; });
+  }
+  $('#t-nivel').onchange=function(){ nomeEd=!!t.id&&false; marcadas={}; tocadas=false; montar(false); };
+  $('#t-classe').onchange=function(){ marcadas={}; tocadas=false; verArea(); };
+  $('#t-curso').onchange=function(){ marcadas={}; tocadas=false; montarAno(false); };
+  $('#t-ano').onchange=function(){ marcadas={}; tocadas=false; verArea(); };
+  montar(true);
+  $('#t-dall').onclick=function(){ tocadas=true; $$('.t-d').forEach(function(c){ c.checked=true; }); };
+  $('#t-dnone').onclick=function(){ tocadas=true; $$('.t-d').forEach(function(c){ c.checked=false; }); };
+  $('#t-ok').onclick=function(){ var btn=this, n=nv(); aGravar(btn,true);
+    api('/turma-guardar',{ id:t.id, nome:$('#t-nome').value, nivel:n, classe:GERAL[n]?$('#t-classe').value:'', curso:CURSO_NIV[n]?$('#t-curso').value:'', ano:CURSO_NIV[n]?$('#t-ano').value:'', area:$('#t-arw').style.display===''?$('#t-area').value:'',
+      turno:$('#t-turno').value, sala:$('#t-sala').value, capacidade:$('#t-cap').value, propina:$('#t-prop').value, director:$('#t-dir').value||null, titular: MONO[n]?$('#t-tit').value:'',
+      disciplinas: $$('.t-d').length? $$('.t-d').filter(function(c){ return c.checked; }).map(function(c){ return c.value; }) : (t.id? t.disciplinas : undefined) })
       .then(function(x){ if(x.ok){ fechar(); toast(t.id?'Turma actualizada':'Turma criada'); pTurmas(); } else { aGravar(btn,false); $('#t-err').innerHTML=erroCaixa(x.erro); } }); };
 }
 
-// DISCIPLINAS
+// DISCIPLINAS (v5.26): ensino geral por classe · técnico (módulos) e superior (cadeiras) por curso e ano
+function classesTxt(nv,cl){ if(!cl||!cl.length) return 'Todas'; if(!EST) return cl.join(', '); var all=EST.classes[nv]||[], idx=cl.map(function(c){ return all.indexOf(c); }).filter(function(i){ return i>=0; }).sort(function(a,b){ return a-b; });
+  var contiguo=idx.every(function(v,i){ return i===0||v===idx[i-1]+1; }); return contiguo&&idx.length>1? all[idx[0]]+' a '+all[idx[idx.length-1]] : idx.map(function(i){ return all[i]; }).join(', '); }
+function linhaDisc(x,nv){ return '<tr><td><span class="dot" style="background:'+esc(x.cor)+'"></span><b>'+esc(x.nome)+'</b>'+(nv==='TEC'&&x.tipo?' <span class="tag">'+esc(x.tipo)+'</span>':'')+'</td><td class="mono small">'+esc(x.sigla)+'</td>'+
+  (GERAL[nv]?'<td class="small">'+esc(classesTxt(nv,x.classes))+'</td>':'')+(nv==='SUP'?'<td class="small">'+(x.semestre?x.semestre+'º sem.':'—')+'</td>':'')+
+  '<td class="r num">'+x.carga+'</td>'+(CURSO_NIV[nv]?'<td class="r num">'+(x.creditos||'—')+'</td>':'')+(nv==='TEC'?'<td class="r num">'+(x.horas||'—')+'</td>':'')+
+  '<td class="r" style="white-space:nowrap"><button class="btn sm" data-ed="'+x.id+'">Editar</button> <button class="btn sm danger" data-del="'+x.id+'">'+ic('trash')+'</button></td></tr>'; }
+function cabDisc(nv){ return '<thead><tr><th>Nome</th><th>Sigla</th>'+(GERAL[nv]?'<th>Classes</th>':'')+(nv==='SUP'?'<th>Semestre</th>':'')+'<th class="r">Tempos / semana</th>'+(CURSO_NIV[nv]?'<th class="r">Créditos</th>':'')+(nv==='TEC'?'<th class="r">Horas</th>':'')+'<th></th></tr></thead>'; }
 function pDisciplinas(){
   aCarregar();
-  api('/disciplinas').then(function(d){
-    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
-    S.disciplinas=d.disciplinas;
-    var niveis=(S.escola&&S.escola.niveis)||[], html=ph('Arranque','Disciplinas', 'Organizadas por nível. No secundário são disciplinas, no superior cadeiras, no técnico e na condução módulos, e na escolinha áreas.', '<button class="btn pri" id="nova">'+ic('plus')+'Nova disciplina</button>');
+  var niveis=(S.escola&&S.escola.niveis)||[], comCurso=niveis.some(function(k){ return CURSO_NIV[k]; });
+  Promise.all([api('/disciplinas'), comCurso?api('/ensino-cursos'):Promise.resolve({ok:true,cursos:[]})]).then(function(r){
+    var d=r[0]; if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    EST=d.estrutura||EST; S.disciplinas=d.disciplinas; S.cursos=r[1].ok?r[1].cursos:[];
+    var so1=niveis.length===1?niveis[0]:'', titD=so1==='TEC'?'Módulos':so1==='SUP'?'Cadeiras':'Disciplinas', btnD=so1==='TEC'?'Novo módulo':so1==='SUP'?'Nova cadeira':'Nova disciplina';
+    var html=ph('Arranque',titD, 'No primário e no secundário, cada disciplina diz em que classes se dá. No técnico-profissional são módulos e no superior cadeiras, dentro de cada curso e ano.', '<button class="btn pri" id="nova">'+ic('plus')+btnD+'</button>');
     niveis.forEach(function(nv){
       var L=d.disciplinas.filter(function(x){ return x.nivel===nv; });
-      html+='<section class="card"><div class="card-h"><div><h3>'+NIVEL[nv]+'</h3><div class="sub">'+L.length+' '+(TERMO[nv]||'disciplina')+(L.length===1?'':'s')+'</div></div>'+
-        (TEM_MODELO[nv]?'<button class="btn sm" data-modelo="'+nv+'">'+ic('sparkle')+'Carregar currículo modelo</button>':'')+'</div><div class="card-b">'+
-        (L.length? '<div class="tbl-wrap"><table><thead><tr><th>Nome</th><th>Sigla</th><th class="r">Tempos / semana</th>'+(nv==='SUP'?'<th class="r">Créditos</th>':'')+'<th>Avaliação</th><th></th></tr></thead><tbody>'+
-          L.map(function(x){ return '<tr><td><span class="dot" style="background:'+esc(x.cor)+'"></span><b>'+esc(x.nome)+'</b></td><td class="mono small">'+esc(x.sigla)+'</td><td class="r num">'+x.carga+'</td>'+(nv==='SUP'?'<td class="r num">'+(x.creditos||'—')+'</td>':'')+'<td class="small">'+(x.descritiva?'A · EA · NA':'0 – 20')+'</td><td class="r"><button class="btn sm" data-ed="'+x.id+'">Editar</button> <button class="btn sm danger" data-del="'+x.id+'">'+ic('trash')+'</button></td></tr>'; }).join('')+'</tbody></table></div>'
-          : '<p class="muted small" style="margin:0">Ainda sem '+(TERMO[nv]||'disciplina')+'s neste nível.'+(TEM_MODELO[nv]?' Use "Carregar currículo modelo" para começar em segundos.':'')+'</p>')+'</div></section>';
+      if(CURSO_NIV[nv]){
+        var C=S.cursos.filter(function(c){ return c.nivel===nv; });
+        if(!C.length) html+=vazio('book','Crie primeiro os cursos','Os '+(nv==='TEC'?'módulos':'cadeiras')+' pertencem a um curso. Vá a «Cursos e turmas» e crie o primeiro curso.');
+        C.forEach(function(c){
+          var LC=L.filter(function(x){ return x.curso===c.id; });
+          html+='<section class="card" style="margin-bottom:16px"><div class="card-h"><div><h3>'+esc(c.nome)+'</h3><div class="sub">'+esc(c.grau)+' · '+LC.length+' '+(nv==='TEC'?'módulo(s)':'cadeira(s)')+'</div></div><button class="btn sm" data-novac="'+c.id+'">'+ic('plus')+(nv==='TEC'?'Módulo':'Cadeira')+'</button></div><div class="card-b">';
+          for(var a=1;a<=c.duracao;a++){ var LA=LC.filter(function(x){ return (x.ano_curso||1)===a; });
+            html+='<div class="eyebrow" style="margin:'+(a>1?'14px':'0')+' 0 6px">'+a+'º ano</div>'+(LA.length?'<div class="tbl-wrap"><table>'+cabDisc(nv)+'<tbody>'+LA.sort(function(p,q){ return (p.semestre||0)-(q.semestre||0); }).map(function(x){ return linhaDisc(x,nv); }).join('')+'</tbody></table></div>':'<p class="small muted" style="margin:0">Ainda sem '+(nv==='TEC'?'módulos':'cadeiras')+' neste ano.</p>'); }
+          html+='</div></section>';
+        });
+      } else {
+        html+='<section class="card" style="margin-bottom:16px"><div class="card-h"><div><h3>'+NIVEL[nv]+'</h3><div class="sub">'+L.length+' '+(TERMO[nv]||'disciplina')+(L.length===1?'':'s')+'</div></div>'+
+          (TEM_MODELO[nv]?'<button class="btn sm" data-modelo="'+nv+'">'+ic('sparkle')+'Carregar currículo modelo</button>':'')+'</div><div class="card-b">'+
+          (L.length? '<div class="tbl-wrap"><table>'+cabDisc(nv)+'<tbody>'+L.map(function(x){ return linhaDisc(x,nv); }).join('')+'</tbody></table></div>'
+            : '<p class="muted small" style="margin:0">Ainda sem '+(TERMO[nv]||'disciplina')+'s neste nível.'+(TEM_MODELO[nv]?' Use «Carregar currículo modelo» para começar em segundos.':'')+'</p>')+'</div></section>';
+      }
     });
     $('#page').innerHTML=html;
     $('#nova').onclick=function(){ formDisc(null); };
+    $$('[data-novac]').forEach(function(b){ var c=S.cursos.filter(function(k){ return k.id===b.getAttribute('data-novac'); })[0]; b.onclick=function(){ formDisc({nivel:c.nivel,curso:c.id}); }; });
     $$('[data-ed]').forEach(function(b){ b.onclick=function(){ formDisc(d.disciplinas.filter(function(x){return x.id===b.getAttribute('data-ed');})[0]); }; });
     $$('[data-del]').forEach(function(b){ b.onclick=function(){ confirmar('Apagar esta disciplina?','Deixa de aparecer nas turmas e nos horários novos.', function(btn){ api('/disciplina-apagar',{id:b.getAttribute('data-del')}).then(function(x){ if(x.ok){ fechar(); toast('Disciplina apagada'); pDisciplinas(); } else { aGravar(btn,false); $('#cf-err').innerHTML=erroCaixa(x.erro); } }); }); }; });
     $$('[data-modelo]').forEach(function(b){ b.onclick=function(){ var nv=b.getAttribute('data-modelo'); b.disabled=true; b.textContent='A carregar…';
@@ -407,14 +529,34 @@ function pDisciplinas(){
 }
 function formDisc(x){
   x=x||{};
-  modal('<div class="modal-h"><h3>'+(x.id?'Editar disciplina':'Nova disciplina')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
-    '<div class="frow"><label class="field">Nome<input class="inp" id="d-nome" value="'+esc(x.nome||'')+'" placeholder="Ex.: Matemática"></label><label class="field">Nível<select class="sel" id="d-nivel">'+opcoesNivel(x.nivel)+'</select></label></div>'+
+  if(!EST){ api('/disciplinas').then(function(d){ if(d.ok){ EST=d.estrutura; formDisc(x); } }); return; }
+  var niv=(S.escola&&S.escola.niveis)||[], nv0=x.nivel||niv.filter(function(k){ return k!=='CON'; })[0]||niv[0];
+  modal('<div class="modal-h"><h3>'+(x.id?'Editar ':nv0==='TEC'?'Novo ':'Nova ')+(TERMO[nv0]||'disciplina')+'</h3><button class="icon-btn" data-fechar>'+ic('x')+'</button></div><div class="modal-b">'+
+    '<div class="frow"><label class="field">Nome<input class="inp" id="d-nome" value="'+esc(x.nome||'')+'" placeholder="Ex.: Matemática"></label><label class="field">Nível<select class="sel" id="d-nivel">'+opcoesNivel(nv0)+'</select></label></div>'+
+    '<div class="field" id="d-clw"><span>Classes em que se dá <span class="small muted" style="font-weight:400">(nenhuma marcada = todas)</span></span><div class="chk" id="d-cls" style="grid-template-columns:repeat(auto-fill,minmax(90px,1fr))"></div></div>'+
+    '<div class="frow" id="d-cuw"><label class="field">Curso<select class="sel" id="d-curso"></select></label><label class="field">Ano<select class="sel" id="d-ano"></select></label><label class="field" id="d-smw">Semestre<select class="sel" id="d-sem"><option value="1"'+(x.semestre===2?'':' selected')+'>1º semestre</option><option value="2"'+(x.semestre===2?' selected':'')+'>2º semestre</option></select></label></div>'+
+    '<div class="frow" id="d-tcw"><label class="field">Tipo de módulo<select class="sel" id="d-tipo">'+(EST.tipos_modulo||[]).map(function(k){ return '<option'+(k===(x.tipo||'Vocacional')?' selected':'')+'>'+k+'</option>'; }).join('')+'</select></label><label class="field">Horas<input class="inp" id="d-horas" type="number" min="0" value="'+(x.horas||'')+'" placeholder="Ex.: 60"></label></div>'+
     '<div class="frow"><label class="field">Sigla (na pauta)<input class="inp mono" id="d-sigla" maxlength="8" value="'+esc(x.sigla||'')+'" placeholder="Ex.: MAT"></label><label class="field">Tempos por semana<input class="inp" id="d-carga" type="number" min="0" max="20" value="'+(x.carga||3)+'"></label></div>'+
-    '<div class="frow"><label class="field">Cor no horário<input class="inp" id="d-cor" type="color" value="'+esc(x.cor||'#0A64DC')+'" style="padding:4px"></label><label class="field">Créditos (só Superior)<input class="inp" id="d-cred" type="number" min="0" value="'+(x.creditos||'')+'"></label></div>'+
+    '<div class="frow"><label class="field">Cor no horário<input class="inp" id="d-cor" type="color" value="'+esc(x.cor||'#0A64DC')+'" style="padding:4px"></label><label class="field" id="d-crw">Créditos<input class="inp" id="d-cred" type="number" min="0" value="'+(x.creditos||'')+'"></label></div>'+
     '<div id="d-err"></div></div><div class="modal-f"><button class="btn" data-fechar>Cancelar</button><button class="btn pri" id="d-ok">'+ic('save')+'Guardar</button></div>');
-  $('#d-ok').onclick=function(){ var btn=this; aGravar(btn,true);
-    api('/disciplina-guardar',{ id:x.id, nome:$('#d-nome').value, nivel:$('#d-nivel').value, sigla:$('#d-sigla').value, carga:$('#d-carga').value, cor:$('#d-cor').value, creditos:$('#d-cred').value })
-      .then(function(r){ if(r.ok){ fechar(); toast(x.id?'Disciplina actualizada':'Disciplina criada'); pDisciplinas(); } else { aGravar(btn,false); $('#d-err').innerHTML=erroCaixa(r.erro); } }); };
+  function nv(){ return $('#d-nivel').value; }
+  function montar(primeira){
+    var n=nv(), g=!!GERAL[n], k=!!CURSO_NIV[n];
+    $('#d-clw').style.display=g&&n!=='ESC'?'':'none'; $('#d-cuw').style.display=k?'':'none'; $('#d-smw').style.display=n==='SUP'?'':'none'; $('#d-tcw').style.display=n==='TEC'?'':'none'; $('#d-crw').style.display=k?'':'none';
+    if(g){ var mc={}; (primeira?(x.classes||[]):$$('.d-c').filter(function(c){ return c.checked; }).map(function(c){ return c.value; })).forEach(function(c){ mc[c]=1; });
+      $('#d-cls').innerHTML=EST.classes[n].map(function(c){ return '<label><input type="checkbox" class="d-c" value="'+esc(c)+'"'+(mc[c]?' checked':'')+'>'+esc(c)+'</label>'; }).join(''); }
+    if(k){ var L=(S.cursos||[]).filter(function(c){ return c.nivel===n; }), cu=primeira?(x.curso||(L[0]&&L[0].id)):$('#d-curso').value;
+      $('#d-curso').innerHTML=L.length?L.map(function(c){ return '<option value="'+c.id+'"'+(c.id===cu?' selected':'')+'>'+esc(c.nome)+'</option>'; }).join(''):'<option value="">— crie primeiro o curso —</option>'; montarAno(primeira); }
+  }
+  function montarAno(primeira){ var c=(S.cursos||[]).filter(function(k){ return k.id===$('#d-curso').value; })[0]; if(!c){ $('#d-ano').innerHTML=''; return; }
+    var a=primeira?(x.ano_curso||1):+$('#d-ano').value||1, h=''; if(a>c.duracao) a=1; for(var i=1;i<=c.duracao;i++) h+='<option value="'+i+'"'+(i===a?' selected':'')+'>'+i+'º ano</option>'; $('#d-ano').innerHTML=h; }
+  $('#d-nivel').onchange=function(){ montar(false); }; $('#d-curso').onchange=function(){ montarAno(false); };
+  if(CURSO_NIV[nv0] && !(S.cursos||[]).length){ api('/ensino-cursos').then(function(r){ if(r.ok){ S.cursos=r.cursos; montar(true); } }); } else montar(true);
+  $('#d-ok').onclick=function(){ var btn=this, n=nv(); aGravar(btn,true);
+    api('/disciplina-guardar',{ id:x.id, nome:$('#d-nome').value, nivel:n, sigla:$('#d-sigla').value, carga:$('#d-carga').value, cor:$('#d-cor').value, creditos:$('#d-cred').value,
+      classes: GERAL[n]? $$('.d-c').filter(function(c){ return c.checked; }).map(function(c){ return c.value; }) : undefined,
+      curso: CURSO_NIV[n]?$('#d-curso').value:'', ano: CURSO_NIV[n]?$('#d-ano').value:'', semestre: n==='SUP'?$('#d-sem').value:'', tipo: n==='TEC'?$('#d-tipo').value:'', horas: n==='TEC'?$('#d-horas').value:'' })
+      .then(function(r){ if(r.ok){ fechar(); toast(x.id?'Guardado':'Criado'); pDisciplinas(); } else { aGravar(btn,false); $('#d-err').innerHTML=erroCaixa(r.erro); } }); };
 }
 
 // PROFESSORES
@@ -1867,6 +2009,72 @@ function esperarAssinatura(r){
       if(x.ok && x.estado==='pago'){ parado=true; if(window.GSCheckout) GSCheckout.fechar();
         modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div style="width:64px;height:64px;border-radius:50%;background:var(--ok);display:grid;place-items:center;margin:0 auto;color:#fff">'+ic('check','width="30" height="30"')+'</div><h3 style="margin-top:14px">Assinatura renovada</h3><p class="muted">Válida até <b style="color:var(--ink)">'+data(x.valida_ate)+'</b>. Obrigado!</p></div><div class="modal-f"><button class="btn pri" id="w-ok">Concluir</button></div>');
         $('#w-ok').onclick=function(){ fechar(); fetch(PROXY+'/sessao',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+SES.token}}).then(function(r){ return r.json(); }).then(function(d){ if(d.ok){ S.escola=d.escola; } casca(); }); }; return; }
+      if(x.ok && (x.estado==='falhado'||x.estado==='expirado') && window.GSCheckout) GSCheckout.fechar();
+      if(x.ok && (x.estado==='falhado'||x.estado==='expirado')){ var s=$('#w-st'); if(s) s.innerHTML='<b style="color:var(--bad)">O pagamento '+(x.estado==='falhado'?'falhou ou foi cancelado':'expirou')+'.</b> Pode tentar outra vez.'; return; }
+      setTimeout(verificar,4000);
+    });
+  })();
+}
+
+/* ---------- SMS e emails (v5.25) ---------- */
+function pSMS(){
+  aCarregar();
+  api('/sms-saldo').then(function(d){
+    if(!d.ok){ $('#page').innerHTML=erroCaixa(d.erro); return; }
+    if(S.escola){ S.escola.sms=d.creditos; }
+    S.R=S.R||{ pac:(d.pacotes[1]||d.pacotes[0]||{}).id, met:'mpesa', tel:'' };
+    if(!d.pacotes.some(function(p){ return p.id===S.R.pac; })) S.R.pac=(d.pacotes[0]||{}).id;
+    function desenhar(){
+      var pac=d.pacotes.filter(function(p){ return p.id===S.R.pac; })[0]||{sms:0,valor:0}, cor=d.creditos<=0?'var(--bad)':d.creditos<=d.poucos?'var(--warn)':'var(--ok)';
+      $('#page').innerHTML=ph('Conta','SMS e emails','Os SMS chegam a qualquer telemóvel. Cada escola começa com '+d.iniciais+' SMS grátis; depois recarrega quando precisar. Os emails são sempre grátis.')+
+        '<div class="grid g4" style="margin-bottom:16px">'+
+          '<div class="card kpi"><div class="l">SMS disponíveis</div><div class="v" style="color:'+cor+'">'+grp(d.creditos)+'</div><div class="d">'+(d.creditos<=0?'Acabaram: os avisos vão por email a quem tem email':d.creditos<=d.poucos?'Estão a acabar. Recarregue já':'Prontos a usar')+'</div></div>'+
+          '<div class="card kpi"><div class="l">SMS usados</div><div class="v">'+grp(d.usados)+'</div><div class="d">Desde o início</div></div>'+
+          '<div class="card kpi"><div class="l">Emails</div><div class="v" style="font-size:20px"><span class="pill ok" style="font-size:14px">Grátis</span></div><div class="d">Sem limite, para quem tem email registado</div></div>'+
+          '<div class="card kpi"><div class="l">Como se conta</div><div class="v" style="font-size:20px">1 SMS</div><div class="d">por telemóvel, até 160 letras</div></div>'+
+        '</div>'+
+        '<section class="card card-b" style="margin-bottom:16px"><div class="eyebrow" style="margin-bottom:10px">Recarregar SMS</div>'+
+          '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px;max-width:760px">'+d.pacotes.map(function(p){ var on=p.id===S.R.pac;
+            return '<button type="button" data-pac="'+esc(p.id)+'" style="text-align:left;padding:14px 16px;border-radius:14px;cursor:pointer;border:2px solid '+(on?'var(--blue)':'var(--line)')+';background:'+(on?'var(--blue-soft)':'var(--surface)')+';color:var(--ink);font:inherit"><b style="display:block;font:800 22px var(--f-display)">'+grp(p.sms)+' SMS</b><span class="num" style="font-weight:800;font-size:16px">'+mt(p.valor)+'</span><div class="small muted">'+(Math.round(p.valor/p.sms*100)/100).toString().replace('.',',')+' MT por SMS</div></button>'; }).join('')+'</div>'+
+          (S.R.met!=='cartao'?'<label class="field" style="max-width:320px;margin-bottom:12px">Número de telemóvel que vai pagar<input class="inp mono" id="sm-tel" inputmode="numeric" maxlength="12" placeholder="84 000 0000 ou 86 000 0000" value="'+esc(S.R.tel||'')+'"></label>':'')+
+          '<div class="methods" style="max-width:520px;margin-bottom:12px">'+['mpesa','emola','cartao'].map(function(k){ return '<button type="button" class="method '+(S.R.met===k?'on':'')+'" data-smt="'+k+'"><span class="lg" style="background:'+METODO[k][1]+';font-size:12px">'+(k==='cartao'?'VISA':METODO[k][0])+'</span>'+METODO[k][0].replace(' / ','/')+'</button>'; }).join('')+'</div>'+
+          '<div id="sm-err"></div><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><button class="btn pri" id="sm-ok" style="height:44px">Pagar '+mt(pac.valor)+'</button><span class="small muted">'+grp(pac.sms)+' SMS somados ao saldo logo que o pagamento for confirmado.</span></div></section>'+
+        '<section class="card card-b" style="margin-bottom:16px"><div class="eyebrow" style="margin-bottom:8px">Quando os SMS acabam</div><p class="small" style="margin:0">Os comunicados, faltas, lembretes de propinas e códigos de entrada vão por <b>email</b> a quem tem email registado. Quem só tem telemóvel deixa de receber até recarregar. Avisamos a Direcção'+(d.email_escola?' em <b>'+esc(d.email_escola)+'</b>':'')+' quando restarem '+d.poucos+' SMS e quando acabarem.</p></section>'+
+        '<section class="card"><div class="card-h"><b>Recargas</b></div>'+(d.historico.length?'<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Pacote</th><th>Método</th><th>Estado</th><th class="r">SMS</th><th class="r">Valor</th></tr></thead><tbody>'+
+          d.historico.map(function(h){ return '<tr><td class="small num">'+data(h.data)+'</td><td>'+esc(h.pacote)+'</td><td class="small">'+esc((METODO[h.metodo]||[h.metodo==='oferta'?'Oferta':h.metodo])[0])+'</td><td>'+(h.estado==='pago'?'<span class="pill ok">Pago</span>':h.estado==='pendente'?'<span class="pill info">Pendente</span>':h.estado==='revisao'?'<span class="pill warn">Em revisão</span>':'<span class="pill bad">'+esc(h.estado)+'</span>')+'</td><td class="r num">'+grp(h.sms)+'</td><td class="r num">'+mt(h.valor)+'</td></tr>'; }).join('')+'</tbody></table></div>':'<div class="card-b small muted">Ainda sem recargas.</div>')+'</section>';
+      $$('[data-pac]').forEach(function(b){ b.onclick=function(){ guardaTel(); S.R.pac=b.getAttribute('data-pac'); desenhar(); }; });
+      $$('[data-smt]').forEach(function(b){ b.onclick=function(){ guardaTel(); S.R.met=b.getAttribute('data-smt'); desenhar(); }; });
+      $('#sm-ok').onclick=function(){
+        guardaTel(); var btn=this, tel=(S.R.tel||'').replace(/\D/g,'');
+        if(S.R.met!=='cartao' && tel.length!==9){ $('#sm-err').innerHTML=erroCaixa('Escreva o número com 9 dígitos.'); return; }
+        aGravar(btn,true);
+        api('/sms-recarregar',{pacote:S.R.pac, metodo:S.R.met, numero:tel}).then(function(r){
+          aGravar(btn,false);
+          if(!r.ok){ $('#sm-err').innerHTML=erroCaixa(r.erro); return; }
+          esperarRecargaSMS(r);
+          if(r.iframe) ckEmbed(r.iframe, 'SMS Gescolar', r.total);
+        });
+      };
+    }
+    function guardaTel(){ var t=$('#sm-tel'); if(t) S.R.tel=t.value; }
+    desenhar();
+  });
+}
+function esperarRecargaSMS(r){
+  var fim=Date.now()+(r.iframe?12:4)*60e3, parado=false;
+  modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div class="spinner"></div><h3 style="margin-top:10px">'+(r.link?'À espera do pagamento com cartão':r.iframe?'Complete o pagamento':'Confirme no telemóvel')+'</h3><p class="muted">'+(r.link?'Pague na página segura da MozPayment. Esta janela actualiza sozinha.':esc(r.mensagem||''))+'</p>'+
+    (r.link?'<a class="btn pri" href="'+esc(r.link)+'" target="_blank" rel="noopener" style="text-decoration:none;justify-content:center;margin-bottom:10px">Abrir a página de pagamento</a>':'')+
+    '<p class="small muted" id="w-st">A aguardar confirmação · '+mt(r.total)+'</p></div><div class="modal-f"><button class="btn" id="w-x">Fechar e ver depois</button></div>');
+  $('#w-x').onclick=function(){ parado=true; if(window.GSCheckout) GSCheckout.fechar(); fechar(); pSMS(); };
+  (function verificar(){
+    if(parado) return;
+    if(Date.now()>fim){ var s=$('#w-st'); if(s) s.textContent='Ainda sem confirmação. Quando o pagamento for confirmado, os SMS são somados sozinhos.'; return; }
+    api('/sms-recarga-estado',{id:r.id}).then(function(x){
+      if(parado) return;
+      if(x.ok && x.estado==='pago'){ parado=true; if(window.GSCheckout) GSCheckout.fechar();
+        if(S.escola && x.creditos!=null) S.escola.sms=x.creditos;
+        modal('<div class="modal-b" style="text-align:center;padding:26px 20px"><div style="width:64px;height:64px;border-radius:50%;background:var(--ok);display:grid;place-items:center;margin:0 auto;color:#fff">'+ic('check','width="30" height="30"')+'</div><h3 style="margin-top:14px">'+grp(x.sms)+' SMS adicionados</h3><p class="muted">Saldo actual: <b style="color:var(--ink)">'+grp(x.creditos)+' SMS</b>. Obrigado!</p></div><div class="modal-f"><button class="btn pri" id="w-ok">Concluir</button></div>');
+        $('#w-ok').onclick=function(){ fechar(); casca(); }; return; }
       if(x.ok && (x.estado==='falhado'||x.estado==='expirado') && window.GSCheckout) GSCheckout.fechar();
       if(x.ok && (x.estado==='falhado'||x.estado==='expirado')){ var s=$('#w-st'); if(s) s.innerHTML='<b style="color:var(--bad)">O pagamento '+(x.estado==='falhado'?'falhou ou foi cancelado':'expirou')+'.</b> Pode tentar outra vez.'; return; }
       setTimeout(verificar,4000);
