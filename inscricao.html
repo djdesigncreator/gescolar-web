@@ -110,12 +110,14 @@ function formulario(erro){
   casca(info()+'<form class="bloco" id="f" novalidate style="margin-top:18px">'+
     '<div class="sec">'+(L.encarregado?'Dados do candidato':'Os seus dados')+'</div>'+
     '<label class="field"><span>Nome completo <span class="req">*</span></span><input class="inp" id="f-nome" autocomplete="name" maxlength="100" placeholder="Nome e apelido"></label>'+
-    '<label class="field">Data de nascimento<input class="inp" id="f-nasc" type="date"></label>'+
+    '<div class="frow2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label class="field">Data de nascimento<input class="inp" id="f-nasc" type="date"></label><label class="field">Sexo<select class="sel" id="f-sexo"><option value="">—</option><option value="F">Feminino</option><option value="M">Masculino</option></select></label></div>'+
+    alvoHTML()+
     '<label class="field"><span>Telemóvel'+(L.encarregado?' do candidato (opcional)':' <span class="req">*</span>')+'</span><input class="inp" id="f-tel" inputmode="tel" maxlength="16" placeholder="84 123 4567"></label>'+
     '<div class="sec">Encarregado de educação'+(L.encarregado?'':' (opcional)')+'</div><label class="field"><span>Nome completo'+(L.encarregado?' <span class="req">*</span>':'')+'</span><input class="inp" id="f-enc" maxlength="100"></label>'+
       '<label class="field"><span>Telemóvel'+(L.encarregado?' <span class="req">*</span>':'')+'</span><input class="inp" id="f-etel" inputmode="tel" maxlength="16" placeholder="84 123 4567"></label>'+
     '<label class="field">Email (opcional)<input class="inp" id="f-email" type="email" maxlength="120"></label>'+
     (L.campos.length?'<div class="sec">Mais informações</div>'+L.campos.map(campo).join(''):'')+
+    '<div class="sec">Documentos <span class="small muted" style="text-transform:none;letter-spacing:0;font-weight:500">(pode enviar já, ou entregar na escola)</span></div><div id="f-docs"></div>'+
     (L.preco?'<div class="sec">Pagamento · '+mt(L.preco)+'</div>'+
       '<label class="field" id="f-numw"><span>Número que vai pagar <span class="req">*</span></span><input class="inp" id="f-num" inputmode="tel" maxlength="16" placeholder="84 123 4567"></label>'+
       '<div class="met">'+[['mpesa','M-Pesa','Vodacom 84/85'],['emola','e-Mola','Movitel 86/87'],['cartao','Cartão','Visa · Mastercard']].map(function(m){ return '<button type="button" data-m="'+m[0]+'" class="'+(S.metodo===m[0]?'on':'')+'">'+m[1]+'<small>'+m[2]+'</small></button>'; }).join('')+'</div>':'')+
@@ -125,16 +127,48 @@ function formulario(erro){
   function verMet(){ $$('[data-m]').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-m')===S.metodo); }); var w=$('#f-numw'); if(w) w.style.display=S.metodo==='cartao'?'none':''; }
   $$('[data-m]').forEach(function(b){ b.onclick=function(){ S.metodo=b.getAttribute('data-m'); verMet(); }; }); verMet();
   var etel=$('#f-etel')||$('#f-tel'); if(etel && $('#f-num')) etel.addEventListener('change',function(){ if(!$('#f-num').value) $('#f-num').value=etel.value; });
+  ligarAlvo();
   $('#f').onsubmit=function(ev){ ev.preventDefault(); enviar(); };
 }
+// v5.27: classe (ou curso) pretendida, tipo de matrícula e documentos da classe
+function nomeCl(c){ return /anos$|Berçário/.test(c)?(c==='Berçário'?'Berçário':'Sala dos '+c):c+' Classe'; }
+function alvoHTML(){
+  D.classes=D.classes||[]; D.cursos=D.cursos||[];
+  var L=D.link, h='<div class="sec">Matrícula · ano lectivo '+esc(D.ano_lectivo||'')+'</div>';
+  if(D.classes.length && !L.classe) h+='<label class="field"><span>Classe que vai frequentar <span class="req">*</span></span><select class="sel" id="f-cl"><option value="">— escolher —</option>'+D.classes.map(function(c){ return '<option value="'+esc(c)+'">'+esc(nomeCl(c))+'</option>'; }).join('')+'</select></label>';
+  else if(L.classe) h+='<p class="small" style="margin:0 0 8px">Classe: <b>'+esc(nomeCl(L.classe))+'</b></p>';
+  if(D.cursos.length && !L.curso) h+='<label class="field"><span>Curso <span class="req">*</span></span><select class="sel" id="f-cu"><option value="">— escolher —</option>'+D.cursos.map(function(c){ return '<option value="'+c.id+'">'+esc(c.nome)+(c.grau?' · '+esc(c.grau):'')+'</option>'; }).join('')+'</select></label><label class="field">Ano do curso<select class="sel" id="f-an"><option value="1">1º ano</option></select></label>';
+  h+='<label class="field">Tipo de matrícula<select class="sel" id="f-tipo"><option value="nova">Primeira matrícula nesta escola</option><option value="transferencia">Vem transferido de outra escola</option></select></label>'+
+    '<label class="field" id="f-antw" style="display:none"><span>Escola de onde vem <span class="req">*</span></span><input class="inp" id="f-ant" maxlength="120"></label>';
+  return h; }
+function docsDaClasse(){
+  var L=D.link, nv=L.nivel, cl=L.classe||($('#f-cl')?$('#f-cl').value:''), tipo=$('#f-tipo')?$('#f-tipo').value:'nova', M=D.docs||{};
+  var l=((cl&&M[nv+':'+cl])||M[nv]||[]).concat(tipo==='transferencia'?(M.TRANSF||[]):[]); return l; }
+function verDocs(){ var l=docsDaClasse(), box=$('#f-docs'); if(!box) return;
+  box.innerHTML=l.length?l.map(function(d,i){ return '<label class="field" style="margin-bottom:8px"><span>'+esc(d.nome)+(d.obrigatorio?'':' (opcional)')+'</span><input class="inp f-doc" type="file" accept=".pdf,image/*" data-n="'+esc(d.nome)+'"></label>'; }).join(''):'<p class="small muted" style="margin:0">'+(D.classes.length&&!L.classe?'Escolha a classe para ver os documentos pedidos.':'A escola não pediu documentos.')+'</p>'; }
+function ligarAlvo(){
+  var cl=$('#f-cl'), tp=$('#f-tipo'), cu=$('#f-cu');
+  if(cl) cl.onchange=verDocs;
+  if(tp) tp.onchange=function(){ $('#f-antw').style.display=tp.value==='transferencia'?'':'none'; verDocs(); };
+  if(cu) cu.onchange=function(){ var c=D.cursos.filter(function(x){ return x.id===cu.value; })[0], h=''; for(var i=1;i<=(c?c.duracao:1);i++) h+='<option value="'+i+'">'+i+'º ano</option>'; $('#f-an').innerHTML=h; verDocs(); };
+  verDocs(); }
+function lerDoc(f){ return new Promise(function(ok,falha){
+  if(!/\.(pdf|jpe?g|png|webp)$/i.test(f.name)) return falha('Os documentos têm de ser PDF ou imagem.');
+  var fr=new FileReader();
+  if(/^image\//.test(f.type) && f.size>900000){ fr.onload=function(){ var im=new Image(); im.onload=function(){ var k=Math.min(1,1600/Math.max(im.width,im.height)), c=document.createElement('canvas'); c.width=Math.round(im.width*k); c.height=Math.round(im.height*k); c.getContext('2d').drawImage(im,0,0,c.width,c.height); ok({nome:f.name.replace(/\.[^.]+$/,'')+'.jpg', dados:c.toDataURL('image/jpeg',0.82)}); }; im.onerror=function(){ falha('Não foi possível ler a imagem.'); }; im.src=fr.result; }; }
+  else { if(f.size>5*1048576) return falha('Cada documento pode ter no máximo 5 MB.'); fr.onload=function(){ ok({nome:f.name, dados:fr.result}); }; }
+  fr.onerror=function(){ falha('Não foi possível ler o ficheiro.'); }; fr.readAsDataURL(f); }); }
 function enviar(){
   var L=D.link, b=$('#f-ok'), resp={};
   L.campos.forEach(function(c){ if(c.tipo==='simnao'){ var x=$('input[name="'+c.id+'"]:checked'); resp[c.id]=x?x.value:''; } else { var e=$('[data-c="'+c.id+'"]'); resp[c.id]=e?e.value:''; } });
-  var corpo={ escola:ESC, link:LNK, nome:$('#f-nome').value, nascimento:$('#f-nasc').value, telefone:$('#f-tel').value, enc_nome:$('#f-enc')?$('#f-enc').value:'', enc_telefone:$('#f-etel')?$('#f-etel').value:'',
+  var corpo={ escola:ESC, link:LNK, nome:$('#f-nome').value, nascimento:$('#f-nasc').value, sexo:$('#f-sexo')?$('#f-sexo').value:'', classe:$('#f-cl')?$('#f-cl').value:'', curso:$('#f-cu')?$('#f-cu').value:'', ano_curso:$('#f-an')?$('#f-an').value:'', tipo:$('#f-tipo')?$('#f-tipo').value:'nova', escola_anterior:$('#f-ant')?$('#f-ant').value:'', telefone:$('#f-tel').value, enc_nome:$('#f-enc')?$('#f-enc').value:'', enc_telefone:$('#f-etel')?$('#f-etel').value:'',
     email:$('#f-email').value, respostas:resp, metodo:L.preco?S.metodo:'', numero:$('#f-num')?$('#f-num').value:'' };
   b.disabled=true; b.textContent='A enviar…'; $('#f-err').innerHTML='';
   var janela=null; if(L.preco && S.metodo==='cartao'){ try{ janela=window.open('','_blank'); }catch(e){} }
-  api('/pub/inscrever',corpo).then(function(r){
+  var fs=$$('.f-doc').filter(function(i){ return i.files&&i.files[0]; });
+  Promise.all(fs.map(function(i){ return lerDoc(i.files[0]).then(function(x){ return {nome:i.getAttribute('data-n'), entregue:true, ficheiro:x}; }); }))
+  .then(function(docs){ corpo.docs=docs; return api('/pub/inscrever',corpo); }, function(m){ return {ok:false, erro:String(m)}; })
+  .then(function(r){
     if(!r.ok){ if(janela) try{ janela.close(); }catch(e){} b.disabled=false; b.textContent=L.preco?'Inscrever e pagar '+mt(L.preco):'Enviar inscrição'; $('#f-err').innerHTML='<div class="msg err">'+esc(r.erro)+'</div>'; $('#f-err').scrollIntoView({behavior:'smooth',block:'center'}); return; }
     var st={id:r.id, chave:r.chave, nome:corpo.nome, metodo:corpo.metodo, numero:corpo.numero, inicio:Date.now()};
     if(r.estado==='paga'){ guarda(null); sucesso(corpo.nome); return; }
