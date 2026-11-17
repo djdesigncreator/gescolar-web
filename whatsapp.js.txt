@@ -1,0 +1,141 @@
+/*
+  Daniel IA - botão de suporte no WhatsApp (27/10/2026)
+  -----------------------------------------------------
+  Um só ficheiro para o dashboard e para a landing. Para usar:
+    <script src="https://app.daniel-ia.pro/suporte/whatsapp.js?v=1"
+            data-mensagem="Olá! Preciso de ajuda com a Daniel IA." defer></script>
+  Opções (no próprio <script>):
+    data-mensagem   texto que já vai escrito no WhatsApp
+    data-convite    segundos até aparecer o balão "Precisa de ajuda?" (0 = nunca)
+  O número de suporte está aqui em baixo (NUMERO) - muda-se só neste ficheiro.
+  Os textos seguem o idioma da página (pt, en, fr, es).
+*/
+(function(){
+  'use strict';
+  if (window.__danielSuporteWa) return;
+  window.__danielSuporteWa = true;
+
+  var NUMERO = '258851711177';
+  var script = document.currentScript || (function(){ var s = document.getElementsByTagName('script'); return s[s.length - 1]; })();
+  var MENSAGEM = (script && script.getAttribute('data-mensagem')) || 'Olá! Preciso de ajuda com a Daniel IA.';
+  var CONVITE = parseInt((script && script.getAttribute('data-convite')) || '0', 10) || 0;
+  var CHAVE = 'daniel_suporte_balao';
+
+  var TEXTOS = {
+    pt: { titulo: 'Precisa de ajuda?', texto: 'Fala connosco no WhatsApp. Respondemos rápido.', botao: 'Abrir conversa', aria: 'Suporte no WhatsApp', fechar: 'Fechar', rotulo: 'Suporte' },
+    en: { titulo: 'Need help?', texto: 'Talk to us on WhatsApp. We reply fast.', botao: 'Start chat', aria: 'WhatsApp support', fechar: 'Close', rotulo: 'Support' },
+    fr: { titulo: 'Besoin d’aide ?', texto: 'Écrivez-nous sur WhatsApp. Nous répondons vite.', botao: 'Ouvrir la discussion', aria: 'Assistance WhatsApp', fechar: 'Fermer', rotulo: 'Aide' },
+    es: { titulo: '¿Necesitas ayuda?', texto: 'Habla con nosotros por WhatsApp. Respondemos rápido.', botao: 'Abrir chat', aria: 'Soporte por WhatsApp', fechar: 'Cerrar', rotulo: 'Soporte' }
+  };
+  function lingua(){
+    var l = String(document.documentElement.getAttribute('lang') || 'pt').toLowerCase().slice(0, 2);
+    return TEXTOS[l] ? l : 'pt';
+  }
+  function ler(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } }
+  function gravar(k, v){ try { sessionStorage.setItem(k, v); } catch (e) {} }
+
+  // Se a página estiver dentro de uma iframe mais alta do que o ecrã (ex: um
+  // bloco HTML do Bubble), o botão vai para a página de cima, para ficar
+  // sempre visível. Se não der (outro domínio), fica nesta página.
+  function documentoAlvo(){
+    try {
+      if (window.parent && window.parent !== window) {
+        var pd = window.parent.document;
+        if (pd && pd.body && window.innerHeight > window.parent.innerHeight + 40) return { doc: pd, win: window.parent };
+      }
+    } catch (e) {}
+    return { doc: document, win: window };
+  }
+
+  // Ícone genérico de conversa (balão com reticências).
+  var ICONE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5c0 4.1-3.6 7.5-8 7.5-1.2 0-2.3-.2-3.3-.6L4 20l1.3-3.6C4.5 15 4 13.3 4 11.5 4 7.4 7.6 4 12 4s8 3.4 8 7.5z"/><circle cx="8.5" cy="11.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="11.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="11.5" r="1.1" fill="currentColor" stroke="none"/></svg>';
+  var ICONE_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>';
+
+  var CSS = ''
+    + '.dia-sup{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(18px,env(safe-area-inset-bottom));z-index:800;display:flex;flex-direction:column;align-items:flex-end;gap:12px;font-family:inherit;}'
+    + '.dia-sup *{box-sizing:border-box;}'
+    + '.dia-sup-btn{position:relative;display:inline-flex;align-items:center;gap:10px;height:56px;padding:0 20px 0 16px;border:none;border-radius:999px;background:#25D366;color:#fff;font-weight:800;font-size:14.5px;line-height:1;font-family:inherit;letter-spacing:.01em;cursor:pointer;text-decoration:none;box-shadow:0 12px 28px rgba(18,140,74,.38),0 2px 6px rgba(0,0,0,.12);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}'
+    + '.dia-sup-btn:hover{transform:translateY(-2px);background:#1FBF5B;box-shadow:0 16px 34px rgba(18,140,74,.45),0 2px 6px rgba(0,0,0,.12);}'
+    + '.dia-sup-btn:focus-visible{outline:3px solid #0B5D2E;outline-offset:3px;}'
+    + '.dia-sup-btn svg{width:26px;height:26px;flex-shrink:0;}'
+    + '.dia-sup-onda{position:absolute;inset:0;border-radius:inherit;background:#25D366;opacity:.45;animation:diaSupOnda 2.6s ease-out infinite;pointer-events:none;z-index:-1;}'
+    + '@keyframes diaSupOnda{0%{transform:scale(1);opacity:.45}80%,100%{transform:scale(1.35,1.6);opacity:0}}'
+    + '.dia-sup-balao{position:relative;width:min(300px,calc(100vw - 36px));background:#fff;color:#14181F;border-radius:18px;padding:16px 16px 14px;box-shadow:0 18px 44px rgba(10,20,30,.22),0 0 0 1px rgba(10,20,30,.06);transform-origin:bottom right;animation:diaSupEntra .35s cubic-bezier(.2,.9,.3,1.2);}'
+    + '.dia-sup-balao::after{content:"";position:absolute;right:26px;bottom:-7px;width:14px;height:14px;background:#fff;transform:rotate(45deg);box-shadow:3px 3px 6px rgba(10,20,30,.06);}'
+    + '@keyframes diaSupEntra{from{opacity:0;transform:translateY(8px) scale(.96)}to{opacity:1;transform:none}}'
+    + '.dia-sup-balao b{display:block;font-size:15px;margin:0 26px 4px 0;}'
+    + '.dia-sup-balao p{margin:0 0 12px;font-size:13.5px;line-height:1.45;color:#4A5260;}'
+    + '.dia-sup-balao a{display:flex;align-items:center;justify-content:center;gap:8px;height:42px;border-radius:12px;background:#25D366;color:#fff;font-weight:800;font-size:14px;text-decoration:none;}'
+    + '.dia-sup-balao a:hover{background:#1FBF5B;}'
+    + '.dia-sup-balao a svg{width:19px;height:19px;}'
+    + '.dia-sup-x{position:absolute;top:10px;right:10px;width:28px;height:28px;border:none;border-radius:50%;background:#F1F3F5;color:#4A5260;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}'
+    + '.dia-sup-x:hover{background:#E4E7EB;}'
+    + '.dia-sup-x svg{width:13px;height:13px;}'
+    + '@media (max-width:600px){.dia-sup-btn{width:56px;padding:0;justify-content:center;}.dia-sup-btn .dia-sup-rot{display:none;}}'
+    + '@media (prefers-reduced-motion:reduce){.dia-sup-onda{display:none}.dia-sup-balao{animation:none}}'
+    + '@media print{.dia-sup{display:none}}';
+
+  function montar(){
+    var alvo = documentoAlvo(), d = alvo.doc;
+    if (d.querySelector('.dia-sup')) return;
+    var st = d.createElement('style');
+    st.setAttribute('data-daniel-ia', 'suporte');
+    st.textContent = CSS;
+    (d.head || d.body).appendChild(st);
+
+    var url = 'https://wa.me/' + NUMERO + '?text=' + encodeURIComponent(MENSAGEM);
+    var caixa = d.createElement('div');
+    caixa.className = 'dia-sup';
+    caixa.setAttribute('data-no-i18n', '');
+    caixa.innerHTML = '<a class="dia-sup-btn" href="' + url + '" target="_blank" rel="noopener"><span class="dia-sup-onda"></span>' + ICONE + '<span class="dia-sup-rot"></span></a>';
+    d.body.appendChild(caixa);
+    var btn = caixa.querySelector('.dia-sup-btn');
+
+    function textos(){
+      var t = TEXTOS[lingua()];
+      btn.setAttribute('aria-label', t.aria);
+      btn.setAttribute('title', t.aria);
+      btn.querySelector('.dia-sup-rot').textContent = t.rotulo;
+      var b = caixa.querySelector('.dia-sup-balao');
+      if (b) {
+        b.querySelector('b').textContent = t.titulo;
+        b.querySelector('p').textContent = t.texto;
+        b.querySelector('.dia-sup-abrir span').textContent = t.botao;
+        b.querySelector('.dia-sup-x').setAttribute('aria-label', t.fechar);
+      }
+    }
+    function fecharBalao(){
+      var b = caixa.querySelector('.dia-sup-balao');
+      if (b) b.parentNode.removeChild(b);
+      gravar(CHAVE, 'fechado');
+    }
+    function abrirBalao(){
+      if (caixa.querySelector('.dia-sup-balao')) return;
+      var b = d.createElement('div');
+      b.className = 'dia-sup-balao';
+      b.setAttribute('role', 'dialog');
+      b.innerHTML = '<button type="button" class="dia-sup-x">' + ICONE_X + '</button><b></b><p></p>'
+        + '<a class="dia-sup-abrir" href="' + url + '" target="_blank" rel="noopener">' + ICONE + '<span></span></a>';
+      caixa.insertBefore(b, btn);
+      b.querySelector('.dia-sup-x').addEventListener('click', fecharBalao);
+      b.querySelector('.dia-sup-abrir').addEventListener('click', fecharBalao);
+      textos();
+    }
+    btn.addEventListener('click', function(){ gravar(CHAVE, 'fechado'); var b = caixa.querySelector('.dia-sup-balao'); if (b) b.parentNode.removeChild(b); });
+    textos();
+    // O idioma pode mudar depois de a página abrir (selector PT/EN/FR/ES).
+    try { new MutationObserver(textos).observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] }); } catch (e) {}
+    if (CONVITE > 0 && ler(CHAVE) !== 'fechado') setTimeout(abrirBalao, CONVITE * 1000);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar);
+  else montar();
+})();
+
+// 17/11/2026: parceria PaySuite - carrega o aviso e a faixa de parceiro (suporte/paysuite.js) em todas as páginas que já usam este ficheiro.
+(function(){
+  if (window.__diaPaySuite || document.querySelector('script[src*="paysuite.js"]')) return;
+  var s = document.createElement('script');
+  s.src = 'https://app.daniel-ia.pro/suporte/paysuite.js?v=1'; s.defer = true;
+  (document.head || document.documentElement).appendChild(s);
+})();

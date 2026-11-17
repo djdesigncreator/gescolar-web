@@ -1,0 +1,175 @@
+/*
+  Daniel IA - popup de publicidade (1.75.0)
+  -----------------------------------------
+  <script src="https://app.daniel-ia.pro/suporte/promo.js?v=1" data-onde="landing|dashboard" defer></script>
+  Mostra os vídeos feitos pela Daniel IA (escolhidos no painel, Vídeos IA)
+  num portátil, com o texto e o botão do painel. Aparece uma vez por pessoa
+  em cada versão (cada vez que o admin guarda, volta a aparecer), só depois
+  de o aviso de cookies desaparecer. Fecha com o X, com Esc ou a clicar fora.
+*/
+(function(){
+  'use strict';
+  if (window.__diaPromo) return;
+  window.__diaPromo = true;
+  var eu = document.currentScript || document.querySelector('script[src*="promo.js"]');
+  var ONDE = (eu && eu.getAttribute('data-onde')) === 'dashboard' ? 'dashboard' : 'landing';
+  var API = (eu && eu.getAttribute('data-api')) || 'https://mc-8oxfde5o71.bunny.run';
+  var CHAVE = 'dia_promo_' + ONDE;
+  if (/[?&]sem_promo=1/.test(location.search)) return;
+  function ler(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function gravar(k, v){ try { localStorage.setItem(k, v); } catch (e) {} }
+  function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  var reduzir = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var CSS = ''
+    + '.dpr{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:16px;font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#F6F2FB}'
+    + '.dpr *{box-sizing:border-box}'
+    + '.dpr-fundo{position:absolute;inset:0;background:rgba(7,3,12,.72);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);animation:dprF .3s ease-out}'
+    + '.dpr-caixa{position:relative;width:min(960px,100%);max-height:calc(100vh - 32px);overflow:auto;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:clamp(18px,3vw,34px);align-items:center;padding:clamp(18px,3vw,34px);border-radius:28px;background:radial-gradient(90% 120% at 0% 0%,rgba(67,9,96,.55),transparent 60%),radial-gradient(80% 110% at 100% 100%,rgba(137,200,4,.14),transparent 60%),#110A1B;border:1px solid rgba(255,255,255,.08);box-shadow:0 40px 120px -40px rgba(0,0,0,.8);animation:dprE .45s cubic-bezier(.2,.8,.2,1)}'
+    + '@keyframes dprF{from{opacity:0}}@keyframes dprE{from{opacity:0;transform:translateY(18px) scale(.97)}}'
+    + '.dpr-x{position:absolute;top:12px;right:12px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#F6F2FB;cursor:pointer;display:grid;place-items:center;z-index:2}'
+    + '.dpr-x:hover{background:rgba(255,255,255,.14)}.dpr-x svg{width:18px;height:18px}'
+    + '.dpr-x:focus-visible,.dpr-cta:focus-visible,.dpr-nao:focus-visible,.dpr-pontos button:focus-visible{outline:2px solid #B4F02B;outline-offset:2px}'
+    + '.dpr-port{position:relative}'
+    + '.dpr-ecra{position:relative;padding:9px 9px 0;border-radius:14px 14px 0 0;background:#05020A;border:1px solid rgba(255,255,255,.08);border-bottom:0;box-shadow:0 30px 60px -30px rgba(137,200,4,.25)}'
+    + '.dpr-barra{display:flex;gap:5px;padding:0 3px 8px}.dpr-barra i{width:7px;height:7px;border-radius:50%;background:#2A1B3D}'
+    + '.dpr-vid{position:relative;aspect-ratio:16/9;border-radius:6px 6px 0 0;overflow:hidden;background:#1B0F2B}'
+    + '.dpr-vid video,.dpr-vid img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .7s ease}'
+    + '.dpr-vid .on{opacity:1}'
+    + '.dpr-nome{position:absolute;left:10px;bottom:10px;z-index:1;font:700 11px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.04em;padding:6px 9px;border-radius:99px;background:rgba(7,3,12,.6);color:#F6F2FB;backdrop-filter:blur(4px)}'
+    + '.dpr-base{height:14px;margin:0 -5%;border-radius:0 0 14px 14px;background:linear-gradient(#2A1B3D,#170E25)}'
+    + '.dpr-base::after{content:"";display:block;width:20%;height:5px;margin:0 auto;border-radius:0 0 8px 8px;background:#0B0612}'
+    + '.dpr-pontos{display:flex;justify-content:center;gap:6px;margin-top:14px}'
+    + '.dpr-pontos button{width:8px;height:8px;padding:0;border-radius:99px;border:0;background:rgba(255,255,255,.22);cursor:pointer;transition:width .25s,background .25s}'
+    + '.dpr-pontos button.on{width:24px;background:#89C804}'
+    + '.dpr-eti{display:inline-flex;align-items:center;gap:7px;font:800 11px/1 "JetBrains Mono",ui-monospace,monospace;letter-spacing:.12em;padding:7px 11px;border-radius:99px;background:linear-gradient(135deg,#C8F84A,#89C804);color:#140620}'
+    + '.dpr-eti svg{width:12px;height:12px}'
+    + '.dpr h2{font:800 clamp(24px,3.4vw,36px)/1.08 "Sora","Manrope",sans-serif;letter-spacing:-.02em;margin:14px 0 10px}'
+    + '.dpr p{margin:0 0 20px;color:#B9AFC9;font-size:15px;line-height:1.6}'
+    + '.dpr-cta{display:inline-flex;align-items:center;gap:9px;min-height:50px;padding:0 22px;border-radius:14px;background:linear-gradient(135deg,#C8F84A,#89C804);color:#140620;font:800 15px/1 "Manrope",sans-serif;text-decoration:none;box-shadow:0 14px 34px -12px rgba(137,200,4,.6);transition:transform .15s}'
+    + '.dpr-cta:hover{transform:translateY(-1px)}.dpr-cta svg{width:18px;height:18px}'
+    + '.dpr-nao{display:block;margin-top:12px;background:none;border:0;padding:6px 0;color:#8E80A3;font:700 13px "Manrope",sans-serif;cursor:pointer}'
+    + '.dpr-nao:hover{color:#F6F2FB}'
+    + '@media (max-width:760px){.dpr-caixa{grid-template-columns:1fr;border-radius:22px;padding:56px 16px 18px}.dpr h2{font-size:24px}.dpr p{font-size:14px;margin-bottom:16px}.dpr-cta{width:100%;justify-content:center}.dpr-nao{margin:8px auto 0}}'
+    + '@media (prefers-reduced-motion:reduce){.dpr-fundo,.dpr-caixa{animation:none}.dpr-vid video,.dpr-vid img{transition:none}}';
+
+  var IC_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var IC_B = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg>';
+  var IC_S = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+  function abrir(p, cta){
+    if (document.querySelector('.dpr')) return;
+    var st = document.createElement('style'); st.setAttribute('data-dia', 'promo'); st.textContent = CSS; document.head.appendChild(st);
+    var raiz = document.createElement('div');
+    raiz.className = 'dpr'; raiz.setAttribute('role', 'dialog'); raiz.setAttribute('aria-modal', 'true'); raiz.setAttribute('aria-labelledby', 'dpr-tit');
+    var vids = p.videos || [];
+    raiz.innerHTML = '<div class="dpr-fundo"></div><div class="dpr-caixa">'
+      + '<button type="button" class="dpr-x" aria-label="Fechar">' + IC_X + '</button>'
+      + '<div class="dpr-port"><div class="dpr-ecra"><div class="dpr-barra"><i></i><i></i><i></i></div><div class="dpr-vid"><span class="dpr-nome" hidden></span></div></div><div class="dpr-base"></div>'
+      + (vids.length > 1 ? '<div class="dpr-pontos">' + vids.map(function(_, i){ return '<button type="button" aria-label="Vídeo ' + (i + 1) + '"></button>'; }).join('') + '</div>' : '') + '</div>'
+      + '<div><span class="dpr-eti">' + IC_B + 'DANIEL IA · BUSINESS</span><h2 id="dpr-tit">' + esc(p.titulo || 'Sites que parecem anúncios de televisão') + '</h2>'
+      + (p.texto ? '<p>' + esc(p.texto) + '</p>' : '')
+      + '<a class="dpr-cta" href="' + esc(cta.link) + '">' + esc(cta.botao) + IC_S + '</a>'
+      + '<button type="button" class="dpr-nao">Agora não</button></div></div>';
+    document.body.appendChild(raiz);
+    var antesFoco = document.activeElement;
+    var caixaVid = raiz.querySelector('.dpr-vid'), nome = raiz.querySelector('.dpr-nome'), pontos = raiz.querySelectorAll('.dpr-pontos button');
+    var els = vids.map(function(v){
+      var e;
+      if (reduzir) { e = new Image(); e.alt = ''; e.src = v.poster || ''; }
+      else {
+        e = document.createElement('video');
+        e.muted = true; e.playsInline = true; e.setAttribute('muted', ''); e.setAttribute('playsinline', ''); e.preload = 'auto';
+        if (v.poster) e.poster = v.poster;
+        e.src = v.url;
+        if (vids.length === 1) e.loop = true;
+      }
+      caixaVid.appendChild(e);
+      return e;
+    });
+    var actual = -1;
+    function ir(i){
+      if (!els.length) return;
+      i = (i + els.length) % els.length;
+      els.forEach(function(e, k){ e.classList.toggle('on', k === i); if (k !== i && e.pause) e.pause(); });
+      Array.prototype.forEach.call(pontos, function(b, k){ b.classList.toggle('on', k === i); });
+      var e = els[i];
+      if (e.play) { try { e.currentTime = 0; } catch (x) {} var pr = e.play(); if (pr && pr.catch) pr.catch(function(){}); }
+      nome.hidden = !vids[i].nome; nome.textContent = vids[i].nome || '';
+      actual = i;
+    }
+    els.forEach(function(e, k){ if (e.addEventListener && vids.length > 1) e.addEventListener('ended', function(){ if (k === actual) ir(k + 1); }); });
+    Array.prototype.forEach.call(pontos, function(b, k){ b.addEventListener('click', function(){ ir(k); }); });
+    ir(0);
+    var tAuto = reduzir && els.length > 1 ? setInterval(function(){ ir(actual + 1); }, 5000) : null;
+    function fechar(){
+      gravar(CHAVE, String(p.versao || 1));
+      clearInterval(tAuto);
+      document.removeEventListener('keydown', tecla);
+      els.forEach(function(e){ if (e.pause) e.pause(); });
+      raiz.remove(); st.remove();
+      if (antesFoco && antesFoco.focus) try { antesFoco.focus(); } catch (e) {}
+    }
+    function tecla(e){
+      if (e.key === 'Escape') fechar();
+      if (e.key === 'Tab') { // o foco fica dentro do popup
+        var f = raiz.querySelectorAll('button,a[href]'), a = f[0], z = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === a) { e.preventDefault(); z.focus(); }
+        else if (!e.shiftKey && document.activeElement === z) { e.preventDefault(); a.focus(); }
+      }
+    }
+    document.addEventListener('keydown', tecla);
+    raiz.querySelector('.dpr-x').addEventListener('click', fechar);
+    raiz.querySelector('.dpr-nao').addEventListener('click', fechar);
+    raiz.querySelector('.dpr-fundo').addEventListener('click', fechar);
+    raiz.querySelector('.dpr-cta').addEventListener('click', function(){ gravar(CHAVE, String(p.versao || 1)); });
+    raiz.querySelector('.dpr-x').focus();
+  }
+
+  // espera que o aviso de cookies saia (e mais um bocadinho)
+  function quandoLivre(fn){
+    var n = 0;
+    (function ver(){
+      n++;
+      var aviso = document.querySelector('.dck-aviso, .dck-fundo');
+      var visivel = aviso && aviso.offsetParent !== null;
+      if (!visivel && !document.querySelector('[aria-modal="true"]:not(.dpr)')) return fn();
+      if (n < 600) setTimeout(ver, 1000);
+    })();
+  }
+
+  function arrancar(){
+    fetch(API + '/promo-popup?onde=' + ONDE).then(function(r){ return r.json(); }).then(function(p){
+      if (!p || !p.activo || !p.videos || !p.videos.length) return;
+      if (ler(CHAVE) === String(p.versao || 1)) return; // já viu esta versão
+      var cta = { botao: p.botao || 'Ver planos', link: p.link || (ONDE === 'dashboard' ? '/planos/' : 'https://app.daniel-ia.pro/') };
+      var pronto = function(){ quandoLivre(function(){ abrir(p, cta); }); };
+      if (ONDE === 'dashboard') {
+        // quem já tem vídeos no plano vai directo criar um site assim
+        var owner = ler('daniel_owner');
+        if (!owner) return setTimeout(pronto, 2500);
+        fetch(API + '/account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner: owner, token: ler('daniel_token') || '' }) })
+          .then(function(r){ return r.json(); })
+          .then(function(r){ var v = r && r.response && r.response.video; if (v && v.permitido) { cta.botao = 'Criar um site assim'; cta.link = '/criar/'; } })
+          .catch(function(){})
+          .then(function(){ setTimeout(pronto, 2500); });
+      } else {
+        // na landing: depois de 6 segundos ou de a pessoa descer um terço da página
+        var feito = false;
+        var ir = function(){ if (feito) return; feito = true; window.removeEventListener('scroll', rolar); pronto(); };
+        var rolar = function(){ var h = document.documentElement.scrollHeight - innerHeight; if (h > 0 && scrollY / h > 0.33) ir(); };
+        window.addEventListener('scroll', rolar, { passive: true });
+        setTimeout(ir, 6000);
+      }
+    }).catch(function(){});
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar); else arrancar();
+})();
+
+// 17/11/2026: parceria PaySuite - carrega o aviso e a faixa de parceiro (suporte/paysuite.js) em todas as páginas que já usam este ficheiro.
+(function(){
+  if (window.__diaPaySuite || document.querySelector('script[src*="paysuite.js"]')) return;
+  var s = document.createElement('script');
+  s.src = 'https://app.daniel-ia.pro/suporte/paysuite.js?v=1'; s.defer = true;
+  (document.head || document.documentElement).appendChild(s);
+})();

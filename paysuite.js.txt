@@ -1,0 +1,131 @@
+/*
+  Daniel IA - parceria de pagamentos PaySuite (17/11/2026)
+  --------------------------------------------------------
+  Um só ficheiro para a landing e para a app. É carregado sozinho pelo
+  whatsapp.js e pelo promo.js (não é preciso mexer em nenhuma página).
+  Também pode ser posto à mão:
+    <script src="https://app.daniel-ia.pro/suporte/paysuite.js?v=1" defer></script>
+
+  O que mostra:
+    - Dashboard e páginas onde se configuram pagamentos (Gerir loja, Oferta,
+      Agenda, Cursos, Carteira, KYC): o aviso completo - os pagamentos das
+      lojas passam a exigir uma conta PaySuite própria e a activação connosco.
+    - Landing e restantes páginas: a faixa "Parceiro de pagamentos PaySuite".
+  O número de contacto (NUMERO) e o endereço da PaySuite (LINK_PAYSUITE)
+  mudam-se só aqui. Os textos seguem o idioma da página (pt, en, fr, es).
+*/
+(function(){
+  'use strict';
+  if (window.__diaPaySuite) return;
+  window.__diaPaySuite = true;
+
+  var NUMERO = '258851711177';
+  var LINK_PAYSUITE = 'https://paysuite.tech';
+  var LOGO = 'data:image/png;base64,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';
+
+  var TEXTOS = {
+    pt: { parceiro: 'Parceiro de pagamentos', selo: 'A Daniel IA é parceira de pagamentos da PaySuite',
+      titulo: 'Pagamentos das lojas: agora com a tua conta PaySuite',
+      texto: 'A Daniel IA é parceira de pagamentos da PaySuite. A partir de agora, para receberes pagamentos no teu site ou loja (M-Pesa, e-Mola e cartão) precisas de ter a tua própria conta PaySuite, pessoal ou de empresa. Até a tua conta estar activada connosco, os pagamentos online das lojas ficam em pausa.',
+      p1: 'Cria a tua conta na PaySuite (pessoal ou empresa).', p2: 'Fala connosco para activarmos os pagamentos na tua loja.',
+      criar: 'Criar conta na PaySuite', falar: 'Falar connosco',
+      curto: 'Para receberes pagamentos online precisas da tua conta PaySuite e de a activar connosco. Até lá, os pagamentos das lojas ficam em pausa.',
+      landing: 'Recebe por M-Pesa, e-Mola e cartão no teu site, com a tua própria conta PaySuite.',
+      msg: 'Olá! Já tenho conta na PaySuite e quero activar os pagamentos na minha loja da Daniel IA.' },
+    en: { parceiro: 'Payment partner', selo: 'Daniel IA is a PaySuite payment partner',
+      titulo: 'Store payments: now with your own PaySuite account',
+      texto: 'Daniel IA is a PaySuite payment partner. From now on, to receive payments on your site or store (M-Pesa, e-Mola and card) you need your own PaySuite account, personal or business. Until your account is activated with us, online store payments are paused.',
+      p1: 'Create your PaySuite account (personal or business).', p2: 'Contact us so we can activate payments on your store.',
+      criar: 'Create a PaySuite account', falar: 'Contact us',
+      curto: 'To receive online payments you need your own PaySuite account, activated with us. Until then, store payments are paused.',
+      landing: 'Get paid by M-Pesa, e-Mola and card on your site, with your own PaySuite account.',
+      msg: 'Hello! I already have a PaySuite account and I want to activate payments on my Daniel IA store.' },
+    fr: { parceiro: 'Partenaire de paiement', selo: 'Daniel IA est partenaire de paiement de PaySuite',
+      titulo: 'Paiements des boutiques : désormais avec votre compte PaySuite',
+      texto: 'Daniel IA est partenaire de paiement de PaySuite. Désormais, pour recevoir des paiements sur votre site ou boutique (M-Pesa, e-Mola et carte), vous devez avoir votre propre compte PaySuite, personnel ou entreprise. Tant que votre compte n’est pas activé avec nous, les paiements en ligne des boutiques sont en pause.',
+      p1: 'Créez votre compte PaySuite (personnel ou entreprise).', p2: 'Contactez-nous pour activer les paiements sur votre boutique.',
+      criar: 'Créer un compte PaySuite', falar: 'Nous contacter',
+      curto: 'Pour recevoir des paiements en ligne, il vous faut votre compte PaySuite, activé avec nous. D’ici là, les paiements des boutiques sont en pause.',
+      landing: 'Encaissez par M-Pesa, e-Mola et carte sur votre site, avec votre propre compte PaySuite.',
+      msg: 'Bonjour ! J’ai déjà un compte PaySuite et je veux activer les paiements sur ma boutique Daniel IA.' },
+    es: { parceiro: 'Socio de pagos', selo: 'Daniel IA es socio de pagos de PaySuite',
+      titulo: 'Pagos de las tiendas: ahora con tu cuenta PaySuite',
+      texto: 'Daniel IA es socio de pagos de PaySuite. A partir de ahora, para recibir pagos en tu sitio o tienda (M-Pesa, e-Mola y tarjeta) necesitas tu propia cuenta PaySuite, personal o de empresa. Hasta que tu cuenta esté activada con nosotros, los pagos online de las tiendas quedan en pausa.',
+      p1: 'Crea tu cuenta en PaySuite (personal o empresa).', p2: 'Habla con nosotros para activar los pagos en tu tienda.',
+      criar: 'Crear cuenta en PaySuite', falar: 'Hablar con nosotros',
+      curto: 'Para recibir pagos online necesitas tu cuenta PaySuite, activada con nosotros. Hasta entonces, los pagos de las tiendas quedan en pausa.',
+      landing: 'Cobra por M-Pesa, e-Mola y tarjeta en tu sitio, con tu propia cuenta PaySuite.',
+      msg: '¡Hola! Ya tengo cuenta en PaySuite y quiero activar los pagos en mi tienda de Daniel IA.' }
+  };
+  function T(){ var l = String(document.documentElement.getAttribute('lang') || 'pt').toLowerCase().slice(0, 2); return TEXTOS[l] || TEXTOS.pt; }
+  function esc(t){ return String(t == null ? '' : t).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  // Onde estamos: aviso completo, aviso curto ou só a faixa de parceiro.
+  var caminho = String(location.pathname || '').toLowerCase();
+  var naApp = /(^|\.)app\.daniel-ia\.pro$/i.test(location.hostname) || /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var MODO = 'faixa';
+  if (naApp && /^\/dashboard(\/|\.html|$)/.test(caminho)) MODO = 'completo';
+  else if (naApp && /^\/(produtos|venda|agenda|cursos|carteira|kyc)(\/|\.html|$)/.test(caminho)) MODO = 'curto';
+  else if (naApp && /^\/(admin|editor|reset|legal|legal-site)(\/|\.html|$)/.test(caminho)) return;
+
+  var CSS = ''
+    + '.dps,.dps *{box-sizing:border-box}'
+    + '.dps{font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--text,#F6F2FB);margin:0 0 22px;border-radius:20px;border:1px solid rgba(41,176,144,.45);background:linear-gradient(135deg,rgba(41,176,144,.16),rgba(41,176,144,.04)),var(--card,#110A1B);padding:20px 22px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start;text-align:left}'
+    + '.dps-logo{width:60px;height:60px;border-radius:16px;background:#fff;display:grid;place-items:center;flex:none;box-shadow:0 8px 22px -10px rgba(41,176,144,.7)}'
+    + '.dps-logo img{width:44px;height:44px;display:block}'
+    + '.dps-sup{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#29B090;margin:0 0 6px}'
+    + '.dps-sup b{font-weight:800;color:var(--text,#F6F2FB);letter-spacing:.02em;text-transform:none;font-size:13px}'
+    + '.dps h2{font-size:clamp(17px,2.4vw,21px);line-height:1.25;margin:0 0 8px;font-weight:800;color:var(--text,#F6F2FB)}'
+    + '.dps p{margin:0 0 12px;font-size:14.5px;line-height:1.6;color:var(--text-dim,#A89BBA)}'
+    + '.dps ol{margin:0 0 14px;padding:0;list-style:none;display:grid;gap:8px;counter-reset:dps}'
+    + '.dps ol li{counter-increment:dps;display:flex;gap:10px;align-items:flex-start;font-size:14.5px;line-height:1.5;font-weight:600;color:var(--text,#F6F2FB)}'
+    + '.dps ol li:before{content:counter(dps);flex:none;width:24px;height:24px;border-radius:50%;background:#29B090;color:#04130F;font-weight:800;font-size:13px;display:grid;place-items:center}'
+    + '.dps-acc{display:flex;gap:10px;flex-wrap:wrap}'
+    + '.dps-btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;font-weight:800;font-size:14.5px;text-decoration:none;border:1px solid transparent;cursor:pointer}'
+    + '.dps-btn.p{background:#29B090;color:#04130F}.dps-btn.p:hover{background:#34C7A4}'
+    + '.dps-btn.s{background:transparent;color:var(--text,#F6F2FB);border-color:var(--border,#2A1B3D)}.dps-btn.s:hover{border-color:#29B090}'
+    + '.dps-btn:focus-visible{outline:3px solid #29B090;outline-offset:2px}'
+    + '.dps.curto{padding:14px 16px;gap:14px;align-items:center}.dps.curto .dps-logo{width:46px;height:46px;border-radius:12px}.dps.curto .dps-logo img{width:34px;height:34px}.dps.curto p{margin:0 0 10px}'
+    + '.dps-faixa{font-family:"Manrope",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;display:flex;justify-content:center;padding:26px 16px}'
+    + '.dps-faixa a{display:inline-flex;align-items:center;gap:14px;text-decoration:none;padding:12px 20px 12px 12px;border-radius:18px;border:1px solid rgba(41,176,144,.45);background:rgba(41,176,144,.10);color:inherit;max-width:100%}'
+    + '.dps-faixa a:hover{background:rgba(41,176,144,.18)}.dps-faixa a:focus-visible{outline:3px solid #29B090;outline-offset:3px}'
+    + '.dps-faixa .dps-logo{width:48px;height:48px;border-radius:13px}.dps-faixa .dps-logo img{width:36px;height:36px}'
+    + '.dps-faixa a>span:not(.dps-logo){display:block;text-align:left}'
+    + '.dps-faixa small{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#29B090}'
+    + '.dps-faixa b{display:block;font-size:19px;font-weight:800;line-height:1.2}'
+    + '.dps-faixa em{display:block;font-style:normal;font-size:13px;opacity:.75;margin-top:2px;max-width:46ch}'
+    + '@media (max-width:560px){.dps{grid-template-columns:1fr;padding:16px}.dps-btn{width:100%}.dps.curto{grid-template-columns:auto minmax(0,1fr)}}';
+
+  function logo(){ return '<span class="dps-logo"><img src="' + LOGO + '" alt="PaySuite" width="44" height="44"></span>'; }
+  function botoes(t){
+    var wa = 'https://wa.me/' + NUMERO + '?text=' + encodeURIComponent(t.msg);
+    return '<div class="dps-acc"><a class="dps-btn p" href="' + LINK_PAYSUITE + '" target="_blank" rel="noopener">' + esc(t.criar) + '</a>'
+      + '<a class="dps-btn s" href="' + wa + '" target="_blank" rel="noopener">' + esc(t.falar) + '</a></div>';
+  }
+  function montar(){
+    if (document.querySelector('.dps,.dps-faixa')) return;
+    var t = T(), st = document.createElement('style');
+    st.textContent = CSS; document.head.appendChild(st);
+    if (MODO === 'faixa') {
+      var f = document.createElement('div');
+      f.className = 'dps-faixa';
+      f.innerHTML = '<a href="' + LINK_PAYSUITE + '" target="_blank" rel="noopener" aria-label="' + esc(t.selo) + '">' + logo()
+        + '<span><small>' + esc(t.parceiro) + '</small><b>PaySuite</b><em>' + esc(t.landing) + '</em></span></a>';
+      var rod = document.querySelector('footer');
+      if (rod && rod.parentNode) rod.parentNode.insertBefore(f, rod); else document.body.appendChild(f);
+      return;
+    }
+    var c = document.createElement('section');
+    c.className = 'dps' + (MODO === 'curto' ? ' curto' : '');
+    c.setAttribute('aria-label', t.selo);
+    c.innerHTML = logo() + '<div><div class="dps-sup">' + esc(t.parceiro) + ' <b>PaySuite</b></div>'
+      + (MODO === 'completo'
+        ? '<h2>' + esc(t.titulo) + '</h2><p>' + esc(t.texto) + '</p><ol><li>' + esc(t.p1) + '</li><li>' + esc(t.p2) + '</li></ol>'
+        : '<p>' + esc(t.curto) + '</p>')
+      + botoes(t) + '</div>';
+    var alvo = document.querySelector('.main') || document.querySelector('main') || document.body;
+    var antes = MODO === 'completo' ? (alvo.querySelector('.cards') || alvo.firstElementChild) : alvo.firstElementChild;
+    if (antes && antes.parentNode === alvo) alvo.insertBefore(c, antes); else if (antes && antes.parentNode) antes.parentNode.insertBefore(c, antes); else alvo.appendChild(c);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', montar); else montar();
+})();
