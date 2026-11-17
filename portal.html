@@ -565,13 +565,15 @@ function pPropinas(){
       : '<div class="saldo ok" style="margin-top:4px"><div class="l">Propinas</div><div class="v">Tudo em dia</div><div class="d">Não há mensalidades por pagar.</div></div>')+
     (pagas.length? '<div class="sec-t">Pagas</div><div class="lista">'+pagas.slice().reverse().map(linha).join('')+'</div>' : '')+
     '<div id="barra"></div>'+
+    (S.d.escola && S.d.escola.pagamentos_online===false ? '<p class="small" style="margin:14px 2px 0;background:var(--surface2,#F2F5FA);border-radius:10px;padding:10px 12px;line-height:1.5"><b>Pagamento online indisponível.</b> Esta escola ainda não recebe pagamentos por M-Pesa, e-Mola ou cartão. Por favor pague na secretaria da escola: o recibo aparece aqui depois.</p>' : '')+
     (!e.conducao && S.d.escola.regras && S.d.escola.regras.multa ? '<p class="small muted" style="margin:14px 2px 0">As mensalidades vencem no dia '+esc(S.d.escola.regras.dia_limite||10)+'. Depois disso a multa é de '+esc(S.d.escola.regras.multa)+'% por mês, até ao máximo de '+esc(S.d.escola.regras.multa_max||S.d.escola.regras.multa)+'%.</p>' : '');
   $$('[data-p]').forEach(function(c){ c.onchange=function(){ var id=c.getAttribute('data-p'); if(c.checked) S.sel[id]=1; else delete S.sel[id]; c.closest('.pt-it').classList.toggle('sel',c.checked); barra(); }; });
   var t=$('#todas'); if(t) t.onclick=function(){ var todas=abertas.every(function(p){ return S.sel[p.id]; }); S.sel={}; if(!todas) abertas.forEach(function(p){ S.sel[p.id]=1; }); pPropinas(); };
   barra();
   function barra(){
     var ids=Object.keys(S.sel), tot=abertas.filter(function(p){ return S.sel[p.id]; }).reduce(function(s,p){ return s+p.total; },0);
-    $('#barra').innerHTML = ids.length ? '<div class="barra-pagar"><div class="tx"><small>'+ids.length+' mensalidade(s)</small><b class="num">'+mt(tot)+'</b></div><button class="btn" id="b-pagar">Pagar</button></div>' : '';
+    var on=!S.d.escola || S.d.escola.pagamentos_online!==false;   // v5.28: sem pagamentos online, paga-se na secretaria
+    $('#barra').innerHTML = ids.length ? '<div class="barra-pagar"><div class="tx"><small>'+ids.length+' mensalidade(s)</small><b class="num">'+mt(tot)+'</b></div>'+(on?'<button class="btn" id="b-pagar">Pagar</button>':'<span class="small" style="max-width:22ch;text-align:right;font-weight:600">Pague na secretaria da escola</span>')+'</div>' : '';
     var b=$('#b-pagar'); if(b) b.onclick=function(){ pagar(e, abertas.filter(function(p){ return S.sel[p.id]; })); };
   }
 }
